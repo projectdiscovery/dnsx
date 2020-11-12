@@ -1,131 +1,171 @@
 <h1 align="left">
-  <img src="static/dnsprobe-logo.png" alt="dnsprobe" width="200px"></a>
+  <img src="static/dnsx-logo.png" alt="dnsx" width="200px"></a>
   <br>
 </h1>
 
 [![License](https://img.shields.io/badge/license-MIT-_red.svg)](https://opensource.org/licenses/MIT)
-[![Go Report Card](https://goreportcard.com/badge/github.com/projectdiscovery/dnsprobe)](https://goreportcard.com/report/github.com/projectdiscovery/dnsprobe)
-[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/projectdiscovery/dnsprobe/issues)
+[![Go Report Card](https://goreportcard.com/badge/github.com/projectdiscovery/dnsx)](https://goreportcard.com/report/github.com/projectdiscovery/dnsx)
+[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/projectdiscovery/dnsx/issues)
+[![GitHub Release](https://img.shields.io/github/release/projectdiscovery/dnsx)](https://github.com/projectdiscovery/dnsx/releases)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/pdiscoveryio.svg?logo=twitter)](https://twitter.com/pdiscoveryio)
+[![Docker Images](https://img.shields.io/docker/pulls/projectdiscovery/dnsx.svg)](https://hub.docker.com/r/projectdiscovery/dnsx)
+[![Chat on Discord](https://img.shields.io/discord/695645237418131507.svg?logo=discord)](https://discord.gg/KECAGdH)
 
-DNSProbe is a tool built on top of [retryabledns](https://github.com/projectdiscovery/retryabledns) that allows you to perform multiple dns queries of your choice with a list of user supplied resolvers.
+dnsx is a fast and multi-purpose DNS toolkit allow to run multiple probers using [retryabledns](https://github.com/projectdiscovery/retryabledns) library, that allows you to perform multiple DNS queries of your choice with a list of user supplied resolvers.
 
 # Resources
 - [Resources](#resources)
 - [Features](#features)
 - [Usage](#usage)
 - [Installation Instructions](#installation-instructions)
+    - [From Binary](#from-binary)
     - [From Source](#from-source)
-    - [Running in a Docker Container](#running-in-a-docker-container)
-    - [Querying host for A record](#querying-host-for-a-record)
-    - [Querying host for CNAME record](#querying-host-for-cname-record)
-    - [Querying CNAME records on the Subfinder output](#querying-cname-records-on-the-subfinder-output)
-- [License](#license)
+    - [From Github](#from-github)
+- [Running dnsx](#running-dnsx)
+- [Notes](#-notes)
+- [Note on wildcards](#note-on-wildcards)
 
 # Features
 
 <h1 align="left">
-  <img src="static/dnsprobe-run.png" alt="dnsprobe" width="700px"></a>
+  <img src="static/dnsx-run.png" alt="dnsx" width="700px"></a>
   <br>
 </h1>
 
  - Simple and Handy utility to query DNS records. 
- 
+ - Handles wildcard subdomains in automated way.
+ - Optimized for **ease of use**.
+ - **Stdin** and **stdout** support to work with other tools.
 
 # Usage
 
-```bash
-dnsprobe -h
+```sh
+dnsx -h
 ```
 This will display help for the tool. Here are all the switches it supports.
 
-| Flag           | Description                                                        | Example                                     |
-|----------------|------------------------------------------------------------------------------------------------------------------|---------------------------|
-| -c             | Max dns retries (default 1)                                                                                      | dnsprobe -c 5             |
-| -l             | List of dns domains (optional)                                                                                              | dnsprobe -l domains.txt                     |
-| -r             | Request Type A, NS, CNAME, SOA, PTR, MX, TXT, AAAA (default "A")                                                 | dnsprobe -r A                               |
-| -s             | List of resolvers (optional)                                                                                                | dnsprobe -s resolvers.txt                   |
-| -t             | Number of concurrent requests to make (default 250)                                                              | dnsprobe -t 500                             |
-| -f             | Output type: ip, domain, response, simple (domain + ip, default), full (domain + response), json (domain + raw response)  | dnsprobe -f json           |
-| -o             | Output file (optional)                                                                                                      | dnsprobe -o result.txt                                |
-| -raw           | Output the full response ignoring output type                                                                  | dnsprobe -raw               |
-| -silent        | Show only found results in output                     | dnsprobe -silent             |
+| Flag 		| Description 						| Example |
+|-----------|-----------------------------------|----------------|
+| a			| Query A record					| dnsx -a	|
+| aaaa 		| Query AAAA record 				| dnsx -aaaa |
+| cname		| Query CNAME record 				| dnsx -cname |
+| ns		| Query NS record 					| dnsx -ns |
+| ptr		| Query PTR record 					| dnsx -ptr |
+| txt 		| Query TXT record 					| dnsx -txt |
+| mx		| DQuery MX record 					| dnsx -mx |
+| soa		| Query SOA record 					| dnsx -soa |
+| raw		| Operates like dig 				| dnsx -raw |
+| l			| File input list of subdomains/host| dnsx -l list.txt |
+| json 		| JSON output 						| dnsx -json |
+| r 		| File or comma separated resolvers | dnsx -r 1.1.1.1 |
+| rl 		| Limit of DNS request/second 		| dnsx -rl 100 |
+| resp 		| Display response data 			| dnsx -cname -resp |
+| resp-only | Display only response data 		| dnsx -cname resp-only |
+| retry 	| Number of DNS retries 			| dnsx -retry 1 |
+| silent 	| Show only results in the output 	| dnsx -silent |
+| o 		| File to write output to (optional)| dnsx -o output.txt |
+| t 		| Concurrent threads to make 		| dnsx -t 250 |
+| verbose 	| Verbose output 					| dnsx -verbose |
+| version 	| Show version of dnsx 				| dnsx -version |
+| wd 		| Wildcard domain name for filtering| dnsx -wd example.com |
+| wt 		| Wildcard Filter Threshold 		| dnsx -wt 5 |
+
 
 # Installation Instructions
+
 ### From Source
 
-dnsprobe requires go1.13+ to install successfully. Run the following command to get the repo -
+The installation is easy. You can download the pre-built binaries for your platform from the [Releases](https://github.com/projectdiscovery/dnsx/releases/) page. Extract them using tar, move it to your `$PATH`and you're ready to go.
 
-```curl
-GO111MODULE=on go get -u -v github.com/projectdiscovery/dnsprobe
+```sh
+Download latest binary from https://github.com/projectdiscovery/dnsx/releases
+
+▶ tar -xvf dnsx-linux-amd64.tar
+▶ mv dnsx-linux-amd64 /usr/local/bin/dnsx
+▶ dnsx -h
 ```
 
-In order to update the tool, you can use -u flag with go get command.
+### From Source
 
-### Running in a Docker Container
+**dnsx** requires **go1.14+** to install successfully. Run the following command to get the repo - 
 
-- Clone the repo using `git clone https://github.com/projectdiscovery/dnsprobe.git`
-- Build your docker container
-```bash
-> docker build -t projectdiscovery/dnsprobe .
+```sh
+▶ GO111MODULE=auto go get -u -v github.com/projectdiscovery/dnsx/cmd/dnsx
 ```
 
-- After building the container using either way, run the following - 
-```bash
-> docker run -it projectdiscovery/dnsprobe
+### From Github
+
+```sh
+▶ git clone https://github.com/projectdiscovery/dnsx.git; cd dnsx/cmd/dnsx; go build; mv dnsx /usr/local/bin/; dnsx -version
 ```
 
-For example, to query a list of domains for CNAME record and output the results to your host file system:
-```bash
-> cat domains.txt | docker run -i projectdiscovery/dnsprobe -r CNAME > bugcrowd.txt
-```
-
-### Querying host for A record
+### Running dnsx
 
 To query a list of domains, you can pass the list via stdin (it also accepts full URLS, in this case the domain is extracted automatically).
 
-```bash
-> cat domains.txt | dnsprobe
+```sh
+▶ subfinder -silent -d hackerone.com | dnsx -resp
 
-root@test:~# cat bc.txt | dnsprobe
-bounce.bugcrowd.com 192.28.152.174
-blog.bugcrowd.com 104.20.4.239
-blog.bugcrowd.com 104.20.5.239
-www.bugcrowd.com 104.20.5.239
-www.bugcrowd.com 104.20.4.239
-events.bugcrowd.com 54.84.134.174
+      _             __  __
+   __| | _ __   ___ \ \/ /
+  / _' || '_ \ / __| \  / 
+ | (_| || | | |\__ \ /  \
+  \__,_||_| |_||___//_/\_\ v1.0
+
+		projectdiscovery.io
+
+[WRN] Use with caution. You are responsible for your actions
+[WRN] Developers assume no liability and are not responsible for any misuse or damage.
+
+a.ns.hackerone.com [162.159.0.31]
+b.ns.hackerone.com [162.159.1.31]
+mta-sts.hackerone.com [185.199.108.153]
+mta-sts.hackerone.com [185.199.109.153]
+mta-sts.hackerone.com [185.199.110.153]
+mta-sts.hackerone.com [185.199.111.153]
+events.hackerone.com [208.100.11.134]
+mta-sts.managed.hackerone.com [185.199.108.153]
+mta-sts.managed.hackerone.com [185.199.109.153]
+mta-sts.managed.hackerone.com [185.199.110.153]
+mta-sts.managed.hackerone.com [185.199.111.153]
+resources.hackerone.com [52.60.160.16]
+resources.hackerone.com [52.60.165.183]
+www.hackerone.com [104.16.100.52]
+www.hackerone.com [104.16.99.52]
+support.hackerone.com [104.16.51.111]
+support.hackerone.com [104.16.53.111]
 ```
 
 ### Querying host for CNAME record
 
-```bash
-> dnsprobe -l domains.txt -r CNAME
+```sh
+▶ subfinder -silent -d hackerone.com | dnsx -resp -cname
 
-root@test:~# dnsprobe -l bc.txt -r CNAME
-forum.bugcrowd.com bugcrowd.hosted-by-discourse.com.
-collateral.bugcrowd.com bugcrowd.outrch.com.
-go.bugcrowd.com mkto-ab270028.com.
-ww2.bugcrowd.com bugcrowdinc.mktoweb.com.
-researcherdocs.bugcrowd.com ssl.readmessl.com.
-docs.bugcrowd.com ssl.readmessl.com.
+      _             __  __
+   __| | _ __   ___ \ \/ /
+  / _' || '_ \ / __| \  / 
+ | (_| || | | |\__ \ /  \
+  \__,_||_| |_||___//_/\_\ v1.0
+
+		projectdiscovery.io
+
+[WRN] Use with caution. You are responsible for your actions
+[WRN] Developers assume no liability and are not responsible for any misuse or damage.
+
+support.hackerone.com [hackerone.zendesk.com]
+resources.hackerone.com [read.uberflip.com]
+mta-sts.hackerone.com [hacker0x01.github.io]
+mta-sts.forwarding.hackerone.com [hacker0x01.github.io]
+events.hackerone.com [whitelabel.bigmarker.com]
 ```
 
-This will run the tool against domains in `domains.txt` and returns the results. The tool uses the resolvers specified with -s option to perform the queries or default system resolvers.
+# 📋 Notes
 
-### Querying CNAME records on the Subfinder output
+- Domain name input is mandatory for wildcard elimination.
+- No other flag works when using wildcard filtering.
 
-```bash 
-> subfinder -d bugcrowd.com -silent | dnsprobe -r cname
+# Note on wildcards
 
-root@b0x:~# subfinder -d bugcrowd.com -silent | dnsprobe -r cname
-forum.bugcrowd.com bugcrowd.hosted-by-discourse.com.
-docs.bugcrowd.com ssl.readmessl.com.
-go.bugcrowd.com mkto-ab270028.com.
-ww2.bugcrowd.com bugcrowdinc.mktoweb.com.
-researcherdocs.bugcrowd.com ssl.readmessl.com.
-collateral.bugcrowd.com bugcrowd.outrch.com.
-proxilate.bugcrowd.com proxilate.a.bugcrowd.com.
-```
+A special feature of dnsX is its ability to handle multi-level DNS based wildcards and do it so with very less number of DNS requests. Sometimes all the subdomains will resolve which will lead to lots of garbage in the results. The way dnsX handles this is it will keep track of how many subdomains point to an IP and if the count of the Subdomains increase beyond a certain small threshold, it will check for wildcard on all the levels of the hosts for that IP iteratively.
 
-# License
-
-DNSProbe is made with 🖤 by the [projectdiscovery](https://projectdiscovery.io) team.
+dnsx is made with 🖤 by the [projectdiscovery](https://projectdiscovery.io) team.
