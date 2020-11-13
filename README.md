@@ -14,7 +14,7 @@
 
 **dnsx** is a fast and multi-purpose DNS toolkit allow to run multiple probers using [retryabledns](https://github.com/projectdiscovery/retryabledns) library, that allows you to perform multiple DNS queries of your choice with a list of user supplied resolvers.
 
-dnsx is successor of [dnsprobe](https://github.com/projectdiscovery/dnsprobe) that includes new features, multipe bugs fixes, and tailored for better user experience, few notable flags are `resp` and `resp-only` that allows to control and print the extact information you are looking for.
+dnsx is successor of [dnsprobe](https://github.com/projectdiscovery/dnsprobe) that includes new features, multipe bugs fixes, and tailored for better user experience, few notable flags are `resp` and `resp-only` that allows to control and print the exact information you are looking for.
 
 We also ported DNS wildcard filtering feature to dnsx from [shuffledns](https://github.com/projectdiscovery/shuffledns) as a standalone support.
 
