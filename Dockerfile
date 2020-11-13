@@ -5,6 +5,6 @@ RUN go get -u github.com/golang/dep/cmd/dep
 WORKDIR /go/src/app
 
 # Install
-RUN go get -u github.com/projectdiscovery/cmd/dnsx
+RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/dnsx/cmd/dnsx
 
 ENTRYPOINT ["dnsx"]

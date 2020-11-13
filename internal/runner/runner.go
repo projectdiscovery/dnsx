@@ -167,6 +167,7 @@ func (r *Runner) prepareInput() error {
 	return nil
 }
 
+// nolint:deadcode
 func makePrintCallback() func(stats clistats.StatisticsClient) {
 	builder := &strings.Builder{}
 	return func(stats clistats.StatisticsClient) {
@@ -359,8 +360,6 @@ func (r *Runner) storeDNSData(dnsdata *retryabledns.DNSData) error {
 }
 
 func (r *Runner) Close() {
-	// nolint:errcheck
-	r.stats.Stop()
 	r.hm.Close()
 }
 
