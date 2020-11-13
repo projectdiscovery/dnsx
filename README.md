@@ -9,7 +9,6 @@
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/projectdiscovery/dnsx/issues)
 [![GitHub Release](https://img.shields.io/github/release/projectdiscovery/dnsx)](https://github.com/projectdiscovery/dnsx/releases)
 [![Follow on Twitter](https://img.shields.io/twitter/follow/pdiscoveryio.svg?logo=twitter)](https://twitter.com/pdiscoveryio)
-[![Docker Images](https://img.shields.io/docker/pulls/projectdiscovery/dnsx.svg)](https://hub.docker.com/r/projectdiscovery/dnsx)
 [![Chat on Discord](https://img.shields.io/discord/695645237418131507.svg?logo=discord)](https://discord.gg/KECAGdH)
 
 **dnsx** is a fast and multi-purpose DNS toolkit allow to run multiple probers using [retryabledns](https://github.com/projectdiscovery/retryabledns) library, that allows you to perform multiple DNS queries of your choice with a list of user supplied resolvers.
@@ -62,7 +61,7 @@ This will display help for the tool. Here are all the switches it supports.
 | ns        | Query NS record                    | dnsx -ns              |
 | ptr       | Query PTR record                   | dnsx -ptr             |
 | txt       | Query TXT record                   | dnsx -txt             |
-| mx        | DQuery MX record                   | dnsx -mx              |
+| mx        | Query MX record                    | dnsx -mx              |
 | soa       | Query SOA record                   | dnsx -soa             |
 | raw       | Operates like dig                  | dnsx -raw             |
 | l         | File input list of subdomains/host | dnsx -l list.txt      |
