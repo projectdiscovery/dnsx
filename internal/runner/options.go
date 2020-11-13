@@ -41,7 +41,7 @@ func ParseOptions() *Options {
 	flag.StringVar(&options.Hosts, "l", "", "File input with list of subdomains")
 	flag.IntVar(&options.Threads, "t", 250, "Number of concurrent threads to make")
 	flag.IntVar(&options.Retries, "retry", 1, "Number of DNS retries")
-	flag.IntVar(&options.RateLimit, "rate-limit", -1, "Number of DNS request/second")
+	flag.IntVar(&options.RateLimit, "rl", -1, "Number of DNS request/second")
 	flag.StringVar(&options.OutputFile, "o", "", "File to write output to (optional)")
 	flag.BoolVar(&options.Raw, "raw", false, "Operates like dig")
 	flag.BoolVar(&options.Silent, "silent", false, "Show only results in the output")
