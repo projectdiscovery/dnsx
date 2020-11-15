@@ -102,6 +102,14 @@ func New(options *Options) (*Runner, error) {
 		return nil, err
 	}
 
+	var stats clistats.StatisticsClient
+	if options.ShowStatistics {
+		stats, err = clistats.New()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	r := Runner{
 		options:          options,
 		dnsx:             dnsX,
@@ -112,7 +120,7 @@ func New(options *Options) (*Runner, error) {
 		wildcardchan:     make(chan struct{}),
 		limiter:          limiter,
 		hm:               hm,
-		stats:            clistats.New(),
+		stats:            stats,
 	}
 
 	return &r, nil
@@ -157,12 +165,14 @@ func (r *Runner) prepareInput() error {
 		r.hm.Set(host, nil)
 	}
 
-	r.stats.AddStatic("hosts", numHosts)
-	r.stats.AddStatic("startedAt", time.Now())
-	r.stats.AddCounter("requests", 0)
-	r.stats.AddCounter("total", uint64(numHosts*len(r.dnsx.QuestionTypes)))
-	// nolint:errcheck
-	r.stats.Start(makePrintCallback(), -1)
+	if r.options.ShowStatistics {
+		r.stats.AddStatic("hosts", numHosts)
+		r.stats.AddStatic("startedAt", time.Now())
+		r.stats.AddCounter("requests", 0)
+		r.stats.AddCounter("total", uint64(numHosts*len(r.dnsx.QuestionTypes)))
+		// nolint:errcheck
+		r.stats.Start(makePrintCallback(), -1)
+	}
 
 	return nil
 }
