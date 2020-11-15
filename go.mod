@@ -2,8 +2,6 @@ module github.com/projectdiscovery/dnsx
 
 go 1.14
 
-replace github.com/projectdiscovery/clistats => /home/marco/go/src/github.com/projectdiscovery/clistats
-
 require (
 	github.com/miekg/dns v1.1.35
 	github.com/projectdiscovery/clistats v0.0.5-0.20201115190457-4a189e365b54
