@@ -128,7 +128,9 @@ func New(options *Options) (*Runner, error) {
 
 func (r *Runner) InputWorker() {
 	r.hm.Scan(func(k, _ []byte) error {
-		r.stats.IncrementCounter("requests", len(r.dnsx.QuestionTypes))
+		if r.options.ShowStatistics {
+			r.stats.IncrementCounter("requests", len(r.dnsx.QuestionTypes))
+		}
 		r.workerchan <- string(k)
 		return nil
 	})
