@@ -3,7 +3,7 @@ builds:
       main: cmd/dnsx/dnsx.go
       goos:
         - linux
-        # - windows
+        - windows
         - darwin
       goarch:
         - amd64

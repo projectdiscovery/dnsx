@@ -32,6 +32,7 @@ type Options struct {
 	JSON              bool
 	WildcardThreshold int
 	WildcardDomain    string
+	ShowStatistics    bool
 }
 
 // ParseOptions parses the command line options for application
@@ -60,6 +61,7 @@ func ParseOptions() *Options {
 	flag.BoolVar(&options.JSON, "json", false, "JSON output")
 	flag.IntVar(&options.WildcardThreshold, "wt", 5, "Wildcard Filter Threshold")
 	flag.StringVar(&options.WildcardDomain, "wd", "", "Wildcard Top level domain for wildcard filtering (other flags will be ignored)")
+	flag.BoolVar(&options.ShowStatistics, "stats", false, "Enable statistic on keypress (terminal may become unresponsive till the end)")
 
 	flag.Parse()
 
