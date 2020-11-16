@@ -173,7 +173,7 @@ func (r *Runner) prepareInput() error {
 		r.stats.AddCounter("requests", 0)
 		r.stats.AddCounter("total", uint64(numHosts*len(r.dnsx.QuestionTypes)))
 		// nolint:errcheck
-		r.stats.Start(makePrintCallback(), -1)
+		r.stats.Start(makePrintCallback(), time.Duration(5)*time.Second)
 	}
 
 	return nil
@@ -211,7 +211,7 @@ func makePrintCallback() func(stats clistats.StatisticsClient) {
 		builder.WriteRune(')')
 		builder.WriteRune('\n')
 
-		gologger.Printf("%s", builder.String())
+		fmt.Fprintf(os.Stderr, "%s", builder.String())
 		builder.Reset()
 	}
 }
