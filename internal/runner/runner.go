@@ -351,6 +351,7 @@ func (r *Runner) worker() {
 
 func (r *Runner) outputRecordType(domain string, items []string) {
 	for _, item := range items {
+		item := strings.ToLower(item)
 		if r.options.ResponseOnly {
 			r.outputchan <- item
 		} else if r.options.Response {
