@@ -40,7 +40,7 @@ func ParseOptions() *Options {
 	options := &Options{}
 	flag.StringVar(&options.Resolvers, "r", "", "List of resolvers (file or command separated)")
 	flag.StringVar(&options.Hosts, "l", "", "File input with list of subdomains")
-	flag.IntVar(&options.Threads, "t", 250, "Number of concurrent threads to make")
+	flag.IntVar(&options.Threads, "t", 100, "Number of concurrent threads to make")
 	flag.IntVar(&options.Retries, "retry", 1, "Number of DNS retries")
 	flag.IntVar(&options.RateLimit, "rl", -1, "Number of DNS request/second")
 	flag.StringVar(&options.OutputFile, "o", "", "File to write output to (optional)")
