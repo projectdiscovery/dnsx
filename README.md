@@ -23,12 +23,12 @@ We also ported DNS wildcard filtering feature to dnsx from [shuffledns](https://
 - [Features](#features)
 - [Usage](#usage)
 - [Installation Instructions](#installation-instructions)
-  - [From Binary](#from-binary)
-  - [From Source](#from-source)
-  - [From Github](#from-github)
-- [Running dnsx](#running-dnsx)
-- [Wildcard filtering](#wildcard-filtering)
-- [Notes](#-notes)
+    - [From Source](#from-source)
+    - [From Source](#from-source-1)
+    - [From Github](#from-github)
+    - [Running dnsx](#running-dnsx)
+    - [Wildcard filtering](#wildcard-filtering)
+- [📋 Notes](#-notes)
 
 
 # Features
@@ -96,7 +96,7 @@ Download latest binary from https://github.com/projectdiscovery/dnsx/releases
 
 ### From Source
 
-**dnsx** requires **go1.14+** to install successfully. Run the following command to get the repo - 
+**dnsx** requires **go1.15+** to install successfully. Run the following command to get the repo -
 
 ```sh
 ▶ GO111MODULE=on go get -v github.com/projectdiscovery/dnsx/cmd/dnsx
@@ -117,7 +117,7 @@ Download latest binary from https://github.com/projectdiscovery/dnsx/releases
 
       _             __  __
    __| | _ __   ___ \ \/ /
-  / _' || '_ \ / __| \  / 
+  / _' || '_ \ / __| \  /
  | (_| || | | |\__ \ /  \
   \__,_||_| |_||___//_/\_\ v1.0
 
@@ -167,7 +167,7 @@ mta-sts.forwarding.hackerone.com [hacker0x01.github.io]
 events.hackerone.com [whitelabel.bigmarker.com]
 ```
 
-**dnsx** can be used to extract subdomains from given network range using `PTR` query, for example:- 
+**dnsx** can be used to extract subdomains from given network range using `PTR` query, for example:-
 
 ```sh
 mapcidr -cidr 173.0.84.0/24 -silent | dnsx -silent -resp-only -ptr
