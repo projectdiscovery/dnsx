@@ -4,6 +4,6 @@ RUN apk add --no-cache --upgrade git openssh-client ca-certificates
 WORKDIR /go/src/app
 
 # Install
-RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/dnsx/cmd/dnsx
+RUN go get -u -v github.com/projectdiscovery/dnsx/cmd/dnsx
 
 ENTRYPOINT ["dnsx"]
