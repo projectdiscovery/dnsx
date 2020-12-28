@@ -26,6 +26,7 @@ We also ported DNS wildcard filtering feature to dnsx from [shuffledns](https://
     - [From Source](#from-source)
     - [From Source](#from-source-1)
     - [From Github](#from-github)
+    - [Install via brew](#install-via-brew)
     - [Running dnsx](#running-dnsx)
     - [Wildcard filtering](#wildcard-filtering)
 - [📋 Notes](#-notes)
@@ -106,6 +107,14 @@ Download latest binary from https://github.com/projectdiscovery/dnsx/releases
 
 ```sh
 ▶ git clone https://github.com/projectdiscovery/dnsx.git; cd dnsx/cmd/dnsx; go build; mv dnsx /usr/local/bin/; dnsx -version
+```
+
+### Install via brew
+
+If you're macOS user and using [Homebrew](https://brew.sh/), you can install via `brew` command:
+
+```sh
+$ brew install dnsx
 ```
 
 ### Running dnsx
