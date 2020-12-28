@@ -8,6 +8,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/projectdiscovery/dnsx)](https://goreportcard.com/report/github.com/projectdiscovery/dnsx)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/projectdiscovery/dnsx/issues)
 [![GitHub Release](https://img.shields.io/github/release/projectdiscovery/dnsx)](https://github.com/projectdiscovery/dnsx/releases)
+[![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://formulae.brew.sh/api/formula/dnsx.json&query=$.versions.stable&label=homebrew)](https://formulae.brew.sh/formula/dnsx)
 [![Follow on Twitter](https://img.shields.io/twitter/follow/pdiscoveryio.svg?logo=twitter)](https://twitter.com/pdiscoveryio)
 [![Chat on Discord](https://img.shields.io/discord/695645237418131507.svg?logo=discord)](https://discord.gg/KECAGdH)
 
