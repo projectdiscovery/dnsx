@@ -304,47 +304,50 @@ func (r *Runner) worker() {
 			domain = extractDomain(domain)
 		}
 		r.limiter.Take()
-		dnsData, err := r.dnsx.QueryMultiple(domain)
-		if err == nil {
-			// if wildcard filtering just store the data
-			if r.options.WildcardDomain != "" {
-				// nolint:errcheck
-				r.storeDNSData(dnsData)
-				continue
-			}
-			if r.options.Raw {
-				r.outputchan <- dnsData.Raw
-				continue
-			}
-			if r.options.JSON {
-				jsons, _ := dnsData.JSON()
-				r.outputchan <- jsons
-				continue
-			}
-			if r.options.A {
-				r.outputRecordType(domain, dnsData.A)
-			}
-			if r.options.AAAA {
-				r.outputRecordType(domain, dnsData.AAAA)
-			}
-			if r.options.CNAME {
-				r.outputRecordType(domain, dnsData.CNAME)
-			}
-			if r.options.PTR {
-				r.outputRecordType(domain, dnsData.PTR)
-			}
-			if r.options.MX {
-				r.outputRecordType(domain, dnsData.MX)
-			}
-			if r.options.NS {
-				r.outputRecordType(domain, dnsData.NS)
-			}
-			if r.options.SOA {
-				r.outputRecordType(domain, dnsData.SOA)
-			}
-			if r.options.TXT {
-				r.outputRecordType(domain, dnsData.TXT)
-			}
+		// Ignoring errors as partial results are still good
+		dnsData, _ := r.dnsx.QueryMultiple(domain)
+		// Just skipping nil responses (in case of critical errors)
+		if dnsData == nil {
+			continue
+		}
+		// if wildcard filtering just store the data
+		if r.options.WildcardDomain != "" {
+			// nolint:errcheck
+			r.storeDNSData(dnsData)
+			continue
+		}
+		if r.options.Raw {
+			r.outputchan <- dnsData.Raw
+			continue
+		}
+		if r.options.JSON {
+			jsons, _ := dnsData.JSON()
+			r.outputchan <- jsons
+			continue
+		}
+		if r.options.A {
+			r.outputRecordType(domain, dnsData.A)
+		}
+		if r.options.AAAA {
+			r.outputRecordType(domain, dnsData.AAAA)
+		}
+		if r.options.CNAME {
+			r.outputRecordType(domain, dnsData.CNAME)
+		}
+		if r.options.PTR {
+			r.outputRecordType(domain, dnsData.PTR)
+		}
+		if r.options.MX {
+			r.outputRecordType(domain, dnsData.MX)
+		}
+		if r.options.NS {
+			r.outputRecordType(domain, dnsData.NS)
+		}
+		if r.options.SOA {
+			r.outputRecordType(domain, dnsData.SOA)
+		}
+		if r.options.TXT {
+			r.outputRecordType(domain, dnsData.TXT)
 		}
 	}
 }
