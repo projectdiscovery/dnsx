@@ -42,7 +42,7 @@ func New(options *Options) (*Runner, error) {
 		if fileExists(options.Resolvers) {
 			rs, err := linesInFile(options.Resolvers)
 			if err != nil {
-				gologger.Fatalf("%s\n", err)
+				gologger.Fatal().Msgf("%s\n", err)
 			}
 			for _, rr := range rs {
 				dnsxOptions.BaseResolvers = append(dnsxOptions.BaseResolvers, prepareResolver(rr))
@@ -257,7 +257,7 @@ func (r *Runner) HandleOutput() {
 		var err error
 		foutput, err = os.Create(r.options.OutputFile)
 		if err != nil {
-			gologger.Fatalf("%s\n", err)
+			gologger.Fatal().Msgf("%s\n", err)
 		}
 		defer foutput.Close()
 		w = bufio.NewWriter(foutput)
@@ -270,7 +270,7 @@ func (r *Runner) HandleOutput() {
 			w.WriteString(item + "\n")
 		}
 		// otherwise writes sequentially to stdout
-		gologger.Silentf("%s\n", item)
+		gologger.Silent().Msgf("%s\n", item)
 	}
 }
 
@@ -375,6 +375,7 @@ func (r *Runner) storeDNSData(dnsdata *retryabledns.DNSData) error {
 	return r.hm.Set(dnsdata.Host, data)
 }
 
+// Close running instance
 func (r *Runner) Close() {
 	r.hm.Close()
 }
