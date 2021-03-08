@@ -9,5 +9,5 @@ require (
 	github.com/projectdiscovery/hmap v0.0.1
 	github.com/projectdiscovery/retryabledns v1.0.8
 	github.com/rs/xid v1.2.1
-	go.uber.org/ratelimit v0.1.0
+	go.uber.org/ratelimit v0.2.0
 )
