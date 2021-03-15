@@ -29,8 +29,8 @@ github.com/projectdiscovery/gologger v1.0.1 h1:FzoYQZnxz9DCvSi/eg5A6+ET4CQ0CDUs2
 github.com/projectdiscovery/gologger v1.0.1/go.mod h1:Ok+axMqK53bWNwDSU1nTNwITLYMXMdZtRc8/y1c7sWE=
 github.com/projectdiscovery/hmap v0.0.1 h1:VAONbJw5jP+syI5smhsfkrq9XPGn4aiYy5pR6KR1wog=
 github.com/projectdiscovery/hmap v0.0.1/go.mod h1:VDEfgzkKQdq7iGTKz8Ooul0NuYHQ8qiDs6r8bPD1Sb0=
-github.com/projectdiscovery/retryabledns v1.0.8 h1:MfwypXKPaVs1Ft2QN9b+OnqiyFTGWnKYkoXQYFRmAn8=
-github.com/projectdiscovery/retryabledns v1.0.8/go.mod h1:4sMC8HZyF01HXukRleSQYwz4870bwgb4+hTSXTMrkf4=
+github.com/projectdiscovery/retryabledns v1.0.10 h1:xJZ2aKoqrNg/OZEw1+4+QIOH40V/WkZDYY1ZZc+uphE=
+github.com/projectdiscovery/retryabledns v1.0.10/go.mod h1:4sMC8HZyF01HXukRleSQYwz4870bwgb4+hTSXTMrkf4=
 github.com/rs/xid v1.2.1 h1:mhH9Nq+C1fY2l1XIpgxIiUOfNpRBYH1kKcr+qfKgjRc=
 github.com/rs/xid v1.2.1/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
