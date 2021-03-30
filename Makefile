@@ -7,7 +7,7 @@ GOGET=$(GOCMD) get
     
 all: build
 build:
-		$(GOBUILD) -v -ldflags="-extldflags=-static" -o "dnsx" cmd/dnsx/httpx.go
+		$(GOBUILD) -v -ldflags="-extldflags=-static" -o "dnsx" cmd/dnsx/dnsx.go
 test: 
 		$(GOTEST) -v ./...
 tidy:
