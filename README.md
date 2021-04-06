@@ -8,6 +8,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/projectdiscovery/dnsx)](https://goreportcard.com/report/github.com/projectdiscovery/dnsx)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/projectdiscovery/dnsx/issues)
 [![GitHub Release](https://img.shields.io/github/release/projectdiscovery/dnsx)](https://github.com/projectdiscovery/dnsx/releases)
+[![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://formulae.brew.sh/api/formula/dnsx.json&query=$.versions.stable&label=homebrew)](https://formulae.brew.sh/formula/dnsx)
 [![Follow on Twitter](https://img.shields.io/twitter/follow/pdiscoveryio.svg?logo=twitter)](https://twitter.com/pdiscoveryio)
 [![Chat on Discord](https://img.shields.io/discord/695645237418131507.svg?logo=discord)](https://discord.gg/KECAGdH)
 
@@ -26,6 +27,7 @@ We also ported DNS wildcard filtering feature to dnsx from [shuffledns](https://
     - [From Source](#from-source)
     - [From Source](#from-source-1)
     - [From Github](#from-github)
+    - [Install via brew](#install-via-brew)
     - [Running dnsx](#running-dnsx)
     - [Wildcard filtering](#wildcard-filtering)
 - [📋 Notes](#-notes)
@@ -106,6 +108,14 @@ Download latest binary from https://github.com/projectdiscovery/dnsx/releases
 
 ```sh
 ▶ git clone https://github.com/projectdiscovery/dnsx.git; cd dnsx/cmd/dnsx; go build; mv dnsx /usr/local/bin/; dnsx -version
+```
+
+### Install via brew
+
+If you're macOS user and using [Homebrew](https://brew.sh/), you can install via `brew` command:
+
+```sh
+$ brew install dnsx
 ```
 
 ### Running dnsx
