@@ -305,7 +305,14 @@ func (r *Runner) worker() {
 		}
 		r.limiter.Take()
 		dnsData, err := r.dnsx.QueryMultiple(domain)
+		if dnsData == nil {
+			continue
+		}
 		if err == nil {
+			if !r.options.IncludeRR {
+				dnsData.Raw = ""
+			}
+
 			// if wildcard filtering just store the data
 			if r.options.WildcardDomain != "" {
 				// nolint:errcheck

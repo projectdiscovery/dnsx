@@ -33,11 +33,13 @@ type Options struct {
 	WildcardThreshold int
 	WildcardDomain    string
 	ShowStatistics    bool
+	IncludeRR         bool
 }
 
 // ParseOptions parses the command line options for application
 func ParseOptions() *Options {
 	options := &Options{}
+	flag.BoolVar(&options.IncludeRR, "include-rr", false, "Include Raw Request/Response")
 	flag.StringVar(&options.Resolvers, "r", "", "List of resolvers (file or command separated)")
 	flag.StringVar(&options.Hosts, "l", "", "File input with list of subdomains")
 	flag.IntVar(&options.Threads, "t", 250, "Number of concurrent threads to make")
