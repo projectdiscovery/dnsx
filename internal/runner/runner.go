@@ -42,7 +42,7 @@ func New(options *Options) (*Runner, error) {
 		if fileExists(options.Resolvers) {
 			rs, err := linesInFile(options.Resolvers)
 			if err != nil {
-				gologger.Fatalf("%s\n", err)
+				gologger.Fatal().Msgf("%s\n", err)
 			}
 			for _, rr := range rs {
 				dnsxOptions.BaseResolvers = append(dnsxOptions.BaseResolvers, prepareResolver(rr))
@@ -257,7 +257,7 @@ func (r *Runner) HandleOutput() {
 		var err error
 		foutput, err = os.Create(r.options.OutputFile)
 		if err != nil {
-			gologger.Fatalf("%s\n", err)
+			gologger.Fatal().Msgf("%s\n", err)
 		}
 		defer foutput.Close()
 		w = bufio.NewWriter(foutput)
@@ -270,7 +270,7 @@ func (r *Runner) HandleOutput() {
 			w.WriteString(item + "\n")
 		}
 		// otherwise writes sequentially to stdout
-		gologger.Silentf("%s\n", item)
+		gologger.Silent().Msgf("%s\n", item)
 	}
 }
 
@@ -304,53 +304,60 @@ func (r *Runner) worker() {
 			domain = extractDomain(domain)
 		}
 		r.limiter.Take()
-		dnsData, err := r.dnsx.QueryMultiple(domain)
-		if err == nil {
-			// if wildcard filtering just store the data
-			if r.options.WildcardDomain != "" {
-				// nolint:errcheck
-				r.storeDNSData(dnsData)
-				continue
-			}
-			if r.options.Raw {
-				r.outputchan <- dnsData.Raw
-				continue
-			}
-			if r.options.JSON {
-				jsons, _ := dnsData.JSON()
-				r.outputchan <- jsons
-				continue
-			}
-			if r.options.A {
-				r.outputRecordType(domain, dnsData.A)
-			}
-			if r.options.AAAA {
-				r.outputRecordType(domain, dnsData.AAAA)
-			}
-			if r.options.CNAME {
-				r.outputRecordType(domain, dnsData.CNAME)
-			}
-			if r.options.PTR {
-				r.outputRecordType(domain, dnsData.PTR)
-			}
-			if r.options.MX {
-				r.outputRecordType(domain, dnsData.MX)
-			}
-			if r.options.NS {
-				r.outputRecordType(domain, dnsData.NS)
-			}
-			if r.options.SOA {
-				r.outputRecordType(domain, dnsData.SOA)
-			}
-			if r.options.TXT {
-				r.outputRecordType(domain, dnsData.TXT)
-			}
+		// Ignoring errors as partial results are still good
+		dnsData, _ := r.dnsx.QueryMultiple(domain)
+		// Just skipping nil responses (in case of critical errors)
+		if dnsData == nil {
+			continue
+		}
+		if !r.options.Raw {
+			dnsData.Raw = ""
+		}
+		// if wildcard filtering just store the data
+		if r.options.WildcardDomain != "" {
+			// nolint:errcheck
+			r.storeDNSData(dnsData)
+			continue
+		}
+		if r.options.JSON {
+			jsons, _ := dnsData.JSON()
+			r.outputchan <- jsons
+			continue
+		}
+		if r.options.Raw {
+			r.outputchan <- dnsData.Raw
+			continue
+		}
+		if r.options.A {
+			r.outputRecordType(domain, dnsData.A)
+		}
+		if r.options.AAAA {
+			r.outputRecordType(domain, dnsData.AAAA)
+		}
+		if r.options.CNAME {
+			r.outputRecordType(domain, dnsData.CNAME)
+		}
+		if r.options.PTR {
+			r.outputRecordType(domain, dnsData.PTR)
+		}
+		if r.options.MX {
+			r.outputRecordType(domain, dnsData.MX)
+		}
+		if r.options.NS {
+			r.outputRecordType(domain, dnsData.NS)
+		}
+		if r.options.SOA {
+			r.outputRecordType(domain, dnsData.SOA)
+		}
+		if r.options.TXT {
+			r.outputRecordType(domain, dnsData.TXT)
 		}
 	}
 }
 
 func (r *Runner) outputRecordType(domain string, items []string) {
 	for _, item := range items {
+		item := strings.ToLower(item)
 		if r.options.ResponseOnly {
 			r.outputchan <- item
 		} else if r.options.Response {
@@ -371,6 +378,7 @@ func (r *Runner) storeDNSData(dnsdata *retryabledns.DNSData) error {
 	return r.hm.Set(dnsdata.Host, data)
 }
 
+// Close running instance
 func (r *Runner) Close() {
 	r.hm.Close()
 }
