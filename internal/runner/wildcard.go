@@ -6,6 +6,7 @@ import (
 	"github.com/rs/xid"
 )
 
+// IsWildcard checks if a host is wildcard
 func (r *Runner) IsWildcard(host string) (bool, map[string]struct{}) {
 	orig := make(map[string]struct{})
 	wildcards := make(map[string]struct{})

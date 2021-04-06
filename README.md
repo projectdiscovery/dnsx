@@ -1,4 +1,4 @@
-<h1 align="left">
+<h1 align="center">
   <img src="static/dnsx-logo.png" alt="dnsx" width="200px"></a>
   <br>
 </h1>

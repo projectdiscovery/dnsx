@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/gologger/levels"
 )
 
 type Options struct {
@@ -40,7 +41,7 @@ func ParseOptions() *Options {
 	options := &Options{}
 	flag.StringVar(&options.Resolvers, "r", "", "List of resolvers (file or command separated)")
 	flag.StringVar(&options.Hosts, "l", "", "File input with list of subdomains")
-	flag.IntVar(&options.Threads, "t", 250, "Number of concurrent threads to make")
+	flag.IntVar(&options.Threads, "t", 100, "Number of concurrent threads to make")
 	flag.IntVar(&options.Retries, "retry", 1, "Number of DNS retries")
 	flag.IntVar(&options.RateLimit, "rl", -1, "Number of DNS request/second")
 	flag.StringVar(&options.OutputFile, "o", "", "File to write output to (optional)")
@@ -71,7 +72,7 @@ func ParseOptions() *Options {
 	showBanner()
 
 	if options.Version {
-		gologger.Infof("Current Version: %s\n", Version)
+		gologger.Info().Msgf("Current Version: %s\n", Version)
 		os.Exit(0)
 	}
 
@@ -82,7 +83,7 @@ func ParseOptions() *Options {
 
 func (options *Options) validateOptions() {
 	if options.Response && options.ResponseOnly {
-		gologger.Fatalf("resp and resp-only can't be used at the same time")
+		gologger.Fatal().Msgf("resp and resp-only can't be used at the same time")
 	}
 }
 
@@ -90,9 +91,9 @@ func (options *Options) validateOptions() {
 func (options *Options) configureOutput() {
 	// If the user desires verbose output, show verbose output
 	if options.Verbose {
-		gologger.MaxLevel = gologger.Verbose
+		gologger.DefaultLogger.SetMaxLevel(levels.LevelVerbose)
 	}
 	if options.Silent {
-		gologger.MaxLevel = gologger.Silent
+		gologger.DefaultLogger.SetMaxLevel(levels.LevelSilent)
 	}
 }
