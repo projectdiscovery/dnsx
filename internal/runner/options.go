@@ -33,7 +33,6 @@ type Options struct {
 	WildcardThreshold int
 	WildcardDomain    string
 	ShowStatistics    bool
-	IncludeRR         bool
 }
 
 // ParseOptions parses the command line options for application
