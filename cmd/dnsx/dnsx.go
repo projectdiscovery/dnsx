@@ -1,8 +1,7 @@
 package main
 
 import (
-	"projectdiscovery/dnsx/internal/runner"
-
+	"github.com/projectdiscovery/dnsx/internal/runner"
 	"github.com/projectdiscovery/gologger"
 )
 
