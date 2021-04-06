@@ -310,6 +310,9 @@ func (r *Runner) worker() {
 		if dnsData == nil {
 			continue
 		}
+		if !r.options.Raw {
+			dnsData.Raw = ""
+		}
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			// nolint:errcheck
