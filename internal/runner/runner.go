@@ -309,7 +309,7 @@ func (r *Runner) worker() {
 			continue
 		}
 		if err == nil {
-			if !r.options.IncludeRR {
+			if !r.options.Raw {
 				dnsData.Raw = ""
 			}
 
