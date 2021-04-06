@@ -33,7 +33,6 @@ var DefaultResolvers = []string{
 	"1.0.0.1:53", // Cloudflare
 	"8.8.8.8:53", // Google
 	"8.8.4.4:53", // Google
-	"9.9.9.9:53", // Quad9
 }
 
 // New creates a dns resolver

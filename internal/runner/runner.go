@@ -319,13 +319,13 @@ func (r *Runner) worker() {
 			r.storeDNSData(dnsData)
 			continue
 		}
-		if r.options.Raw {
-			r.outputchan <- dnsData.Raw
-			continue
-		}
 		if r.options.JSON {
 			jsons, _ := dnsData.JSON()
 			r.outputchan <- jsons
+			continue
+		}
+		if r.options.Raw {
+			r.outputchan <- dnsData.Raw
 			continue
 		}
 		if r.options.A {
