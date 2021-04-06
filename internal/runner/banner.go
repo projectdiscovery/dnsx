@@ -7,11 +7,11 @@ const banner = `
    __| | _ __   ___ \ \/ /
   / _' || '_ \ / __| \  / 
  | (_| || | | |\__ \ /  \ 
-  \__,_||_| |_||___//_/\_\ v1.0.1
+  \__,_||_| |_||___//_/\_\ v1.0.2
 `
 
 // Version is the current version of dnsx
-const Version = `1.0.1`
+const Version = `1.0.2`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
