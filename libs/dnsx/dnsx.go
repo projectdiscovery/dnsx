@@ -1,6 +1,7 @@
 package dnsx
 
 import (
+	"errors"
 	"net"
 
 	miekgdns "github.com/miekg/dns"
@@ -51,6 +52,10 @@ func (d *DNSX) Lookup(hostname string) ([]string, error) {
 	dnsdata, err := d.dnsClient.Resolve(hostname)
 	if err != nil {
 		return nil, err
+	}
+
+	if dnsdata == nil || len(dnsdata.A) == 0 {
+		return []string{}, errors.New("no ips found")
 	}
 
 	return dnsdata.A, nil
