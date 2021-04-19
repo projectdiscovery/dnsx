@@ -13,12 +13,11 @@ require (
 	github.com/projectdiscovery/clistats v0.0.8
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/hmap v0.0.1
-	github.com/projectdiscovery/retryabledns v1.0.10
+	github.com/projectdiscovery/retryabledns v1.0.11
 	github.com/rs/xid v1.3.0
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
-	golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57 // indirect
-	golang.org/x/text v0.3.5 // indirect
+	golang.org/x/net v0.0.0-20210415231046-e915ea6b2b7d // indirect
+	golang.org/x/sys v0.0.0-20210419170143-37df388d1f33 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
