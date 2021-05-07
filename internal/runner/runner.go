@@ -401,7 +401,8 @@ func (r *Runner) wildcardWorker() {
 		var dnsdata retryabledns.DNSData
 		err := dnsdata.Unmarshal(v)
 		if err != nil {
-			return err
+			// the item has no record - ignore
+			return nil
 		}
 
 		for _, a := range dnsdata.A {
