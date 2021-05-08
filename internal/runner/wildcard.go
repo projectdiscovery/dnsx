@@ -30,7 +30,7 @@ func (r *Runner) IsWildcard(host string) (bool, map[string]struct{}) {
 	// Iterate over all the hosts generated for rand.
 	for _, h := range hosts {
 		in, err := r.dnsx.QueryOne(h)
-		if err != nil {
+		if err != nil || in == nil {
 			continue
 		}
 
