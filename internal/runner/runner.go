@@ -325,8 +325,8 @@ func (r *Runner) worker() {
 						data.Raw = rawRespString
 						// join the whole chain in raw field
 						dnsData.Raw += fmt.Sprintln(rawRespString)
-						data.RawResp = nil
 					}
+					data.RawResp = nil
 				}
 			}
 		}
