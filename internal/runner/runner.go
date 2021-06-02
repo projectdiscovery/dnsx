@@ -320,8 +320,10 @@ func (r *Runner) worker() {
 			dnsData.TraceData, _ = r.dnsx.Trace(domain)
 			if dnsData.TraceData != nil {
 				for _, data := range dnsData.TraceData.DNSData {
-					if !r.options.Raw {
+					if r.options.Raw {
 						data.Raw = data.RawResp.String()
+						// join the whole chain in raw field
+						dnsData.Raw += fmt.Sprintln(data.RawResp)
 					}
 					data.RawResp = nil
 				}
