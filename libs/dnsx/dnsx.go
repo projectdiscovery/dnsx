@@ -2,6 +2,7 @@ package dnsx
 
 import (
 	"errors"
+	"math"
 	"net"
 
 	miekgdns "github.com/miekg/dns"
@@ -10,22 +11,25 @@ import (
 
 // DNSX is structure to perform dns lookups
 type DNSX struct {
-	dnsClient     *retryabledns.Client
-	QuestionTypes []uint16
+	dnsClient *retryabledns.Client
+	Options   *Options
 }
 
 // Options contains configuration options
 type Options struct {
-	BaseResolvers []string
-	MaxRetries    int
-	QuestionTypes []uint16
+	BaseResolvers     []string
+	MaxRetries        int
+	QuestionTypes     []uint16
+	Trace             bool
+	TraceMaxRecursion int
 }
 
 // DefaultOptions contains the default configuration options
 var DefaultOptions = Options{
-	BaseResolvers: DefaultResolvers,
-	MaxRetries:    5,
-	QuestionTypes: []uint16{miekgdns.TypeA},
+	BaseResolvers:     DefaultResolvers,
+	MaxRetries:        5,
+	QuestionTypes:     []uint16{miekgdns.TypeA},
+	TraceMaxRecursion: math.MaxUint16,
 }
 
 // DefaultResolvers contains the list of resolvers known to be trusted.
@@ -40,7 +44,7 @@ var DefaultResolvers = []string{
 func New(options Options) (*DNSX, error) {
 	dnsClient := retryabledns.New(options.BaseResolvers, options.MaxRetries)
 
-	return &DNSX{dnsClient: dnsClient, QuestionTypes: options.QuestionTypes}, nil
+	return &DNSX{dnsClient: dnsClient, Options: &options}, nil
 }
 
 // Lookup performs a DNS A question and returns corresponding IPs
@@ -63,10 +67,15 @@ func (d *DNSX) Lookup(hostname string) ([]string, error) {
 
 // QueryOne performs a DNS question of a specified type and returns raw responses
 func (d *DNSX) QueryOne(hostname string) (*retryabledns.DNSData, error) {
-	return d.dnsClient.Query(hostname, d.QuestionTypes[0])
+	return d.dnsClient.Query(hostname, d.Options.QuestionTypes[0])
 }
 
 // QueryMultiple performs a DNS question of the specified types and returns raw responses
 func (d *DNSX) QueryMultiple(hostname string) (*retryabledns.DNSData, error) {
-	return d.dnsClient.QueryMultiple(hostname, d.QuestionTypes)
+	return d.dnsClient.QueryMultiple(hostname, d.Options.QuestionTypes)
+}
+
+// Trace performs a DNS trace of the specified types and returns raw responses
+func (d *DNSX) Trace(hostname string) (*retryabledns.TraceData, error) {
+	return d.dnsClient.Trace(hostname, d.Options.QuestionTypes[0], d.Options.TraceMaxRecursion)
 }
