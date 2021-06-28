@@ -36,6 +36,7 @@ type Runner struct {
 func New(options *Options) (*Runner, error) {
 	dnsxOptions := dnsx.DefaultOptions
 	dnsxOptions.MaxRetries = options.Retries
+	dnsxOptions.TraceMaxRecursion = options.TraceMaxRecursion
 
 	if options.Resolvers != "" {
 		dnsxOptions.BaseResolvers = []string{}
@@ -131,7 +132,7 @@ func New(options *Options) (*Runner, error) {
 func (r *Runner) InputWorker() {
 	r.hm.Scan(func(k, _ []byte) error {
 		if r.options.ShowStatistics {
-			r.stats.IncrementCounter("requests", len(r.dnsx.QuestionTypes))
+			r.stats.IncrementCounter("requests", len(r.dnsx.Options.QuestionTypes))
 		}
 		r.workerchan <- string(k)
 		return nil
@@ -172,8 +173,8 @@ func (r *Runner) prepareInput() error {
 		r.stats.AddStatic("hosts", numHosts)
 		r.stats.AddStatic("startedAt", time.Now())
 		r.stats.AddCounter("requests", 0)
-		r.stats.AddCounter("total", uint64(numHosts*len(r.dnsx.QuestionTypes)))
-		_ = r.stats.Start(makePrintCallback(), time.Duration(five)*time.Second)
+		r.stats.AddCounter("total", uint64(numHosts*len(r.dnsx.Options.QuestionTypes)))
+		_ = r.stats.Start(makePrintCallback(), time.Duration(5)*time.Second)
 	}
 
 	return nil
@@ -304,6 +305,7 @@ func (r *Runner) worker() {
 			domain = extractDomain(domain)
 		}
 		r.limiter.Take()
+
 		// Ignoring errors as partial results are still good
 		dnsData, _ := r.dnsx.QueryMultiple(domain)
 		// Just skipping nil responses (in case of critical errors)
@@ -313,6 +315,22 @@ func (r *Runner) worker() {
 		if !r.options.Raw {
 			dnsData.Raw = ""
 		}
+
+		if r.options.Trace {
+			dnsData.TraceData, _ = r.dnsx.Trace(domain)
+			if dnsData.TraceData != nil {
+				for _, data := range dnsData.TraceData.DNSData {
+					if r.options.Raw && data.RawResp != nil {
+						rawRespString := data.RawResp.String()
+						data.Raw = rawRespString
+						// join the whole chain in raw field
+						dnsData.Raw += fmt.Sprintln(rawRespString)
+					}
+					data.RawResp = nil
+				}
+			}
+		}
+
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			_ = r.storeDNSData(dnsData)

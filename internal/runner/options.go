@@ -2,6 +2,7 @@ package runner
 
 import (
 	"flag"
+	"math"
 	"os"
 
 	"github.com/projectdiscovery/gologger"
@@ -32,6 +33,8 @@ type Options struct {
 	SOA               bool
 	TXT               bool
 	JSON              bool
+	Trace             bool
+	TraceMaxRecursion int
 	WildcardThreshold int
 	WildcardDomain    string
 	ShowStatistics    bool
@@ -64,6 +67,8 @@ func ParseOptions() *Options {
 	flag.IntVar(&options.WildcardThreshold, "wt", five, "Wildcard Filter Threshold")
 	flag.StringVar(&options.WildcardDomain, "wd", "", "Wildcard Top level domain for wildcard filtering (other flags will be ignored)")
 	flag.BoolVar(&options.ShowStatistics, "stats", false, "Enable statistic on keypress (terminal may become unresponsive till the end)")
+	flag.BoolVar(&options.Trace, "trace", false, "Perform dns trace")
+	flag.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace")
 
 	flag.Parse()
 
