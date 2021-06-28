@@ -42,7 +42,7 @@ type Options struct {
 // ParseOptions parses the command line options for application
 func ParseOptions() *Options {
 	options := &Options{}
-	flag.StringVar(&options.Resolvers, "r", "", "List of resolvers (file or command separated)")
+	flag.StringVar(&options.Resolvers, "r", "", "List of resolvers (file or comma separated)")
 	flag.StringVar(&options.Hosts, "l", "", "File input with list of subdomains")
 	flag.IntVar(&options.Threads, "t", 100, "Number of concurrent threads to make")
 	flag.IntVar(&options.Retries, "retry", 1, "Number of DNS retries")
