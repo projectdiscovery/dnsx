@@ -174,7 +174,7 @@ func (r *Runner) prepareInput() error {
 		r.stats.AddStatic("startedAt", time.Now())
 		r.stats.AddCounter("requests", 0)
 		r.stats.AddCounter("total", uint64(numHosts*len(r.dnsx.Options.QuestionTypes)))
-		_ = r.stats.Start(makePrintCallback(), time.Duration(5)*time.Second)
+		_ = r.stats.Start(makePrintCallback(), time.Duration(five)*time.Second)
 	}
 
 	return nil
