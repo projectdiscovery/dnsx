@@ -7,9 +7,9 @@ import (
 )
 
 // IsWildcard checks if a host is wildcard
-func (r *Runner) IsWildcard(host string) (bool, map[string]struct{}) {
+func (r *Runner) IsWildcard(host string) (iswildcard bool, wildcards map[string]struct{}) {
 	orig := make(map[string]struct{})
-	wildcards := make(map[string]struct{})
+	wildcards = make(map[string]struct{})
 
 	subdomainPart := strings.TrimSuffix(host, "."+r.options.WildcardDomain)
 	subdomainTokens := strings.Split(subdomainPart, ".")
@@ -19,8 +19,7 @@ func (r *Runner) IsWildcard(host string) (bool, map[string]struct{}) {
 	// We use a rand prefix at the beginning like %rand%.domain.tld
 	// A permutation is generated for each level of the subdomain.
 	var hosts []string
-	hosts = append(hosts, host)
-	hosts = append(hosts, xid.New().String()+"."+r.options.WildcardDomain)
+	hosts = append(hosts, host, xid.New().String()+"."+r.options.WildcardDomain)
 
 	for i := 0; i < len(subdomainTokens); i++ {
 		newhost := xid.New().String() + "." + strings.Join(subdomainTokens[i:], ".") + "." + r.options.WildcardDomain
@@ -50,9 +49,10 @@ func (r *Runner) IsWildcard(host string) (bool, map[string]struct{}) {
 	// check if original ip are among wildcards
 	for a := range orig {
 		if _, ok := wildcards[a]; ok {
-			return true, wildcards
+			iswildcard = true
+			break
 		}
 	}
 
-	return false, wildcards
+	return //nolint
 }

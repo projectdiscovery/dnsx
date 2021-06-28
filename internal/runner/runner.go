@@ -32,6 +32,7 @@ type Runner struct {
 	stats            clistats.StatisticsClient
 }
 
+// New creates new runner instance
 func New(options *Options) (*Runner, error) {
 	dnsxOptions := dnsx.DefaultOptions
 	dnsxOptions.MaxRetries = options.Retries
@@ -126,6 +127,7 @@ func New(options *Options) (*Runner, error) {
 	return &r, nil
 }
 
+// InputWorker handle parsing and elaborating the input
 func (r *Runner) InputWorker() {
 	r.hm.Scan(func(k, _ []byte) error {
 		if r.options.ShowStatistics {
@@ -147,7 +149,7 @@ func (r *Runner) prepareInput() error {
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer f.Close() //nolint
 	} else if (stat.Mode() & os.ModeCharDevice) == 0 {
 		f = os.Stdin
 	} else {
@@ -163,8 +165,7 @@ func (r *Runner) prepareInput() error {
 			continue
 		}
 		numHosts++
-		// nolint:errcheck
-		r.hm.Set(host, nil)
+		_ = r.hm.Set(host, nil)
 	}
 
 	if r.options.ShowStatistics {
@@ -172,14 +173,12 @@ func (r *Runner) prepareInput() error {
 		r.stats.AddStatic("startedAt", time.Now())
 		r.stats.AddCounter("requests", 0)
 		r.stats.AddCounter("total", uint64(numHosts*len(r.dnsx.QuestionTypes)))
-		// nolint:errcheck
-		r.stats.Start(makePrintCallback(), time.Duration(5)*time.Second)
+		_ = r.stats.Start(makePrintCallback(), time.Duration(five)*time.Second)
 	}
 
 	return nil
 }
 
-// nolint:deadcode
 func makePrintCallback() func(stats clistats.StatisticsClient) {
 	builder := &strings.Builder{}
 	return func(stats clistats.StatisticsClient) {
@@ -216,6 +215,7 @@ func makePrintCallback() func(stats clistats.StatisticsClient) {
 	}
 }
 
+// Run the internal logic
 func (r *Runner) Run() error {
 	err := r.prepareInput()
 	if err != nil {
@@ -245,6 +245,7 @@ func (r *Runner) Run() error {
 	return nil
 }
 
+// HandleOutput results
 func (r *Runner) HandleOutput() {
 	defer r.wgoutputworker.Done()
 
@@ -259,15 +260,14 @@ func (r *Runner) HandleOutput() {
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}
-		defer foutput.Close()
+		defer foutput.Close() //nolint
 		w = bufio.NewWriter(foutput)
-		defer w.Flush()
+		defer w.Flush() //nolint
 	}
 	for item := range r.outputchan {
 		if r.options.OutputFile != "" {
 			// uses a buffer to write to file
-			// nolint:errcheck
-			w.WriteString(item + "\n")
+			_, _ = w.WriteString(item + "\n")
 		}
 		// otherwise writes sequentially to stdout
 		gologger.Silent().Msgf("%s\n", item)
@@ -315,8 +315,7 @@ func (r *Runner) worker() {
 		}
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
-			// nolint:errcheck
-			r.storeDNSData(dnsData)
+			_ = r.storeDNSData(dnsData)
 			continue
 		}
 		if r.options.JSON {
@@ -357,7 +356,7 @@ func (r *Runner) worker() {
 
 func (r *Runner) outputRecordType(domain string, items []string) {
 	for _, item := range items {
-		item := strings.ToLower(item)
+		item = strings.ToLower(item)
 		if r.options.ResponseOnly {
 			r.outputchan <- item
 		} else if r.options.Response {
@@ -380,7 +379,7 @@ func (r *Runner) storeDNSData(dnsdata *retryabledns.DNSData) error {
 
 // Close running instance
 func (r *Runner) Close() {
-	r.hm.Close()
+	_ = r.hm.Close()
 }
 
 // TODO - wip - just ignore
@@ -458,5 +457,4 @@ func (r *Runner) wildcardWorker() {
 			}
 		}
 	}
-
 }

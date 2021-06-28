@@ -8,6 +8,7 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 )
 
+// Options of the runner
 type Options struct {
 	Resolvers         string
 	Hosts             string
@@ -41,7 +42,7 @@ func ParseOptions() *Options {
 	options := &Options{}
 	flag.StringVar(&options.Resolvers, "r", "", "List of resolvers (file or command separated)")
 	flag.StringVar(&options.Hosts, "l", "", "File input with list of subdomains")
-	flag.IntVar(&options.Threads, "t", 100, "Number of concurrent threads to make")
+	flag.IntVar(&options.Threads, "t", defaultThreads, "Number of concurrent threads to make")
 	flag.IntVar(&options.Retries, "retry", 1, "Number of DNS retries")
 	flag.IntVar(&options.RateLimit, "rl", -1, "Number of DNS request/second")
 	flag.StringVar(&options.OutputFile, "o", "", "File to write output to (optional)")
@@ -60,7 +61,7 @@ func ParseOptions() *Options {
 	flag.BoolVar(&options.SOA, "soa", false, "Query SOA record")
 	flag.BoolVar(&options.TXT, "txt", false, "Query TXT record")
 	flag.BoolVar(&options.JSON, "json", false, "JSON output")
-	flag.IntVar(&options.WildcardThreshold, "wt", 5, "Wildcard Filter Threshold")
+	flag.IntVar(&options.WildcardThreshold, "wt", five, "Wildcard Filter Threshold")
 	flag.StringVar(&options.WildcardDomain, "wd", "", "Wildcard Top level domain for wildcard filtering (other flags will be ignored)")
 	flag.BoolVar(&options.ShowStatistics, "stats", false, "Enable statistic on keypress (terminal may become unresponsive till the end)")
 
