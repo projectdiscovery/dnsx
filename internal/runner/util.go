@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+const (
+	five           = 5
+	defaultThreads = 100
+)
+
 func fileExists(fileName string) bool {
 	info, err := os.Stat(fileName)
 	if os.IsNotExist(err) {
@@ -23,7 +28,7 @@ func linesInFile(fileName string) ([]string, error) {
 	if err != nil {
 		return result, err
 	}
-	defer f.Close()
+	defer f.Close() //nolint
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -47,8 +52,8 @@ func isURL(toTest string) bool {
 	return true
 }
 
-func extractDomain(URL string) string {
-	u, err := url.Parse(URL)
+func extractDomain(target string) string {
+	u, err := url.Parse(target)
 	if err != nil {
 		return ""
 	}
