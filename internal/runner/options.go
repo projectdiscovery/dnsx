@@ -71,7 +71,7 @@ func ParseOptions() *Options {
 	flag.BoolVar(&options.JSON, "json", false, "JSON output")
 	flag.IntVar(&options.WildcardThreshold, "wt", 5, "Wildcard Filter Threshold")
 	flag.StringVar(&options.WildcardDomain, "wd", "", "Wildcard Top level domain for wildcard filtering (other flags will be ignored)")
-	flag.BoolVar(&options.ShowStatistics, "stats", false, "Enable statistic on keypress (terminal may become unresponsive till the end)")
+	flag.BoolVar(&options.ShowStatistics, "stats", false, "Display stats of the running scan")
 	flag.BoolVar(&options.Trace, "trace", false, "Perform dns trace")
 	flag.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace")
 	flag.StringVar(&options.RCode, "rcode", "", "Response codes (eg. -rcode 0,1,2 or -rcode noerror,nxdomain)")
