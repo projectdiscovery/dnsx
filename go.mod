@@ -10,6 +10,7 @@ require (
 	github.com/onsi/ginkgo v1.15.0 // indirect
 	github.com/onsi/gomega v1.10.5 // indirect
 	github.com/projectdiscovery/clistats v0.0.8
+	github.com/projectdiscovery/fileutil v0.0.0-20210601061022-8ef4fc6fbfb6
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/hmap v0.0.1
 	github.com/projectdiscovery/iputil v0.0.0-20210429152401-c18a5408ca46

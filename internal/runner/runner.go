@@ -11,6 +11,7 @@ import (
 	"github.com/miekg/dns"
 	"github.com/projectdiscovery/clistats"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
+	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/hmap/store/hybrid"
 	"github.com/projectdiscovery/iputil"
@@ -42,7 +43,7 @@ func New(options *Options) (*Runner, error) {
 	if options.Resolvers != "" {
 		dnsxOptions.BaseResolvers = []string{}
 		// If it's a file load resolvers from it
-		if fileExists(options.Resolvers) {
+		if fileutil.FileExists(options.Resolvers) {
 			rs, err := linesInFile(options.Resolvers)
 			if err != nil {
 				gologger.Fatal().Msgf("%s\n", err)
