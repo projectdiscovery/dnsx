@@ -1,9 +1,12 @@
 package runner
 
 import (
+	"errors"
 	"flag"
 	"math"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
@@ -37,6 +40,9 @@ type Options struct {
 	WildcardThreshold int
 	WildcardDomain    string
 	ShowStatistics    bool
+	rcodes            map[int]struct{}
+	RCode             string
+	hasRCodes         bool
 }
 
 // ParseOptions parses the command line options for application
@@ -68,11 +74,17 @@ func ParseOptions() *Options {
 	flag.BoolVar(&options.ShowStatistics, "stats", false, "Enable statistic on keypress (terminal may become unresponsive till the end)")
 	flag.BoolVar(&options.Trace, "trace", false, "Perform dns trace")
 	flag.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace")
+	flag.StringVar(&options.RCode, "rcode", "", "Response codes (eg. -rcode 0,1,2 or -rcode noerror,nxdomain)")
 
 	flag.Parse()
 
 	// Read the inputs and configure the logging
 	options.configureOutput()
+
+	err := options.configureRcodes()
+	if err != nil {
+		gologger.Fatal().Msgf("%s\n", err)
+	}
 
 	showBanner()
 
@@ -101,4 +113,71 @@ func (options *Options) configureOutput() {
 	if options.Silent {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelSilent)
 	}
+}
+
+func (options *Options) configureRcodes() error {
+	options.rcodes = make(map[int]struct{})
+	rcodes := strings.Split(options.RCode, ",")
+	for _, rcode := range rcodes {
+		var rc int
+		switch strings.ToLower(rcode) {
+		case "":
+			continue
+		case "noerror":
+			rc = 0
+		case "formerr":
+			rc = 1
+		case "servfail":
+			rc = 2
+		case "nxdomain":
+			rc = 3
+		case "notimp":
+			rc = 4
+		case "refused":
+			rc = 5
+		case "yxdomain":
+			rc = 6
+		case "yxrrset":
+			rc = 7
+		case "nxrrset":
+			rc = 8
+		case "notauth":
+			rc = 9
+		case "notzone":
+			rc = 10
+		case "badsig", "badvers":
+			rc = 16
+		case "badkey":
+			rc = 17
+		case "badtime":
+			rc = 18
+		case "badmode":
+			rc = 19
+		case "badname":
+			rc = 20
+		case "badalg":
+			rc = 21
+		case "badtrunc":
+			rc = 22
+		case "badcookie":
+			rc = 23
+		default:
+			var err error
+			rc, err = strconv.Atoi(rcode)
+			if err != nil {
+				return errors.New("invalid rcode value")
+			}
+		}
+
+		options.rcodes[rc] = struct{}{}
+	}
+
+	options.hasRCodes = options.RCode != ""
+
+	// Set rcode to 0 if none was specified
+	if len(options.rcodes) == 0 {
+		options.rcodes[0] = struct{}{}
+	}
+
+	return nil
 }
