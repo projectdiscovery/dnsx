@@ -44,6 +44,7 @@
 
  - Simple and Handy utility to query DNS records.
  - Supports **A, AAAA, CNAME, PTR, NS, MX, TXT, SOA**
+ - Supports DNS Status Code probing
  - Supports DNS Tracing
  - Handles wildcard subdomains in automated way.
  - **Stdin** and **stdout** support to work with other tools.
@@ -102,17 +103,6 @@ GO111MODULE=on go get -v github.com/projectdiscovery/dnsx/cmd/dnsx
 
 ```sh
 ▶ subfinder -silent -d hackerone.com | dnsx
-
-      _             __  __
-   __| | _ __   ___ \ \/ /
-  / _' || '_ \ / __| \  /
- | (_| || | | |\__ \ /  \
-  \__,_||_| |_||___//_/\_\ v1.0.4
-
-    projectdiscovery.io
-
-[WRN] Use with caution. You are responsible for your actions
-[WRN] Developers assume no liability and are not responsible for any misuse or damage.
 
 a.ns.hackerone.com
 www.hackerone.com
@@ -180,10 +170,26 @@ mta-sts.forwarding.hackerone.com [hacker0x01.github.io]
 events.hackerone.com [whitelabel.bigmarker.com]
 ```
 
+**dnsx** can be used to probe DNS Staus code on given list of subdomains, for example:-
+
+```sh
+▶ subfinder -silent -d hackerone.com | dnsx -silent -rcode noerror,servfail,refused
+
+ns.hackerone.com [NOERROR]
+a.ns.hackerone.com [NOERROR]
+b.ns.hackerone.com [NOERROR]
+support.hackerone.com [NOERROR]
+resources.hackerone.com [NOERROR]
+mta-sts.hackerone.com [NOERROR]
+www.hackerone.com [NOERROR]
+mta-sts.forwarding.hackerone.com [NOERROR]
+docs.hackerone.com [NOERROR]
+```
+
 **dnsx** can be used to extract subdomains from given network range using `PTR` query, for example:-
 
 ```sh
-mapcidr -cidr 173.0.84.0/24 -silent | dnsx -silent -resp-only -ptr
+echo 173.0.84.0/24 | dnsx -silent -resp-only -ptr
 
 cors.api.paypal.com
 trinityadminauth.paypal.com
