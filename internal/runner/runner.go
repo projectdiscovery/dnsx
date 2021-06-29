@@ -399,7 +399,7 @@ func (r *Runner) outputRecordType(domain string, items []string) {
 }
 
 func (r *Runner) outputResponseCode(domain string, responsecode int) {
-	responseCodeExt, ok := dns.RcodeToString[int(responsecode)]
+	responseCodeExt, ok := dns.RcodeToString[responsecode]
 	if ok {
 		r.outputchan <- domain + " [" + responseCodeExt + "]"
 	}
