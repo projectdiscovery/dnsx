@@ -170,7 +170,7 @@ mta-sts.forwarding.hackerone.com [hacker0x01.github.io]
 events.hackerone.com [whitelabel.bigmarker.com]
 ```
 
-**dnsx** can be used to probe DNS Staus code on given list of subdomains, for example:-
+**dnsx** can be used to probe [DNS Staus code](https://github.com/projectdiscovery/dnsx/wiki/RCODE-ID-VALUE-Mapping) on given list of subdomains, for example:-
 
 ```sh
 ▶ subfinder -silent -d hackerone.com | dnsx -silent -rcode noerror,servfail,refused
