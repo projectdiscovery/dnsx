@@ -88,7 +88,7 @@ This will display help for the tool. Here are all the switches it supports.
 # Installation Instructions
 
 
-httpx requires **go1.14+** to install successfully. Run the following command to get the repo - 
+dnsx requires **go1.14+** to install successfully. Run the following command to get the repo - 
 
 ```sh
 GO111MODULE=on go get -v github.com/projectdiscovery/dnsx/cmd/dnsx
