@@ -9,14 +9,6 @@ import (
 	"time"
 )
 
-func fileExists(fileName string) bool {
-	info, err := os.Stat(fileName)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
-}
-
 func linesInFile(fileName string) ([]string, error) {
 	result := []string{}
 	f, err := os.Open(fileName)

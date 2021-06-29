@@ -11,8 +11,11 @@ import (
 	"github.com/miekg/dns"
 	"github.com/projectdiscovery/clistats"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
+	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/hmap/store/hybrid"
+	"github.com/projectdiscovery/iputil"
+	"github.com/projectdiscovery/mapcidr"
 	retryabledns "github.com/projectdiscovery/retryabledns"
 	"go.uber.org/ratelimit"
 )
@@ -40,7 +43,7 @@ func New(options *Options) (*Runner, error) {
 	if options.Resolvers != "" {
 		dnsxOptions.BaseResolvers = []string{}
 		// If it's a file load resolvers from it
-		if fileExists(options.Resolvers) {
+		if fileutil.FileExists(options.Resolvers) {
 			rs, err := linesInFile(options.Resolvers)
 			if err != nil {
 				gologger.Fatal().Msgf("%s\n", err)
@@ -158,14 +161,20 @@ func (r *Runner) prepareInput() error {
 	numHosts := 0
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
-		host := strings.TrimSpace(sc.Text())
-		// Used just to get the exact number of targets
-		if _, ok := r.hm.Get(host); ok {
-			continue
+		item := strings.TrimSpace(sc.Text())
+		hosts := []string{item}
+		if iputil.IsCIDR(item) {
+			hosts, _ = mapcidr.IPAddresses(item)
 		}
-		numHosts++
-		// nolint:errcheck
-		r.hm.Set(host, nil)
+		for _, host := range hosts {
+			// Used just to get the exact number of targets
+			if _, ok := r.hm.Get(host); ok {
+				continue
+			}
+			numHosts++
+			// nolint:errcheck
+			r.hm.Set(host, nil)
+		}
 	}
 
 	if r.options.ShowStatistics {
@@ -312,6 +321,18 @@ func (r *Runner) worker() {
 		if dnsData == nil {
 			continue
 		}
+
+		if dnsData.Host == "" || dnsData.Timestamp.IsZero() {
+			continue
+		}
+
+		// skip responses not having the expected response code
+		if len(r.options.rcodes) > 0 {
+			if _, ok := r.options.rcodes[dnsData.StatusCodeRaw]; !ok {
+				continue
+			}
+		}
+
 		if !r.options.Raw {
 			dnsData.Raw = ""
 		}
@@ -344,6 +365,10 @@ func (r *Runner) worker() {
 		}
 		if r.options.Raw {
 			r.outputchan <- dnsData.Raw
+			continue
+		}
+		if r.options.hasRCodes {
+			r.outputResponseCode(domain, dnsData.StatusCodeRaw)
 			continue
 		}
 		if r.options.A {
@@ -385,6 +410,13 @@ func (r *Runner) outputRecordType(domain string, items []string) {
 			r.outputchan <- domain
 			break
 		}
+	}
+}
+
+func (r *Runner) outputResponseCode(domain string, responsecode int) {
+	responseCodeExt, ok := dns.RcodeToString[responsecode]
+	if ok {
+		r.outputchan <- domain + " [" + responseCodeExt + "]"
 	}
 }
 

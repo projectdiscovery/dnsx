@@ -44,6 +44,7 @@
 
  - Simple and Handy utility to query DNS records.
  - Supports **A, AAAA, CNAME, PTR, NS, MX, TXT, SOA**
+ - Supports DNS Status Code probing
  - Supports DNS Tracing
  - Handles wildcard subdomains in automated way.
  - **Stdin** and **stdout** support to work with other tools.
@@ -67,6 +68,7 @@ This will display help for the tool. Here are all the switches it supports.
 | mx                  | Query MX record                    | dnsx -mx              |
 | soa                 | Query SOA record                   | dnsx -soa             |
 | raw                 | Operates like dig                  | dnsx -raw             |
+| rcode               | DNS Response codes                 | dnsx -rcode 0,1,2     |
 | l                   | File input list of subdomains/host | dnsx -l list.txt      |
 | json                | JSON output                        | dnsx -json            |
 | r                   | File or comma separated resolvers  | dnsx -r 1.1.1.1       |
@@ -75,6 +77,7 @@ This will display help for the tool. Here are all the switches it supports.
 | resp-only           | Display only response data         | dnsx -cname resp-only |
 | retry               | Number of DNS retries              | dnsx -retry 1         |
 | silent              | Show only results in the output    | dnsx -silent          |
+| stats               | Display stats of the running scan  | dnsx -stats           |
 | o                   | File to write output to (optional) | dnsx -o output.txt    |
 | t                   | Concurrent threads to make         | dnsx -t 100           |
 | trace               | Perform dns trace                  | dnsx -trace           |
@@ -88,7 +91,7 @@ This will display help for the tool. Here are all the switches it supports.
 # Installation Instructions
 
 
-httpx requires **go1.14+** to install successfully. Run the following command to get the repo - 
+dnsx requires **go1.14+** to install successfully. Run the following command to get the repo - 
 
 ```sh
 GO111MODULE=on go get -v github.com/projectdiscovery/dnsx/cmd/dnsx
@@ -100,17 +103,6 @@ GO111MODULE=on go get -v github.com/projectdiscovery/dnsx/cmd/dnsx
 
 ```sh
 ▶ subfinder -silent -d hackerone.com | dnsx
-
-      _             __  __
-   __| | _ __   ___ \ \/ /
-  / _' || '_ \ / __| \  /
- | (_| || | | |\__ \ /  \
-  \__,_||_| |_||___//_/\_\ v1.0.4
-
-    projectdiscovery.io
-
-[WRN] Use with caution. You are responsible for your actions
-[WRN] Developers assume no liability and are not responsible for any misuse or damage.
 
 a.ns.hackerone.com
 www.hackerone.com
@@ -178,10 +170,26 @@ mta-sts.forwarding.hackerone.com [hacker0x01.github.io]
 events.hackerone.com [whitelabel.bigmarker.com]
 ```
 
+**dnsx** can be used to probe [DNS Staus code](https://github.com/projectdiscovery/dnsx/wiki/RCODE-ID-VALUE-Mapping) on given list of subdomains, for example:-
+
+```sh
+▶ subfinder -silent -d hackerone.com | dnsx -silent -rcode noerror,servfail,refused
+
+ns.hackerone.com [NOERROR]
+a.ns.hackerone.com [NOERROR]
+b.ns.hackerone.com [NOERROR]
+support.hackerone.com [NOERROR]
+resources.hackerone.com [NOERROR]
+mta-sts.hackerone.com [NOERROR]
+www.hackerone.com [NOERROR]
+mta-sts.forwarding.hackerone.com [NOERROR]
+docs.hackerone.com [NOERROR]
+```
+
 **dnsx** can be used to extract subdomains from given network range using `PTR` query, for example:-
 
 ```sh
-mapcidr -cidr 173.0.84.0/24 -silent | dnsx -silent -resp-only -ptr
+echo 173.0.84.0/24 | dnsx -silent -resp-only -ptr
 
 cors.api.paypal.com
 trinityadminauth.paypal.com
