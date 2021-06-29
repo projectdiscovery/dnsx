@@ -353,6 +353,10 @@ func (r *Runner) worker() {
 			r.outputchan <- dnsData.Raw
 			continue
 		}
+		if r.options.hasRCodes {
+			r.outputResponseCode(domain, dnsData.StatusCodeRaw)
+			continue
+		}
 		if r.options.A {
 			r.outputRecordType(domain, dnsData.A)
 		}
@@ -376,9 +380,6 @@ func (r *Runner) worker() {
 		}
 		if r.options.TXT {
 			r.outputRecordType(domain, dnsData.TXT)
-		}
-		if r.options.hasRCodes {
-			r.outputResponseCode(domain, dnsData.StatusCodeRaw)
 		}
 	}
 }
