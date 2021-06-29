@@ -221,13 +221,57 @@ func (options *Options) configureRcodes() error {
 
 	rcodes := strings.Split(options.RCodes, ",")
 	for _, rcode := range rcodes {
-		if rcode == "" {
+		var rc int
+		switch strings.ToLower(rcode) {
+		case "":
 			continue
+		case "noerror":
+			rc = 0
+		case "formerr":
+			rc = 1
+		case "servfail":
+			rc = 2
+		case "nxdomain":
+			rc = 3
+		case "notimp":
+			rc = 4
+		case "refused":
+			rc = 5
+		case "yxdomain":
+			rc = 6
+		case "yxrrset":
+			rc = 7
+		case "nxrrset":
+			rc = 8
+		case "notauth":
+			rc = 9
+		case "notzone":
+			rc = 10
+		case "badsig", "badvers":
+			rc = 16
+		case "badkey":
+			rc = 17
+		case "badtime":
+			rc = 18
+		case "badmode":
+			rc = 19
+		case "badname":
+			rc = 20
+		case "badalg":
+			rc = 21
+		case "badtrunc":
+			rc = 22
+		case "badcookie":
+			rc = 23
+		default:
+			var err error
+			rc, err = strconv.Atoi(rcode)
+			if err != nil {
+				// chec
+				return err
+			}
 		}
-		rc, err := strconv.Atoi(rcode)
-		if err != nil {
-			return err
-		}
+
 		options.rcodes[rc] = struct{}{}
 	}
 
