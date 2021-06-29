@@ -312,6 +312,14 @@ func (r *Runner) worker() {
 		if dnsData == nil {
 			continue
 		}
+
+		// skip responses not having the expected response code
+		if len(r.options.rcodes) > 0 {
+			if _, ok := r.options.rcodes[dnsData.StatusCodeRaw]; !ok {
+				continue
+			}
+		}
+
 		if !r.options.Raw {
 			dnsData.Raw = ""
 		}
@@ -370,6 +378,9 @@ func (r *Runner) worker() {
 		if r.options.TXT {
 			r.outputRecordType(domain, dnsData.TXT)
 		}
+		if r.options.hasRCodes {
+			r.outputResponseCode(domain, dnsData.StatusCodeRaw)
+		}
 	}
 }
 
@@ -385,6 +396,13 @@ func (r *Runner) outputRecordType(domain string, items []string) {
 			r.outputchan <- domain
 			break
 		}
+	}
+}
+
+func (r *Runner) outputResponseCode(domain string, responsecode int) {
+	responseCodeExt, ok := dns.RcodeToString[int(responsecode)]
+	if ok {
+		r.outputchan <- domain + " [" + responseCodeExt + "]"
 	}
 }
 
