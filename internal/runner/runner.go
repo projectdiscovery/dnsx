@@ -322,6 +322,10 @@ func (r *Runner) worker() {
 			continue
 		}
 
+		if dnsData.Host == "" || dnsData.Timestamp.IsZero() {
+			continue
+		}
+
 		// skip responses not having the expected response code
 		if len(r.options.rcodes) > 0 {
 			if _, ok := r.options.rcodes[dnsData.StatusCodeRaw]; !ok {
