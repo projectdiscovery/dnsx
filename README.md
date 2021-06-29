@@ -67,6 +67,7 @@ This will display help for the tool. Here are all the switches it supports.
 | mx                  | Query MX record                    | dnsx -mx              |
 | soa                 | Query SOA record                   | dnsx -soa             |
 | raw                 | Operates like dig                  | dnsx -raw             |
+| rcode               | DNS Response codes                 | dnsx -rcode 0,1,2     |
 | l                   | File input list of subdomains/host | dnsx -l list.txt      |
 | json                | JSON output                        | dnsx -json            |
 | r                   | File or comma separated resolvers  | dnsx -r 1.1.1.1       |
@@ -75,6 +76,7 @@ This will display help for the tool. Here are all the switches it supports.
 | resp-only           | Display only response data         | dnsx -cname resp-only |
 | retry               | Number of DNS retries              | dnsx -retry 1         |
 | silent              | Show only results in the output    | dnsx -silent          |
+| stats               | Display stats of the running scan  | dnsx -stats           |
 | o                   | File to write output to (optional) | dnsx -o output.txt    |
 | t                   | Concurrent threads to make         | dnsx -t 100           |
 | trace               | Perform dns trace                  | dnsx -trace           |
