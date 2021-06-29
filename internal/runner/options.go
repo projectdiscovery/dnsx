@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"errors"
 	"flag"
 	"math"
 	"os"
@@ -164,8 +165,7 @@ func (options *Options) configureRcodes() error {
 			var err error
 			rc, err = strconv.Atoi(rcode)
 			if err != nil {
-				// chec
-				return err
+				return errors.New("invalid rcode value")
 			}
 		}
 
