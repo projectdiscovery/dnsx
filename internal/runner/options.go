@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/projectdiscovery/goconfig"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
 )
@@ -43,6 +44,9 @@ type Options struct {
 	rcodes            map[int]struct{}
 	RCode             string
 	hasRCodes         bool
+	Resume            bool
+	ResumeFile        string
+	resumeCfg         *ResumeCfg
 }
 
 // ParseOptions parses the command line options for application
@@ -75,6 +79,8 @@ func ParseOptions() *Options {
 	flag.BoolVar(&options.Trace, "trace", false, "Perform dns trace")
 	flag.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace")
 	flag.StringVar(&options.RCode, "rcode", "", "Response codes (eg. -rcode 0,1,2 or -rcode noerror,nxdomain)")
+	flag.BoolVar(&options.Resume, "resume", false, "Enable stop/resume support")
+	flag.StringVar(&options.ResumeFile, "resume-file", "resume.cfg", "Resume file name")
 
 	flag.Parse()
 
@@ -84,6 +90,13 @@ func ParseOptions() *Options {
 	err := options.configureRcodes()
 	if err != nil {
 		gologger.Fatal().Msgf("%s\n", err)
+	}
+
+	if options.Resume {
+		err = options.configureResume()
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
 	}
 
 	showBanner()
@@ -179,5 +192,13 @@ func (options *Options) configureRcodes() error {
 		options.rcodes[0] = struct{}{}
 	}
 
+	return nil
+}
+
+func (options *Options) configureResume() error {
+	var resumeCfg ResumeCfg
+	// attempt to load resume file - fail silently if it doesn't exist
+	goconfig.Load(&resumeCfg, options.ResumeFile)
+	options.resumeCfg = &resumeCfg
 	return nil
 }
