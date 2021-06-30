@@ -12,6 +12,7 @@ import (
 	"github.com/projectdiscovery/clistats"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/fileutil"
+	"github.com/projectdiscovery/goconfig"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/hmap/store/hybrid"
 	"github.com/projectdiscovery/iputil"
@@ -135,7 +136,15 @@ func (r *Runner) InputWorker() {
 		if r.options.ShowStatistics {
 			r.stats.IncrementCounter("requests", len(r.dnsx.Options.QuestionTypes))
 		}
-		r.workerchan <- string(k)
+		item := string(k)
+		if r.options.Resume {
+			r.options.resumeCfg.current = item
+			r.options.resumeCfg.currentIndex++
+			if r.options.resumeCfg.currentIndex <= r.options.resumeCfg.Index {
+				return nil
+			}
+		}
+		r.workerchan <- item
 		return nil
 	})
 	close(r.workerchan)
@@ -230,6 +239,21 @@ func (r *Runner) Run() error {
 	err := r.prepareInput()
 	if err != nil {
 		return err
+	}
+
+	// if resume is enabled start callback
+	if r.options.Resume {
+		if r.options.Resume && r.options.resumeCfg.Index > 0 {
+			gologger.Debug().Msgf("Resuming at position %d: %s\n", r.options.resumeCfg.Index, r.options.resumeCfg.ResumeFrom)
+		}
+		go func() {
+			for range time.Tick(time.Second * 5) {
+				var resumeCfg ResumeCfg
+				resumeCfg.Index = r.options.resumeCfg.currentIndex
+				resumeCfg.ResumeFrom = r.options.resumeCfg.current
+				goconfig.Save(resumeCfg, r.options.ResumeFile)
+			}
+		}()
 	}
 
 	r.startWorkers()
@@ -430,6 +454,10 @@ func (r *Runner) storeDNSData(dnsdata *retryabledns.DNSData) error {
 
 // Close running instance
 func (r *Runner) Close() {
+	// if resume is enabled then the execution completed successfully and we can delete the config file
+	if r.options.Resume && fileutil.FileExists(r.options.ResumeFile) {
+		os.Remove(r.options.ResumeFile)
+	}
 	r.hm.Close()
 }
 
