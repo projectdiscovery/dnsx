@@ -30,6 +30,8 @@ github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db/go.mod h1:/XxbfmMg8l
 github.com/golang/snappy v0.0.2/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
 github.com/golang/snappy v0.0.3 h1:fHPg5GQYlCeLIPB9BZqMVR5nR9A+IM5zcgeTdjMYmLA=
 github.com/golang/snappy v0.0.3/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
+github.com/golang/snappy v0.0.4 h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM=
+github.com/golang/snappy v0.0.4/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
 github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
 github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
 github.com/google/go-cmp v0.3.1/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
@@ -91,6 +93,8 @@ github.com/projectdiscovery/goconfig v0.0.0-20210630124552-ac61bcd6152e h1:LzN4H
 github.com/projectdiscovery/goconfig v0.0.0-20210630124552-ac61bcd6152e/go.mod h1:EkHkoCTKUMoriS+yGgCrJPfH6ZIoQoXtx6GJkEQa+Bc=
 github.com/projectdiscovery/goconfig v0.0.0-20210630181306-c8de611fad1f h1:EbVUUpBVSKrkZH97JVR6M6vOX6qILSZpuXKaubBJhXY=
 github.com/projectdiscovery/goconfig v0.0.0-20210630181306-c8de611fad1f/go.mod h1:EkHkoCTKUMoriS+yGgCrJPfH6ZIoQoXtx6GJkEQa+Bc=
+github.com/projectdiscovery/goconfig v0.0.0-20210713142907-ee77a107938c h1:ngl4D6YKSIEex6OMtnGft8LC8B0P2Agj3a5lQLwrAws=
+github.com/projectdiscovery/goconfig v0.0.0-20210713142907-ee77a107938c/go.mod h1:EkHkoCTKUMoriS+yGgCrJPfH6ZIoQoXtx6GJkEQa+Bc=
 github.com/projectdiscovery/gologger v1.0.1/go.mod h1:Ok+axMqK53bWNwDSU1nTNwITLYMXMdZtRc8/y1c7sWE=
 github.com/projectdiscovery/gologger v1.1.4 h1:qWxGUq7ukHWT849uGPkagPKF3yBPYAsTtMKunQ8O2VI=
 github.com/projectdiscovery/gologger v1.1.4/go.mod h1:Bhb6Bdx2PV1nMaFLoXNBmHIU85iROS9y1tBuv7T5pMY=
@@ -99,6 +103,8 @@ github.com/projectdiscovery/hmap v0.0.1/go.mod h1:VDEfgzkKQdq7iGTKz8Ooul0NuYHQ8q
 github.com/projectdiscovery/ipranger v0.0.2/go.mod h1:kcAIk/lo5rW+IzUrFkeYyXnFJ+dKwYooEOHGVPP/RWE=
 github.com/projectdiscovery/iputil v0.0.0-20210429152401-c18a5408ca46 h1:veDjJpC3q2PLyuYPS3jNeoYgbHvHPWQhwqRPoCe6YTA=
 github.com/projectdiscovery/iputil v0.0.0-20210429152401-c18a5408ca46/go.mod h1:PQAqn5h5NXsQTF4ZA00ZTYLRzGCjOtcCq8llAqrsd1A=
+github.com/projectdiscovery/iputil v0.0.0-20210705072957-5a968407979b h1:ajuou9cW3DGEtArQejqEyDMHcmhXEF7ASgsdVwBkvzs=
+github.com/projectdiscovery/iputil v0.0.0-20210705072957-5a968407979b/go.mod h1:PQAqn5h5NXsQTF4ZA00ZTYLRzGCjOtcCq8llAqrsd1A=
 github.com/projectdiscovery/mapcidr v0.0.4/go.mod h1:ALOIj6ptkWujNoX8RdQwB2mZ+kAmKuLJBq9T5gR5wG0=
 github.com/projectdiscovery/mapcidr v0.0.6/go.mod h1:ZEBhMmBU3laUl3g9QGTrzJku1VJOzjdFwW01f/zVVzM=
 github.com/projectdiscovery/mapcidr v0.0.7 h1:WK6WFimbWjUxfvcHEgofYNqIyqQh0vTDKzbmTh53aVg=

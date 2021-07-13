@@ -1,8 +1,8 @@
 package runner
 
 type ResumeCfg struct {
-	ResumeFrom   string `json:"resume_from,omitempty"`
-	Index        int    `json:"index,omitempty"`
+	ResumeFrom   string
+	Index        int
 	current      string
 	currentIndex int
 }
