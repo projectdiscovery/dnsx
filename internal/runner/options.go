@@ -198,7 +198,7 @@ func (options *Options) configureRcodes() error {
 func (options *Options) configureResume() error {
 	var resumeCfg ResumeCfg
 	// attempt to load resume file - fail silently if it doesn't exist
-	goconfig.Load(&resumeCfg, options.ResumeFile)
+	_ = goconfig.Load(&resumeCfg, options.ResumeFile)
 	options.resumeCfg = &resumeCfg
 	return nil
 }

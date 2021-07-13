@@ -251,7 +251,7 @@ func (r *Runner) Run() error {
 				var resumeCfg ResumeCfg
 				resumeCfg.Index = r.options.resumeCfg.currentIndex
 				resumeCfg.ResumeFrom = r.options.resumeCfg.current
-				goconfig.Save(resumeCfg, r.options.ResumeFile)
+				_ = goconfig.Save(resumeCfg, r.options.ResumeFile)
 			}
 		}()
 	}
