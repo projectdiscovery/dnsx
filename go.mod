@@ -14,7 +14,7 @@ require (
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/hmap v0.0.1
 	github.com/projectdiscovery/iputil v0.0.0-20210429152401-c18a5408ca46
-	github.com/projectdiscovery/mapcidr v0.0.7
+	github.com/projectdiscovery/mapcidr v0.0.8
 	github.com/projectdiscovery/retryabledns v1.0.12
 	github.com/rs/xid v1.3.0
 	go.uber.org/ratelimit v0.2.0
