@@ -289,13 +289,23 @@ func (r *Runner) HandleOutput() {
 	)
 	if r.options.OutputFile != "" {
 		var err error
-		foutput, err = os.Create(r.options.OutputFile)
+		foutput, err = os.OpenFile(r.options.OutputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}
 		defer foutput.Close()
 		w = bufio.NewWriter(foutput)
 		defer w.Flush()
+		var flushTicker *time.Ticker
+		if r.options.FlushInterval >= 0 {
+			flushTicker = time.NewTicker(time.Duration(r.options.FlushInterval) * time.Second)
+			defer flushTicker.Stop()
+			go func() {
+				for range flushTicker.C {
+					w.Flush()
+				}
+			}()
+		}
 	}
 	for item := range r.outputchan {
 		if r.options.OutputFile != "" {

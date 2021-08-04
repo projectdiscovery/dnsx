@@ -47,6 +47,7 @@ type Options struct {
 	Resume            bool
 	ResumeFile        string
 	resumeCfg         *ResumeCfg
+	FlushInterval     int
 }
 
 // ParseOptions parses the command line options for application
@@ -81,6 +82,7 @@ func ParseOptions() *Options {
 	flag.StringVar(&options.RCode, "rcode", "", "Response codes (eg. -rcode 0,1,2 or -rcode noerror,nxdomain)")
 	flag.BoolVar(&options.Resume, "resume", false, "Enable stop/resume support")
 	flag.StringVar(&options.ResumeFile, "resume-file", "resume.cfg", "Resume file name")
+	flag.IntVar(&options.FlushInterval, "flush-interval", 10, "Flush interval of output file")
 
 	flag.Parse()
 
