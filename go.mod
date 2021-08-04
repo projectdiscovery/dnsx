@@ -15,7 +15,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.1
 	github.com/projectdiscovery/iputil v0.0.0-20210429152401-c18a5408ca46
 	github.com/projectdiscovery/mapcidr v0.0.8
-	github.com/projectdiscovery/retryabledns v1.0.13-0.20210804093039-a08e225931eb
+	github.com/projectdiscovery/retryabledns v1.0.13-0.20210804172212-e02a826811fb
 	github.com/rs/xid v1.3.0
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
