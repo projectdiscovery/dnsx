@@ -14,6 +14,10 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 )
 
+const (
+	DefaultResumeFile = "resume.cfg"
+)
+
 type Options struct {
 	Resolvers         string
 	Hosts             string
@@ -46,20 +50,18 @@ type Options struct {
 	RCode             string
 	hasRCodes         bool
 	Resume            bool
-	ResumeFileSave    string
-	ResumeFileLoad    string
 	resumeCfg         *ResumeCfg
 	FlushInterval     int
 }
 
 // ShouldLoadResume resume file
 func (options *Options) ShouldLoadResume() bool {
-	return options.ResumeFileLoad != "" && fileutil.FileExists(options.ResumeFileLoad)
+	return options.Resume && fileutil.FileExists(DefaultResumeFile)
 }
 
 // ShouldSaveResume file
 func (options *Options) ShouldSaveResume() bool {
-	return options.ResumeFileSave != ""
+	return true
 }
 
 // ParseOptions parses the command line options for application
@@ -92,8 +94,7 @@ func ParseOptions() *Options {
 	flag.BoolVar(&options.Trace, "trace", false, "Perform dns trace")
 	flag.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace")
 	flag.StringVar(&options.RCode, "rcode", "", "Response codes (eg. -rcode 0,1,2 or -rcode noerror,nxdomain)")
-	flag.StringVar(&options.ResumeFileSave, "resume-file-save", "resume.cfg", "Resume file name")
-	flag.StringVar(&options.ResumeFileLoad, "resume-file", "", "Resume file name")
+	flag.BoolVar(&options.Resume, "resume", false, "Resume")
 	flag.IntVar(&options.FlushInterval, "flush-interval", 10, "Flush interval of output file")
 
 	flag.Parse()
@@ -208,9 +209,10 @@ func (options *Options) configureRcodes() error {
 }
 
 func (options *Options) configureResume() error {
-	var resumeCfg ResumeCfg
-	// attempt to load resume file - fail silently if it doesn't exist
-	_ = goconfig.Load(&resumeCfg, options.ResumeFileLoad)
-	options.resumeCfg = &resumeCfg
+	options.resumeCfg = &ResumeCfg{}
+	if options.Resume && fileutil.FileExists(DefaultResumeFile) {
+		return goconfig.Load(&options.resumeCfg, DefaultResumeFile)
+
+	}
 	return nil
 }

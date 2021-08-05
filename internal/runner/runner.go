@@ -240,7 +240,7 @@ func (r *Runner) SaveResumeConfig() error {
 	var resumeCfg ResumeCfg
 	resumeCfg.Index = r.options.resumeCfg.currentIndex
 	resumeCfg.ResumeFrom = r.options.resumeCfg.current
-	return goconfig.Save(resumeCfg, r.options.ResumeFileSave)
+	return goconfig.Save(resumeCfg, DefaultResumeFile)
 }
 
 func (r *Runner) Run() error {
