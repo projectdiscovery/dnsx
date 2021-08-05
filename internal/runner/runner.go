@@ -137,7 +137,7 @@ func (r *Runner) InputWorker() {
 			r.stats.IncrementCounter("requests", len(r.dnsx.Options.QuestionTypes))
 		}
 		item := string(k)
-		if r.options.Resume {
+		if r.options.resumeCfg != nil {
 			r.options.resumeCfg.current = item
 			r.options.resumeCfg.currentIndex++
 			if r.options.resumeCfg.currentIndex <= r.options.resumeCfg.Index {
@@ -235,25 +235,23 @@ func makePrintCallback() func(stats clistats.StatisticsClient) {
 	}
 }
 
+// SaveResumeConfig to file
+func (r *Runner) SaveResumeConfig() error {
+	var resumeCfg ResumeCfg
+	resumeCfg.Index = r.options.resumeCfg.currentIndex
+	resumeCfg.ResumeFrom = r.options.resumeCfg.current
+	return goconfig.Save(resumeCfg, r.options.ResumeFileSave)
+}
+
 func (r *Runner) Run() error {
 	err := r.prepareInput()
 	if err != nil {
 		return err
 	}
 
-	// if resume is enabled start callback
-	if r.options.Resume {
-		if r.options.Resume && r.options.resumeCfg.Index > 0 {
-			gologger.Debug().Msgf("Resuming at position %d: %s\n", r.options.resumeCfg.Index, r.options.resumeCfg.ResumeFrom)
-		}
-		go func() {
-			for range time.Tick(time.Second * 5) {
-				var resumeCfg ResumeCfg
-				resumeCfg.Index = r.options.resumeCfg.currentIndex
-				resumeCfg.ResumeFrom = r.options.resumeCfg.current
-				_ = goconfig.Save(resumeCfg, r.options.ResumeFile)
-			}
-		}()
+	// if resume is enabled inform the user
+	if r.options.ShouldLoadResume() && r.options.resumeCfg.Index > 0 {
+		gologger.Debug().Msgf("Resuming at position %d: %s\n", r.options.resumeCfg.Index, r.options.resumeCfg.ResumeFrom)
 	}
 
 	r.startWorkers()
@@ -464,10 +462,6 @@ func (r *Runner) storeDNSData(dnsdata *retryabledns.DNSData) error {
 
 // Close running instance
 func (r *Runner) Close() {
-	// if resume is enabled then the execution completed successfully and we can delete the config file
-	if r.options.Resume && fileutil.FileExists(r.options.ResumeFile) {
-		os.Remove(r.options.ResumeFile)
-	}
 	r.hm.Close()
 }
 

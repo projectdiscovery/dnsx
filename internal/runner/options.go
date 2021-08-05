@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/goconfig"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
@@ -45,9 +46,20 @@ type Options struct {
 	RCode             string
 	hasRCodes         bool
 	Resume            bool
-	ResumeFile        string
+	ResumeFileSave    string
+	ResumeFileLoad    string
 	resumeCfg         *ResumeCfg
 	FlushInterval     int
+}
+
+// ShouldLoadResume resume file
+func (options *Options) ShouldLoadResume() bool {
+	return options.ResumeFileLoad != "" && fileutil.FileExists(options.ResumeFileLoad)
+}
+
+// ShouldSaveResume file
+func (options *Options) ShouldSaveResume() bool {
+	return options.ResumeFileSave != ""
 }
 
 // ParseOptions parses the command line options for application
@@ -80,8 +92,8 @@ func ParseOptions() *Options {
 	flag.BoolVar(&options.Trace, "trace", false, "Perform dns trace")
 	flag.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace")
 	flag.StringVar(&options.RCode, "rcode", "", "Response codes (eg. -rcode 0,1,2 or -rcode noerror,nxdomain)")
-	flag.BoolVar(&options.Resume, "resume", false, "Enable stop/resume support")
-	flag.StringVar(&options.ResumeFile, "resume-file", "resume.cfg", "Resume file name")
+	flag.StringVar(&options.ResumeFileSave, "resume-file-save", "resume.cfg", "Resume file name")
+	flag.StringVar(&options.ResumeFileLoad, "resume-file", "", "Resume file name")
 	flag.IntVar(&options.FlushInterval, "flush-interval", 10, "Flush interval of output file")
 
 	flag.Parse()
@@ -94,11 +106,9 @@ func ParseOptions() *Options {
 		gologger.Fatal().Msgf("%s\n", err)
 	}
 
-	if options.Resume {
-		err = options.configureResume()
-		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
-		}
+	err = options.configureResume()
+	if err != nil {
+		gologger.Fatal().Msgf("%s\n", err)
 	}
 
 	showBanner()
@@ -200,7 +210,7 @@ func (options *Options) configureRcodes() error {
 func (options *Options) configureResume() error {
 	var resumeCfg ResumeCfg
 	// attempt to load resume file - fail silently if it doesn't exist
-	_ = goconfig.Load(&resumeCfg, options.ResumeFile)
+	_ = goconfig.Load(&resumeCfg, options.ResumeFileLoad)
 	options.resumeCfg = &resumeCfg
 	return nil
 }
