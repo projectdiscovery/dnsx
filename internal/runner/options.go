@@ -8,8 +8,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/projectdiscovery/fileutil"
+	"github.com/projectdiscovery/goconfig"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
+)
+
+const (
+	DefaultResumeFile = "resume.cfg"
 )
 
 type Options struct {
@@ -43,6 +49,19 @@ type Options struct {
 	rcodes            map[int]struct{}
 	RCode             string
 	hasRCodes         bool
+	Resume            bool
+	resumeCfg         *ResumeCfg
+	FlushInterval     int
+}
+
+// ShouldLoadResume resume file
+func (options *Options) ShouldLoadResume() bool {
+	return options.Resume && fileutil.FileExists(DefaultResumeFile)
+}
+
+// ShouldSaveResume file
+func (options *Options) ShouldSaveResume() bool {
+	return true
 }
 
 // ParseOptions parses the command line options for application
@@ -75,6 +94,8 @@ func ParseOptions() *Options {
 	flag.BoolVar(&options.Trace, "trace", false, "Perform dns trace")
 	flag.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace")
 	flag.StringVar(&options.RCode, "rcode", "", "Response codes (eg. -rcode 0,1,2 or -rcode noerror,nxdomain)")
+	flag.BoolVar(&options.Resume, "resume", false, "Resume")
+	flag.IntVar(&options.FlushInterval, "flush-interval", 10, "Flush interval of output file")
 
 	flag.Parse()
 
@@ -82,6 +103,11 @@ func ParseOptions() *Options {
 	options.configureOutput()
 
 	err := options.configureRcodes()
+	if err != nil {
+		gologger.Fatal().Msgf("%s\n", err)
+	}
+
+	err = options.configureResume()
 	if err != nil {
 		gologger.Fatal().Msgf("%s\n", err)
 	}
@@ -179,5 +205,14 @@ func (options *Options) configureRcodes() error {
 		options.rcodes[0] = struct{}{}
 	}
 
+	return nil
+}
+
+func (options *Options) configureResume() error {
+	options.resumeCfg = &ResumeCfg{}
+	if options.Resume && fileutil.FileExists(DefaultResumeFile) {
+		return goconfig.Load(&options.resumeCfg, DefaultResumeFile)
+
+	}
 	return nil
 }
