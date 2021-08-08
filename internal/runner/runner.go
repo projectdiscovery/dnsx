@@ -251,7 +251,7 @@ func (r *Runner) Run() error {
 
 	// if resume is enabled inform the user
 	if r.options.ShouldLoadResume() && r.options.resumeCfg.Index > 0 {
-		gologger.Debug().Msgf("Resuming at position %d: %s\n", r.options.resumeCfg.Index, r.options.resumeCfg.ResumeFrom)
+		gologger.Debug().Msgf("Resuming scan using file %s. Restarting at position %d: %s\n", DefaultResumeFile, r.options.resumeCfg.Index, r.options.resumeCfg.ResumeFrom)
 	}
 
 	r.startWorkers()
