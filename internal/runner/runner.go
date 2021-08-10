@@ -12,6 +12,7 @@ import (
 	"github.com/projectdiscovery/clistats"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/fileutil"
+	"github.com/projectdiscovery/goconfig"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/hmap/store/hybrid"
 	"github.com/projectdiscovery/iputil"
@@ -135,7 +136,15 @@ func (r *Runner) InputWorker() {
 		if r.options.ShowStatistics {
 			r.stats.IncrementCounter("requests", len(r.dnsx.Options.QuestionTypes))
 		}
-		r.workerchan <- string(k)
+		item := string(k)
+		if r.options.resumeCfg != nil {
+			r.options.resumeCfg.current = item
+			r.options.resumeCfg.currentIndex++
+			if r.options.resumeCfg.currentIndex <= r.options.resumeCfg.Index {
+				return nil
+			}
+		}
+		r.workerchan <- item
 		return nil
 	})
 	close(r.workerchan)
@@ -226,10 +235,23 @@ func makePrintCallback() func(stats clistats.StatisticsClient) {
 	}
 }
 
+// SaveResumeConfig to file
+func (r *Runner) SaveResumeConfig() error {
+	var resumeCfg ResumeCfg
+	resumeCfg.Index = r.options.resumeCfg.currentIndex
+	resumeCfg.ResumeFrom = r.options.resumeCfg.current
+	return goconfig.Save(resumeCfg, DefaultResumeFile)
+}
+
 func (r *Runner) Run() error {
 	err := r.prepareInput()
 	if err != nil {
 		return err
+	}
+
+	// if resume is enabled inform the user
+	if r.options.ShouldLoadResume() && r.options.resumeCfg.Index > 0 {
+		gologger.Debug().Msgf("Resuming scan using file %s. Restarting at position %d: %s\n", DefaultResumeFile, r.options.resumeCfg.Index, r.options.resumeCfg.ResumeFrom)
 	}
 
 	r.startWorkers()
@@ -265,13 +287,23 @@ func (r *Runner) HandleOutput() {
 	)
 	if r.options.OutputFile != "" {
 		var err error
-		foutput, err = os.Create(r.options.OutputFile)
+		foutput, err = os.OpenFile(r.options.OutputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}
 		defer foutput.Close()
 		w = bufio.NewWriter(foutput)
 		defer w.Flush()
+		var flushTicker *time.Ticker
+		if r.options.FlushInterval >= 0 {
+			flushTicker = time.NewTicker(time.Duration(r.options.FlushInterval) * time.Second)
+			defer flushTicker.Stop()
+			go func() {
+				for range flushTicker.C {
+					w.Flush()
+				}
+			}()
+		}
 	}
 	for item := range r.outputchan {
 		if r.options.OutputFile != "" {
