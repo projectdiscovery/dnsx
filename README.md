@@ -15,7 +15,7 @@
 <a href="https://twitter.com/pdiscoveryio"><img src="https://img.shields.io/twitter/follow/pdiscoveryio.svg?logo=twitter"></a>
 <a href="https://discord.gg/projectdiscovery"><img src="https://img.shields.io/discord/695645237418131507.svg?logo=discord"></a>
 </p>
-      
+
 <p align="center">
   <a href="#features">Features</a> •
   <a href="#installation-instructions">Installation</a> •
@@ -90,10 +90,10 @@ This will display help for the tool. Here are all the switches it supports.
 # Installation Instructions
 
 
-dnsx requires **go1.14+** to install successfully. Run the following command to get the repo - 
+dnsx requires **go1.16+** to install successfully. Run the following command to get the repo -
 
 ```sh
-GO111MODULE=on go get -v github.com/projectdiscovery/dnsx/cmd/dnsx
+go get -v github.com/projectdiscovery/dnsx/cmd/dnsx
 ```
 
 ### Running dnsx
