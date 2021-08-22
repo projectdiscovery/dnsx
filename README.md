@@ -101,7 +101,7 @@ go get -v github.com/projectdiscovery/dnsx/cmd/dnsx
 **dnsx** can be used to filter dead records from the list of passive subdomains obtained from various sources, for example:-
 
 ```sh
-▶ subfinder -silent -d hackerone.com | dnsx
+subfinder -silent -d hackerone.com | dnsx -silent
 
 a.ns.hackerone.com
 www.hackerone.com
@@ -119,7 +119,7 @@ support.hackerone.com
 **dnsx** can be used to print **A** records for the given list of subdomains, for example:-
 
 ```sh
-▶ subfinder -silent -d hackerone.com | dnsx -silent -a -resp
+subfinder -silent -d hackerone.com | dnsx -silent -a -resp
 
 a.ns.hackerone.com [162.159.0.31]
 b.ns.hackerone.com [162.159.1.31]
@@ -160,7 +160,7 @@ support.hackerone.com [104.16.53.111]
 **dnsx** can be used to extract **CNAME** records for the given list of subdomains, for example:-
 
 ```sh
-▶ subfinder -silent -d hackerone.com | dnsx -silent -cname -resp
+subfinder -silent -d hackerone.com | dnsx -silent -cname -resp
 
 support.hackerone.com [hackerone.zendesk.com]
 resources.hackerone.com [read.uberflip.com]
@@ -172,7 +172,7 @@ events.hackerone.com [whitelabel.bigmarker.com]
 **dnsx** can be used to probe [DNS Staus code](https://github.com/projectdiscovery/dnsx/wiki/RCODE-ID-VALUE-Mapping) on given list of subdomains, for example:-
 
 ```sh
-▶ subfinder -silent -d hackerone.com | dnsx -silent -rcode noerror,servfail,refused
+subfinder -silent -d hackerone.com | dnsx -silent -rcode noerror,servfail,refused
 
 ns.hackerone.com [NOERROR]
 a.ns.hackerone.com [NOERROR]
