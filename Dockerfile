@@ -1,4 +1,4 @@
-FROM golang:1.16.7-alpine3.14 AS build-env
+FROM golang:1.17.0-alpine3.14 AS build-env
 RUN go get -v github.com/projectdiscovery/dnsx/cmd/dnsx
 
 FROM alpine:3.14
