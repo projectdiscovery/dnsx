@@ -42,7 +42,7 @@ var DefaultResolvers = []string{
 
 // New creates a dns resolver
 func New(options Options) (*DNSX, error) {
-	dnsClient := retryabledns.New(options.BaseResolvers, options.MaxRetries)
+	dnsClient := retryabledns.New(retryabledns.Options{BaseResolvers: options.BaseResolvers, MaxRetries: options.MaxRetries})
 
 	return &DNSX{dnsClient: dnsClient, Options: &options}, nil
 }
