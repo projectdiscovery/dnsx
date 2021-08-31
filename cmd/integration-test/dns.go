@@ -29,8 +29,8 @@ func (h *dnsARequest) Execute() error {
 		Addr:    "127.0.0.1:15000",
 		Net:     "udp",
 	}
-	go srv.ListenAndServe()
-	defer srv.Shutdown()
+	go srv.ListenAndServe() //nolint
+	defer srv.Shutdown()    //nolint
 
 	var extra []string
 	extra = append(extra, "-r", "127.0.0.1:15000")
@@ -67,8 +67,8 @@ func (h *dnsAAAARequest) Execute() error {
 		Addr:    "127.0.0.1:15000",
 		Net:     "udp",
 	}
-	go srv.ListenAndServe()
-	defer srv.Shutdown()
+	go srv.ListenAndServe() //nolint
+	defer srv.Shutdown()    //nolint
 
 	var extra []string
 	extra = append(extra, "-r", "127.0.0.1:15000")
@@ -106,7 +106,7 @@ func (t *dnshandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	for _, answer := range t.answers {
 		if strings.EqualFold(question, answer.question) && answer.questionType == questionType {
 			resp := buildAnswer(r, answer)
-			w.WriteMsg(resp)
+			w.WriteMsg(resp) //nolint
 		}
 	}
 }
