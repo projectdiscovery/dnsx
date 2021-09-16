@@ -15,11 +15,13 @@ require (
 	github.com/projectdiscovery/hmap v0.0.1
 	github.com/projectdiscovery/iputil v0.0.0-20210705072957-5a968407979b
 	github.com/projectdiscovery/mapcidr v0.0.8
-	github.com/projectdiscovery/retryabledns v1.0.13-0.20210828095625-2b537c6877d9
+	github.com/projectdiscovery/retryabledns v1.0.13-0.20210916165024-76c5b76fd59a
+	github.com/projectdiscovery/stringsutil v0.0.0-20210830151154-f567170afdd9 // indirect
 	github.com/rs/xid v1.3.0
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985 // indirect
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8 // indirect
+	golang.org/x/sys v0.0.0-20210915083310-ed5796bab164 // indirect
+	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
