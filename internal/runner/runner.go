@@ -331,7 +331,12 @@ func (r *Runner) Run() error {
 					r.outputchan <- host
 				}
 			} else {
-				numRemovedSubdomains += len(hosts)
+				for host := range hosts {
+					if _, ok := seen[host]; !ok {
+						numRemovedSubdomains++
+						seen[host] = struct{}{}
+					}
+				}
 			}
 		}
 		close(r.outputchan)
