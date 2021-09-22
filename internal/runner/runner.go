@@ -264,7 +264,9 @@ func (r *Runner) Run() error {
 	r.startWorkers()
 
 	r.wgresolveworkers.Wait()
-	r.stats.Stop()
+	if r.stats != nil {
+		r.stats.Stop()
+	}
 
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
