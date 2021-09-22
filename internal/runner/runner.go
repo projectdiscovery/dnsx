@@ -319,6 +319,7 @@ func (r *Runner) Run() error {
 		// we need to restart output
 		r.startOutputWorker()
 		seen := make(map[string]struct{})
+		seenRemovedSubdomains := make(map[string]struct{})
 		numRemovedSubdomains := 0
 		for _, A := range listIPs {
 			hosts := ipDomain[A]
@@ -332,9 +333,9 @@ func (r *Runner) Run() error {
 				}
 			} else {
 				for host := range hosts {
-					if _, ok := seen[host]; !ok {
+					if _, ok := seenRemovedSubdomains[host]; !ok {
 						numRemovedSubdomains++
-						seen[host] = struct{}{}
+						seenRemovedSubdomains[host] = struct{}{}
 					}
 				}
 			}
