@@ -23,19 +23,21 @@ import (
 
 // Runner is a client for running the enumeration process.
 type Runner struct {
-	options            *Options
-	dnsx               *dnsx.DNSX
-	wgoutputworker     *sync.WaitGroup
-	wgresolveworkers   *sync.WaitGroup
-	wgwildcardworker   *sync.WaitGroup
-	workerchan         chan string
-	outputchan         chan string
-	wildcardworkerchan chan string
-	wildcards          map[string]struct{}
-	wildcardsmutex     sync.RWMutex
-	limiter            ratelimit.Limiter
-	hm                 *hybrid.HybridMap
-	stats              clistats.StatisticsClient
+	options             *Options
+	dnsx                *dnsx.DNSX
+	wgoutputworker      *sync.WaitGroup
+	wgresolveworkers    *sync.WaitGroup
+	wgwildcardworker    *sync.WaitGroup
+	workerchan          chan string
+	outputchan          chan string
+	wildcardworkerchan  chan string
+	wildcards           map[string]struct{}
+	wildcardsmutex      sync.RWMutex
+	wildcardscache      map[string][]string
+	wildcardscachemutex sync.Mutex
+	limiter             ratelimit.Limiter
+	hm                  *hybrid.HybridMap
+	stats               clistats.StatisticsClient
 }
 
 func New(options *Options) (*Runner, error) {
@@ -126,6 +128,7 @@ func New(options *Options) (*Runner, error) {
 		workerchan:         make(chan string),
 		wildcardworkerchan: make(chan string),
 		wildcards:          make(map[string]struct{}),
+		wildcardscache:     make(map[string][]string),
 		limiter:            limiter,
 		hm:                 hm,
 		stats:              stats,

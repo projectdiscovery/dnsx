@@ -27,24 +27,33 @@ func (r *Runner) IsWildcard(host string) bool {
 	// We use a rand prefix at the beginning like %rand%.domain.tld
 	// A permutation is generated for each level of the subdomain.
 	var hosts []string
-	hosts = append(hosts, xid.New().String()+"."+r.options.WildcardDomain)
+	hosts = append(hosts, r.options.WildcardDomain)
 
 	if len(subdomainTokens) > 0 {
 		for i := 1; i < len(subdomainTokens); i++ {
-			newhost := xid.New().String() + "." + strings.Join(subdomainTokens[i:], ".") + "." + r.options.WildcardDomain
+			newhost := strings.Join(subdomainTokens[i:], ".") + "." + r.options.WildcardDomain
 			hosts = append(hosts, newhost)
 		}
 	}
 
 	// Iterate over all the hosts generated for rand.
 	for _, h := range hosts {
-		in, err := r.dnsx.QueryOne(h)
-		if err != nil || in == nil {
-			continue
+		r.wildcardscachemutex.Lock()
+		listip, ok := r.wildcardscache[h]
+		r.wildcardscachemutex.Unlock()
+		if !ok {
+			in, err := r.dnsx.QueryOne(xid.New().String() + "." + h)
+			if err != nil || in == nil {
+				continue
+			}
+			listip = in.A
+			r.wildcardscachemutex.Lock()
+			r.wildcardscache[h] = in.A
+			r.wildcardscachemutex.Unlock()
 		}
 
 		// Get all the records and add them to the wildcard map
-		for _, A := range in.A {
+		for _, A := range listip {
 			if _, ok := wildcards[A]; !ok {
 				wildcards[A] = struct{}{}
 			}
