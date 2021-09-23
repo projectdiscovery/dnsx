@@ -21,11 +21,6 @@ import (
 	"go.uber.org/ratelimit"
 )
 
-type WildcardCheck struct {
-	A     string
-	Hosts map[string]struct{}
-}
-
 // Runner is a client for running the enumeration process.
 type Runner struct {
 	options            *Options
@@ -35,7 +30,7 @@ type Runner struct {
 	wgwildcardworker   *sync.WaitGroup
 	workerchan         chan string
 	outputchan         chan string
-	wildcardworkerchan chan WildcardCheck
+	wildcardworkerchan chan string
 	wildcards          map[string]struct{}
 	limiter            ratelimit.Limiter
 	hm                 *hybrid.HybridMap
@@ -128,7 +123,7 @@ func New(options *Options) (*Runner, error) {
 		wgresolveworkers:   &sync.WaitGroup{},
 		wgwildcardworker:   &sync.WaitGroup{},
 		workerchan:         make(chan string),
-		wildcardworkerchan: make(chan WildcardCheck),
+		wildcardworkerchan: make(chan string),
 		wildcards:          make(map[string]struct{}),
 		limiter:            limiter,
 		hm:                 hm,
@@ -311,9 +306,8 @@ func (r *Runner) Run() error {
 
 		for _, a := range listIPs {
 			hosts := ipDomain[a]
-			r.wildcardworkerchan <- WildcardCheck{
-				A:     a,
-				Hosts: hosts,
+			for host := range hosts {
+				r.wildcardworkerchan <- host
 			}
 		}
 		close(r.wildcardworkerchan)
@@ -325,17 +319,16 @@ func (r *Runner) Run() error {
 		seenRemovedSubdomains := make(map[string]struct{})
 		numRemovedSubdomains := 0
 		for _, A := range listIPs {
-			hosts := ipDomain[A]
-			if _, ok := r.wildcards[A]; !ok {
-				for host := range hosts {
-					if _, ok := seen[host]; ok {
-						continue
-					}
+			for host := range ipDomain[A] {
+				if host == r.options.WildcardDomain {
 					seen[host] = struct{}{}
 					r.outputchan <- host
-				}
-			} else {
-				for host := range hosts {
+				} else if _, ok := r.wildcards[host]; !ok {
+					if _, ok := seen[host]; !ok {
+						seen[host] = struct{}{}
+						r.outputchan <- host
+					}
+				} else {
 					if _, ok := seenRemovedSubdomains[host]; !ok {
 						numRemovedSubdomains++
 						seenRemovedSubdomains[host] = struct{}{}
@@ -539,37 +532,15 @@ func (r *Runner) Close() {
 func (r *Runner) wildcardWorker() {
 	defer r.wgwildcardworker.Done()
 
-	// process all items
 	for {
-		wildcardCheck, more := <-r.wildcardworkerchan
+		host, more := <-r.wildcardworkerchan
 		if !more {
 			break
 		}
-		hosts := wildcardCheck.Hosts
-		// We've stumbled upon a wildcard, just ignore it.
-		if _, ok := r.wildcards[wildcardCheck.A]; ok {
-			continue
-		}
 
-		// Perform wildcard detection on the ip, if an IP is found in the wildcard
-		// we add it to the wildcard map so that further runs don't require such filtering again.
-		if len(hosts) >= r.options.WildcardThreshold {
-			for host := range hosts {
-				isWildcard, ips := r.IsWildcard(host)
-				if len(ips) > 0 {
-					for ip := range ips {
-						// we add the single ip to the wildcard list
-						r.wildcards[ip] = struct{}{}
-					}
-				}
-
-				if isWildcard {
-					// we also mark the original ip as wildcard, since at least once it resolved to this host
-					r.wildcards[wildcardCheck.A] = struct{}{}
-					break
-				}
-			}
-			continue
+		if r.IsWildcard(host) {
+			// mark this host as a wildcard subdomain
+			r.wildcards[host] = struct{}{}
 		}
 	}
 }
