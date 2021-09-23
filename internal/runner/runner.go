@@ -32,6 +32,7 @@ type Runner struct {
 	outputchan         chan string
 	wildcardworkerchan chan string
 	wildcards          map[string]struct{}
+	wildcardsmutex     sync.RWMutex
 	limiter            ratelimit.Limiter
 	hm                 *hybrid.HybridMap
 	stats              clistats.StatisticsClient
@@ -306,8 +307,10 @@ func (r *Runner) Run() error {
 
 		for _, a := range listIPs {
 			hosts := ipDomain[a]
-			for host := range hosts {
-				r.wildcardworkerchan <- host
+			if len(hosts) >= r.options.WildcardThreshold {
+				for host := range hosts {
+					r.wildcardworkerchan <- host
+				}
 			}
 		}
 		close(r.wildcardworkerchan)
@@ -540,7 +543,9 @@ func (r *Runner) wildcardWorker() {
 
 		if r.IsWildcard(host) {
 			// mark this host as a wildcard subdomain
+			r.wildcardsmutex.Lock()
 			r.wildcards[host] = struct{}{}
+			r.wildcardsmutex.Unlock()
 		}
 	}
 }
