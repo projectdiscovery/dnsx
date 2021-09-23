@@ -265,7 +265,10 @@ func (r *Runner) Run() error {
 
 	r.wgresolveworkers.Wait()
 	if r.stats != nil {
-		r.stats.Stop()
+		err = r.stats.Stop()
+		if err != nil {
+			return err
+		}
 	}
 
 	close(r.outputchan)
@@ -539,35 +542,34 @@ func (r *Runner) wildcardWorker() {
 	// process all items
 	for {
 		wildcardCheck, more := <-r.wildcardworkerchan
-		if more {
-			hosts := wildcardCheck.Hosts
-			// We've stumbled upon a wildcard, just ignore it.
-			if _, ok := r.wildcards[wildcardCheck.A]; ok {
-				continue
-			}
+		if !more {
+			break
+		}
+		hosts := wildcardCheck.Hosts
+		// We've stumbled upon a wildcard, just ignore it.
+		if _, ok := r.wildcards[wildcardCheck.A]; ok {
+			continue
+		}
 
-			// Perform wildcard detection on the ip, if an IP is found in the wildcard
-			// we add it to the wildcard map so that further runs don't require such filtering again.
-			if len(hosts) >= r.options.WildcardThreshold {
-				for host := range hosts {
-					isWildcard, ips := r.IsWildcard(host)
-					if len(ips) > 0 {
-						for ip := range ips {
-							// we add the single ip to the wildcard list
-							r.wildcards[ip] = struct{}{}
-						}
-					}
-
-					if isWildcard {
-						// we also mark the original ip as wildcard, since at least once it resolved to this host
-						r.wildcards[wildcardCheck.A] = struct{}{}
-						break
+		// Perform wildcard detection on the ip, if an IP is found in the wildcard
+		// we add it to the wildcard map so that further runs don't require such filtering again.
+		if len(hosts) >= r.options.WildcardThreshold {
+			for host := range hosts {
+				isWildcard, ips := r.IsWildcard(host)
+				if len(ips) > 0 {
+					for ip := range ips {
+						// we add the single ip to the wildcard list
+						r.wildcards[ip] = struct{}{}
 					}
 				}
-				continue
+
+				if isWildcard {
+					// we also mark the original ip as wildcard, since at least once it resolved to this host
+					r.wildcards[wildcardCheck.A] = struct{}{}
+					break
+				}
 			}
-		} else {
-			break
+			continue
 		}
 	}
 }
