@@ -308,11 +308,15 @@ func (r *Runner) Run() error {
 			go r.wildcardWorker()
 		}
 
+		seen := make(map[string]struct{})
 		for _, a := range listIPs {
 			hosts := ipDomain[a]
 			if len(hosts) >= r.options.WildcardThreshold {
 				for host := range hosts {
-					r.wildcardworkerchan <- host
+					if _, ok := seen[host]; !ok {
+						seen[host] = struct{}{}
+						r.wildcardworkerchan <- host
+					}
 				}
 			}
 		}
@@ -321,7 +325,7 @@ func (r *Runner) Run() error {
 
 		// we need to restart output
 		r.startOutputWorker()
-		seen := make(map[string]struct{})
+		seen = make(map[string]struct{})
 		seenRemovedSubdomains := make(map[string]struct{})
 		numRemovedSubdomains := 0
 		for _, A := range listIPs {
