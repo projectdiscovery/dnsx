@@ -327,8 +327,10 @@ func (r *Runner) Run() error {
 		for _, A := range listIPs {
 			for host := range ipDomain[A] {
 				if host == r.options.WildcardDomain {
-					seen[host] = struct{}{}
-					r.outputchan <- host
+					if _, ok := seen[host]; !ok {
+						seen[host] = struct{}{}
+						r.outputchan <- host
+					}
 				} else if _, ok := r.wildcards[host]; !ok {
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
