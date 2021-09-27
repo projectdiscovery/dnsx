@@ -71,8 +71,8 @@ github.com/projectdiscovery/blackrock v0.0.0-20210415162320-b38689ae3a2e h1:7bwa
 github.com/projectdiscovery/blackrock v0.0.0-20210415162320-b38689ae3a2e/go.mod h1:/IsapnEYiWG+yEDPXp0e8NWj3npzB9Ccy9lXEUJwMZs=
 github.com/projectdiscovery/clistats v0.0.8 h1:tjmWb15mqsPf/yrQXVHLe2ThZX/5+mgKSfZBKWWLh20=
 github.com/projectdiscovery/clistats v0.0.8/go.mod h1:lV6jUHAv2bYWqrQstqW8iVIydKJhWlVaLl3Xo9ioVGg=
-github.com/projectdiscovery/fileutil v0.0.0-20210804142714-ebba15fa53ca h1:xT//ApxoeQRbt9GgL/122688bhGy9hur8YG0Qh69k5I=
-github.com/projectdiscovery/fileutil v0.0.0-20210804142714-ebba15fa53ca/go.mod h1:U+QCpQnX8o2N2w0VUGyAzjM3yBAe4BKedVElxiImsx0=
+github.com/projectdiscovery/fileutil v0.0.0-20210926202739-6050d0acf73c h1:KDmCXhLLnS/Gc1VDyTxxamRzc8OmHCm1X+f8WQoaTRs=
+github.com/projectdiscovery/fileutil v0.0.0-20210926202739-6050d0acf73c/go.mod h1:U+QCpQnX8o2N2w0VUGyAzjM3yBAe4BKedVElxiImsx0=
 github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c h1:1XRSp+44bhWudAWz+2+wHYJBHvDfE8mk9uWpzX+DU9k=
 github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c/go.mod h1:mBv7GRD5n3WNbFE9blG8ynzXTM5eh9MmwaK6EOyn6Pk=
 github.com/projectdiscovery/gologger v1.0.1/go.mod h1:Ok+axMqK53bWNwDSU1nTNwITLYMXMdZtRc8/y1c7sWE=
@@ -89,8 +89,8 @@ github.com/projectdiscovery/mapcidr v0.0.8 h1:16U05F2x3o/jSTsxSCY2hCuCs9xOSwVxjo
 github.com/projectdiscovery/mapcidr v0.0.8/go.mod h1:7CzdUdjuLVI0s33dQ33lWgjg3vPuLFw2rQzZ0RxkT00=
 github.com/projectdiscovery/reflectutil v0.0.0-20210804085554-4d90952bf92f h1:HR3R/nhELwLXufUlO1ZkKVqrZl4lN1cWFBdN8RcMuLo=
 github.com/projectdiscovery/reflectutil v0.0.0-20210804085554-4d90952bf92f/go.mod h1:3L0WfNIcVWXIDur8k+gKDLZLWY2F+rs0SQXtcn/3AYU=
-github.com/projectdiscovery/retryabledns v1.0.13-0.20210916165024-76c5b76fd59a h1:WJQjr9qi/VjWhdNiGyNqcFi0967Gp0W3I769bCpHOJE=
-github.com/projectdiscovery/retryabledns v1.0.13-0.20210916165024-76c5b76fd59a/go.mod h1:tXaLDs4n3pRZHwfa8mdXpUWe/AYDNK3HlWDjldhRbjI=
+github.com/projectdiscovery/retryabledns v1.0.13-0.20210927160332-db15799e2e4d h1:tFPD9+3lq+XMHpQ/zMMp41RdXEl90h+KZli7UQt1LNY=
+github.com/projectdiscovery/retryabledns v1.0.13-0.20210927160332-db15799e2e4d/go.mod h1:c5lCypH3Wv7PNRHFsTbmTWlOAV502VlqUmS9A/2wlNU=
 github.com/projectdiscovery/retryablehttp-go v1.0.2 h1:LV1/KAQU+yeWhNVlvveaYFsjBYRwXlNEq0PvrezMV0U=
 github.com/projectdiscovery/retryablehttp-go v1.0.2/go.mod h1:dx//aY9V247qHdsRf0vdWHTBZuBQ2vm6Dq5dagxrDYI=
 github.com/projectdiscovery/stringsutil v0.0.0-20210823090203-2f5f137e8e1d/go.mod h1:oTRc18WBv9t6BpaN9XBY+QmG28PUpsyDzRht56Qf49I=

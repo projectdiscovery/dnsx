@@ -40,6 +40,7 @@ func New(options *Options) (*Runner, error) {
 	dnsxOptions := dnsx.DefaultOptions
 	dnsxOptions.MaxRetries = options.Retries
 	dnsxOptions.TraceMaxRecursion = options.TraceMaxRecursion
+	dnsxOptions.Hostsfile = options.HostsFile
 
 	if options.Resolvers != "" {
 		dnsxOptions.BaseResolvers = []string{}
