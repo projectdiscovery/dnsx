@@ -23,17 +23,21 @@ import (
 
 // Runner is a client for running the enumeration process.
 type Runner struct {
-	options          *Options
-	dnsx             *dnsx.DNSX
-	wgoutputworker   *sync.WaitGroup
-	wgresolveworkers *sync.WaitGroup
-	wgwildcardworker *sync.WaitGroup
-	workerchan       chan string
-	outputchan       chan string
-	wildcardchan     chan struct{}
-	limiter          ratelimit.Limiter
-	hm               *hybrid.HybridMap
-	stats            clistats.StatisticsClient
+	options             *Options
+	dnsx                *dnsx.DNSX
+	wgoutputworker      *sync.WaitGroup
+	wgresolveworkers    *sync.WaitGroup
+	wgwildcardworker    *sync.WaitGroup
+	workerchan          chan string
+	outputchan          chan string
+	wildcardworkerchan  chan string
+	wildcards           map[string]struct{}
+	wildcardsmutex      sync.RWMutex
+	wildcardscache      map[string][]string
+	wildcardscachemutex sync.Mutex
+	limiter             ratelimit.Limiter
+	hm                  *hybrid.HybridMap
+	stats               clistats.StatisticsClient
 }
 
 func New(options *Options) (*Runner, error) {
@@ -116,16 +120,18 @@ func New(options *Options) (*Runner, error) {
 	}
 
 	r := Runner{
-		options:          options,
-		dnsx:             dnsX,
-		wgoutputworker:   &sync.WaitGroup{},
-		wgresolveworkers: &sync.WaitGroup{},
-		wgwildcardworker: &sync.WaitGroup{},
-		workerchan:       make(chan string),
-		wildcardchan:     make(chan struct{}),
-		limiter:          limiter,
-		hm:               hm,
-		stats:            stats,
+		options:            options,
+		dnsx:               dnsX,
+		wgoutputworker:     &sync.WaitGroup{},
+		wgresolveworkers:   &sync.WaitGroup{},
+		wgwildcardworker:   &sync.WaitGroup{},
+		workerchan:         make(chan string),
+		wildcardworkerchan: make(chan string),
+		wildcards:          make(map[string]struct{}),
+		wildcardscache:     make(map[string][]string),
+		limiter:            limiter,
+		hm:                 hm,
+		stats:              stats,
 	}
 
 	return &r, nil
@@ -257,21 +263,95 @@ func (r *Runner) Run() error {
 	r.startWorkers()
 
 	r.wgresolveworkers.Wait()
+	if r.stats != nil {
+		err = r.stats.Stop()
+		if err != nil {
+			return err
+		}
+	}
 
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
 
-	// we need to restart output
 	if r.options.WildcardDomain != "" {
-		r.startOutputWorker()
-	}
-	r.wildcardchan <- struct{}{}
-	r.wgwildcardworker.Wait()
+		gologger.Print().Msgf("Starting to filter wildcard subdomains\n")
+		ipDomain := make(map[string]map[string]struct{})
+		listIPs := []string{}
+		// prepare in memory structure similarly to shuffledns
+		r.hm.Scan(func(k, v []byte) error {
+			var dnsdata retryabledns.DNSData
+			err := dnsdata.Unmarshal(v)
+			if err != nil {
+				// the item has no record - ignore
+				return nil
+			}
 
-	// waiting output worker
-	if r.options.WildcardDomain != "" {
+			for _, a := range dnsdata.A {
+				_, ok := ipDomain[a]
+				if !ok {
+					ipDomain[a] = make(map[string]struct{})
+					listIPs = append(listIPs, a)
+				}
+				ipDomain[a][string(k)] = struct{}{}
+			}
+
+			return nil
+		})
+
+		// wildcard workers
+		numThreads := r.options.Threads
+		if numThreads > len(listIPs) {
+			numThreads = len(listIPs)
+		}
+		for i := 0; i < numThreads; i++ {
+			r.wgwildcardworker.Add(1)
+			go r.wildcardWorker()
+		}
+
+		seen := make(map[string]struct{})
+		for _, a := range listIPs {
+			hosts := ipDomain[a]
+			if len(hosts) >= r.options.WildcardThreshold {
+				for host := range hosts {
+					if _, ok := seen[host]; !ok {
+						seen[host] = struct{}{}
+						r.wildcardworkerchan <- host
+					}
+				}
+			}
+		}
+		close(r.wildcardworkerchan)
+		r.wgwildcardworker.Wait()
+
+		// we need to restart output
+		r.startOutputWorker()
+		seen = make(map[string]struct{})
+		seenRemovedSubdomains := make(map[string]struct{})
+		numRemovedSubdomains := 0
+		for _, A := range listIPs {
+			for host := range ipDomain[A] {
+				if host == r.options.WildcardDomain {
+					if _, ok := seen[host]; !ok {
+						seen[host] = struct{}{}
+						r.outputchan <- host
+					}
+				} else if _, ok := r.wildcards[host]; !ok {
+					if _, ok := seen[host]; !ok {
+						seen[host] = struct{}{}
+						r.outputchan <- host
+					}
+				} else {
+					if _, ok := seenRemovedSubdomains[host]; !ok {
+						numRemovedSubdomains++
+						seenRemovedSubdomains[host] = struct{}{}
+					}
+				}
+			}
+		}
 		close(r.outputchan)
+		// waiting output worker
 		r.wgoutputworker.Wait()
+		gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
 	}
 
 	return nil
@@ -332,10 +412,6 @@ func (r *Runner) startWorkers() {
 		r.wgresolveworkers.Add(1)
 		go r.worker()
 	}
-
-	// wildcard worker
-	r.wgwildcardworker.Add(1)
-	go r.wildcardWorker()
 }
 
 func (r *Runner) worker() {
@@ -465,80 +541,20 @@ func (r *Runner) Close() {
 	r.hm.Close()
 }
 
-// TODO - wip - just ignore
 func (r *Runner) wildcardWorker() {
 	defer r.wgwildcardworker.Done()
 
-	<-r.wildcardchan
-
-	if r.hm == nil {
-		return
-	}
-
-	wildcards := make(map[string]struct{})
-	ipDomain := make(map[string]map[string]struct{})
-
-	// prepare in memory structure similarly to shuffledns
-	r.hm.Scan(func(k, v []byte) error {
-		var dnsdata retryabledns.DNSData
-		err := dnsdata.Unmarshal(v)
-		if err != nil {
-			// the item has no record - ignore
-			return nil
+	for {
+		host, more := <-r.wildcardworkerchan
+		if !more {
+			break
 		}
 
-		for _, a := range dnsdata.A {
-			_, ok := ipDomain[a]
-			if !ok {
-				ipDomain[a] = make(map[string]struct{})
-			}
-			ipDomain[a][string(k)] = struct{}{}
-		}
-
-		return nil
-	})
-
-	// process all items
-	for A, hosts := range ipDomain {
-		// We've stumbled upon a wildcard, just ignore it.
-		if _, ok := wildcards[A]; ok {
-			continue
-		}
-
-		// Perform wildcard detection on the ip, if an IP is found in the wildcard
-		// we add it to the wildcard map so that further runs don't require such filtering again.
-		if len(hosts) >= r.options.WildcardThreshold {
-			for host := range hosts {
-				isWildcard, ips := r.IsWildcard(host)
-				if len(ips) > 0 {
-					for ip := range ips {
-						// we add the single ip to the wildcard list
-						wildcards[ip] = struct{}{}
-					}
-				}
-
-				if isWildcard {
-					// we also mark the original ip as wildcard, since at least once it resolved to this host
-					wildcards[A] = struct{}{}
-					break
-				}
-			}
-			continue
+		if r.IsWildcard(host) {
+			// mark this host as a wildcard subdomain
+			r.wildcardsmutex.Lock()
+			r.wildcards[host] = struct{}{}
+			r.wildcardsmutex.Unlock()
 		}
 	}
-
-	seen := make(map[string]struct{})
-	// print out valid ones for testing purposes only
-	for A, hosts := range ipDomain {
-		if _, ok := wildcards[A]; !ok {
-			for host := range hosts {
-				if _, ok := seen[host]; ok {
-					continue
-				}
-				seen[host] = struct{}{}
-				r.outputchan <- host
-			}
-		}
-	}
-
 }
