@@ -52,6 +52,7 @@ type Options struct {
 	Resume            bool
 	resumeCfg         *ResumeCfg
 	FlushInterval     int
+	HostsFile         bool
 }
 
 // ShouldLoadResume resume file
@@ -96,6 +97,7 @@ func ParseOptions() *Options {
 	flag.StringVar(&options.RCode, "rcode", "", "Response codes (eg. -rcode 0,1,2 or -rcode noerror,nxdomain)")
 	flag.BoolVar(&options.Resume, "resume", false, "Resume")
 	flag.IntVar(&options.FlushInterval, "flush-interval", 10, "Flush interval of output file")
+	flag.BoolVar(&options.HostsFile, "hostsfile", false, "Parse host file")
 
 	flag.Parse()
 

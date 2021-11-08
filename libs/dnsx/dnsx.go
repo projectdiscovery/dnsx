@@ -3,9 +3,9 @@ package dnsx
 import (
 	"errors"
 	"math"
-	"net"
 
 	miekgdns "github.com/miekg/dns"
+	"github.com/projectdiscovery/iputil"
 	retryabledns "github.com/projectdiscovery/retryabledns"
 )
 
@@ -22,6 +22,7 @@ type Options struct {
 	QuestionTypes     []uint16
 	Trace             bool
 	TraceMaxRecursion int
+	Hostsfile         bool
 }
 
 // DefaultOptions contains the default configuration options
@@ -30,6 +31,7 @@ var DefaultOptions = Options{
 	MaxRetries:        5,
 	QuestionTypes:     []uint16{miekgdns.TypeA},
 	TraceMaxRecursion: math.MaxUint16,
+	Hostsfile:         true,
 }
 
 // DefaultResolvers contains the list of resolvers known to be trusted.
@@ -42,14 +44,20 @@ var DefaultResolvers = []string{
 
 // New creates a dns resolver
 func New(options Options) (*DNSX, error) {
-	dnsClient := retryabledns.New(options.BaseResolvers, options.MaxRetries)
+	retryablednsOptions := retryabledns.Options{
+		BaseResolvers: options.BaseResolvers,
+		MaxRetries:    options.MaxRetries,
+		Hostsfile:     options.Hostsfile,
+	}
+
+	dnsClient := retryabledns.NewWithOptions(retryablednsOptions)
 
 	return &DNSX{dnsClient: dnsClient, Options: &options}, nil
 }
 
 // Lookup performs a DNS A question and returns corresponding IPs
 func (d *DNSX) Lookup(hostname string) ([]string, error) {
-	if ip := net.ParseIP(hostname); ip != nil {
+	if iputil.IsIP(hostname) {
 		return []string{hostname}, nil
 	}
 
