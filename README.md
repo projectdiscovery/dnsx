@@ -58,7 +58,7 @@ This will display help for the tool. Here are all the switches it supports.
 
 | Flag                | Description                        | Example               |
 | ------------------- | ---------------------------------- | --------------------- |
-| RATE-LIMIT:        |                                    |                       | 
+| RATE-LIMIT:         |                                    |                       | 
 | t                   | Concurrent threads to make         | dnsx -t 100           |
 | rl                  | Limit of DNS request/second        | dnsx -rl 100          |
 | OUTPUT:             |                                    |                       | 
