@@ -2,7 +2,6 @@ package runner
 
 import (
 	"errors"
-	"flag"
 	"math"
 	"os"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/goconfig"
+	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
 )
@@ -68,39 +68,67 @@ func (options *Options) ShouldSaveResume() bool {
 // ParseOptions parses the command line options for application
 func ParseOptions() *Options {
 	options := &Options{}
-	flag.StringVar(&options.Resolvers, "r", "", "List of resolvers (file or comma separated)")
-	flag.StringVar(&options.Hosts, "l", "", "File input with list of subdomains")
-	flag.IntVar(&options.Threads, "t", 100, "Number of concurrent threads to make")
-	flag.IntVar(&options.Retries, "retry", 1, "Number of DNS retries")
-	flag.IntVar(&options.RateLimit, "rl", -1, "Number of DNS request/second")
-	flag.StringVar(&options.OutputFile, "o", "", "File to write output to (optional)")
-	flag.BoolVar(&options.Raw, "raw", false, "Operates like dig")
-	flag.BoolVar(&options.Silent, "silent", false, "Show only results in the output")
-	flag.BoolVar(&options.Verbose, "verbose", false, "Verbose output")
-	flag.BoolVar(&options.Version, "version", false, "Show version of dnsx")
-	flag.BoolVar(&options.Response, "resp", false, "Display response data")
-	flag.BoolVar(&options.ResponseOnly, "resp-only", false, "Display response data only")
-	flag.BoolVar(&options.A, "a", false, "Query A record")
-	flag.BoolVar(&options.AAAA, "aaaa", false, "Query AAAA record")
-	flag.BoolVar(&options.NS, "ns", false, "Query NS record")
-	flag.BoolVar(&options.CNAME, "cname", false, "Query CNAME record")
-	flag.BoolVar(&options.PTR, "ptr", false, "Query PTR record")
-	flag.BoolVar(&options.MX, "mx", false, "Query MX record")
-	flag.BoolVar(&options.SOA, "soa", false, "Query SOA record")
-	flag.BoolVar(&options.TXT, "txt", false, "Query TXT record")
-	flag.BoolVar(&options.JSON, "json", false, "JSON output")
-	flag.IntVar(&options.WildcardThreshold, "wt", 5, "Wildcard Filter Threshold")
-	flag.StringVar(&options.WildcardDomain, "wd", "", "Wildcard Top level domain for wildcard filtering (other flags will be ignored)")
-	flag.BoolVar(&options.ShowStatistics, "stats", false, "Display stats of the running scan")
-	flag.BoolVar(&options.Trace, "trace", false, "Perform dns trace")
-	flag.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace")
-	flag.StringVar(&options.RCode, "rcode", "", "Response codes (eg. -rcode 0,1,2 or -rcode noerror,nxdomain)")
-	flag.BoolVar(&options.Resume, "resume", false, "Resume")
-	flag.IntVar(&options.FlushInterval, "flush-interval", 10, "Flush interval of output file")
-	flag.BoolVar(&options.HostsFile, "hostsfile", false, "Parse host file")
+	flagSet := goflags.NewFlagSet()
+	flagSet.SetDescription(`dnsx is a fast and multi-purpose DNS toolkit allow to run multiple probes using [retryabledns](https://github.com/projectdiscovery/retryabledns) library, that allows you to perform multiple DNS queries of your choice with a list of user supplied resolvers, additionally supports DNS wildcard filtering like [shuffledns](https://github.com/projectdiscovery/shuffledns).`)
 
-	flag.Parse()
+	createGroup(flagSet, "rate-limit", "Rate-limit",
+	flagSet.IntVar(&options.Threads, "t", 100, "Number of concurrent threads to make"),
+	flagSet.IntVar(&options.RateLimit, "rl", -1, "Number of DNS request/second"),
+	)
 
+	createGroup(flagSet, "output", "Output",
+	flagSet.StringVar(&options.OutputFile, "o", "", "File to write output to (optional)"),
+	flagSet.BoolVar(&options.JSON, "json", false, "JSON output"),
+	)
+
+	createGroup(flagSet, "debug", "Debug",
+	flagSet.BoolVar(&options.Silent, "silent", false, "Show only results in the output"),
+	flagSet.BoolVar(&options.Verbose, "verbose", false, "Verbose output"),
+	flagSet.BoolVar(&options.Version, "version", false, "Show version of dnsx"),
+	flagSet.BoolVar(&options.ShowStatistics, "stats", false, "Display stats of the running scan"),
+	flagSet.BoolVar(&options.Response, "resp", false, "Display response data"),
+	)
+
+	createGroup(flagSet, "input", "Input",
+	flagSet.StringVar(&options.Resolvers, "r", "", "List of resolvers (file or comma separated)"),
+	flagSet.StringVar(&options.Hosts, "l", "", "File input with list of subdomains"),
+	)
+
+	createGroup(flagSet, "optimization", "Optimization",
+	flagSet.IntVar(&options.Retries, "retry", 1, "Number of DNS retries"),
+	flagSet.IntVar(&options.FlushInterval, "flush-interval", 10, "Flush interval of output file"),
+	)
+
+	createGroup(flagSet, "record-type", "Record-Type",
+	flagSet.BoolVar(&options.A, "a", false, "Query A record"),
+	flagSet.BoolVar(&options.AAAA, "aaaa", false, "Query AAAA record"),
+	flagSet.BoolVar(&options.NS, "ns", false, "Query NS record"),
+	flagSet.BoolVar(&options.CNAME, "cname", false, "Query CNAME record"),
+	flagSet.BoolVar(&options.PTR, "ptr", false, "Query PTR record"),
+	flagSet.BoolVar(&options.MX, "mx", false, "Query MX record"),
+	flagSet.BoolVar(&options.SOA, "soa", false, "Query SOA record"),
+	flagSet.BoolVar(&options.TXT, "txt", false, "Query TXT record"),
+    )
+
+	createGroup(flagSet, "filters", "Filtering",
+	flagSet.IntVar(&options.WildcardThreshold, "wt", 5, "Wildcard Filter Threshold"),
+	flagSet.StringVar(&options.WildcardDomain, "wd", "", "Wildcard Top level domain for wildcard filtering (other flags will be ignored)"),
+	flagSet.BoolVar(&options.ResponseOnly, "resp-only", false, "Display response data only"),
+	)
+
+	createGroup(flagSet, "configs", "Configurations",
+	flagSet.BoolVar(&options.Raw, "raw", false, "Operates like dig"),
+	flagSet.BoolVar(&options.Trace, "trace", false, "Perform dns trace"),
+	flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace"),
+	flagSet.StringVar(&options.RCode, "rcode", "", "Response codes (eg. -rcode 0,1,2 or -rcode noerror,nxdomain)"),
+	flagSet.BoolVar(&options.Resume, "resume", false, "Resume"),
+	flagSet.BoolVar(&options.HostsFile, "hostsfile", false, "Parse host file"),
+	)
+
+	_ = flagSet.Parse()
+	
+
+	
 	// Read the inputs and configure the logging
 	options.configureOutput()
 
@@ -218,3 +246,10 @@ func (options *Options) configureResume() error {
 	}
 	return nil
 }
+
+func createGroup(flagSet *goflags.FlagSet, groupName, description string, flags ...*goflags.FlagData) {
+	flagSet.SetGroup(groupName, description)
+	for _, currentFlag := range flags {
+		currentFlag.Group(groupName)
+	}
+}	

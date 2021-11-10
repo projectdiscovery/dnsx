@@ -58,6 +58,25 @@ This will display help for the tool. Here are all the switches it supports.
 
 | Flag                | Description                        | Example               |
 | ------------------- | ---------------------------------- | --------------------- |
+| RATE-LIMIT:        |                                    |                       | 
+| t                   | Concurrent threads to make         | dnsx -t 100           |
+| rl                  | Limit of DNS request/second        | dnsx -rl 100          |
+| OUTPUT:             |                                    |                       | 
+| o                   | File to write output to (optional) | dnsx -o output.txt    |
+| json                | JSON output                        | dnsx -json            |
+| DEBUG:              |                                    |                       | 
+| silent              | Show only results in the output    | dnsx -silent          |
+| verbose             | Verbose output                     | dnsx -verbose         |
+| version             | Show version of dnsx               | dnsx -version         |
+| stats               | Display stats of the running scan  | dnsx -stats           |
+| resp                | Display response data              | dnsx -cname -resp     |
+| INPUT:              |                                    |                       | 
+| r                   | File or comma separated resolvers  | dnsx -r 1.1.1.1       |
+| l                   | File input list of subdomains/host | dnsx -l list.txt      |
+|OPTIMIZATION:        |                                    |                       | 
+| retry               | Number of DNS retries              | dnsx -retry 1         |
+| flush-interval      | Flush interval of output file      | dnsx-flush-interval 10|  
+|RECORD-TYPE:         |                                    |                       | 
 | a                   | Query A record                     | dnsx -a               |
 | aaaa                | Query AAAA record                  | dnsx -aaaa            |
 | cname               | Query CNAME record                 | dnsx -cname           |
@@ -66,25 +85,18 @@ This will display help for the tool. Here are all the switches it supports.
 | txt                 | Query TXT record                   | dnsx -txt             |
 | mx                  | Query MX record                    | dnsx -mx              |
 | soa                 | Query SOA record                   | dnsx -soa             |
-| raw                 | Operates like dig                  | dnsx -raw             |
-| rcode               | DNS Response codes                 | dnsx -rcode 0,1,2     |
-| l                   | File input list of subdomains/host | dnsx -l list.txt      |
-| json                | JSON output                        | dnsx -json            |
-| r                   | File or comma separated resolvers  | dnsx -r 1.1.1.1       |
-| rl                  | Limit of DNS request/second        | dnsx -rl 100          |
-| resp                | Display response data              | dnsx -cname -resp     |
-| resp-only           | Display only response data         | dnsx -cname resp-only |
-| retry               | Number of DNS retries              | dnsx -retry 1         |
-| silent              | Show only results in the output    | dnsx -silent          |
-| stats               | Display stats of the running scan  | dnsx -stats           |
-| o                   | File to write output to (optional) | dnsx -o output.txt    |
-| t                   | Concurrent threads to make         | dnsx -t 100           |
-| trace               | Perform dns trace                  | dnsx -trace           |
-| trace-max-recursion | Max recursion for dns trace        | dnsx -t 32767         |
-| verbose             | Verbose output                     | dnsx -verbose         |
-| version             | Show version of dnsx               | dnsx -version         |
+|FILTERING:           |                                    |                       | 
 | wd                  | Wildcard domain name for filtering | dnsx -wd example.com  |
 | wt                  | Wildcard Filter Threshold          | dnsx -wt 5            |
+| resp-only           | Display only response data         | dnsx -cname resp-only |
+|CONFIGURATIONS:      |                                    |                       | 
+| raw                 | Operates like dig                  | dnsx -raw             |
+| rcode               | DNS Response codes                 | dnsx -rcode 0,1,2     |
+| trace               | Perform dns trace                  | dnsx -trace           |
+| trace-max-recursion | Max recursion for dns trace        | dnsx -t 32767         |
+| resume              | Resume                             | dnsx -resume          |
+| hostsfile           | Parse host file                    | dnsx -hostsfile       |
+
 
 
 # Installation Instructions
