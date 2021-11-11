@@ -56,44 +56,63 @@ dnsx -h
 
 This will display help for the tool. Here are all the switches it supports.
 
-| Flag                | Description                        | Example               |
-| ------------------- | ---------------------------------- | --------------------- |
-| a                   | Query A record                     | dnsx -a               |
-| aaaa                | Query AAAA record                  | dnsx -aaaa            |
-| cname               | Query CNAME record                 | dnsx -cname           |
-| ns                  | Query NS record                    | dnsx -ns              |
-| ptr                 | Query PTR record                   | dnsx -ptr             |
-| txt                 | Query TXT record                   | dnsx -txt             |
-| mx                  | Query MX record                    | dnsx -mx              |
-| soa                 | Query SOA record                   | dnsx -soa             |
-| raw                 | Operates like dig                  | dnsx -raw             |
-| rcode               | DNS Response codes                 | dnsx -rcode 0,1,2     |
-| l                   | File input list of subdomains/host | dnsx -l list.txt      |
-| json                | JSON output                        | dnsx -json            |
-| r                   | File or comma separated resolvers  | dnsx -r 1.1.1.1       |
-| rl                  | Limit of DNS request/second        | dnsx -rl 100          |
-| resp                | Display response data              | dnsx -cname -resp     |
-| resp-only           | Display only response data         | dnsx -cname resp-only |
-| retry               | Number of DNS retries              | dnsx -retry 1         |
-| silent              | Show only results in the output    | dnsx -silent          |
-| stats               | Display stats of the running scan  | dnsx -stats           |
-| o                   | File to write output to (optional) | dnsx -o output.txt    |
-| t                   | Concurrent threads to make         | dnsx -t 100           |
-| trace               | Perform dns trace                  | dnsx -trace           |
-| trace-max-recursion | Max recursion for dns trace        | dnsx -t 32767         |
-| verbose             | Verbose output                     | dnsx -verbose         |
-| version             | Show version of dnsx               | dnsx -version         |
-| wd                  | Wildcard domain name for filtering | dnsx -wd example.com  |
-| wt                  | Wildcard Filter Threshold          | dnsx -wt 5            |
+```console
+INPUT:
+   -l, -list string  File input with list of sub(domains)/hosts
+
+QUERY:
+   -a      Query A record (default)
+   -aaaa   Query AAAA record
+   -cname  Query CNAME record
+   -ns     Query NS record
+   -txt    Query TXT record
+   -ptr    Query PTR record
+   -mx     Query MX record
+   -soa    Query SOA record
+
+FILTERS:
+   -resp               Display DNS response
+   -resp-only          Display DNS response only
+   -rcode, -rc string  Display DNS status code (eg. -rcode noerror,servfail,refused)
+
+RATE-LIMIT:
+   -t, -c int            Number of concurrent threads to use (default 100)
+   -rl, -rate-limit int  Number of DNS request/second (disabled as default) (default -1)
+
+OUTPUT:
+   -o, -output string  File to write output (optional)
+   -json               Write output in JSONL(ines) format
+
+DEBUG:
+   -silent       Show only results in the output
+   -v, -verbose  Verbose output
+   -raw, -debug  Display RAW DNS response
+   -stats        Display stats of the running scan
+   -version      Show version of dnsx
+
+OPTIMIZATION:
+   -retry int                Number of DNS retries (default 1)
+   -hf, -hostsfile           Parse system host file
+   -trace                    Perform DNS trace
+   -trace-max-recursion int  Max recursion for dns trace (default 32767)
+   -flush-interval int       Flush interval of output file (default 10)
+   -resume                   Resume
+
+CONFIGURATIONS:
+   -r, -resolver string          List of resolvers (file or comma separated)
+   -wt, -wildcard-threshold int  Wildcard Filter Threshold (default 5)
+   -wd, -wildcard-domain string  Domain name for wildcard filtering (other flags will be ignored)
+```
+
 
 
 # Installation Instructions
 
 
-dnsx requires **go1.16+** to install successfully. Run the following command to get the repo -
+dnsx requires **go1.17** to install successfully. Run the following command to get the repo -
 
 ```sh
-go get -v github.com/projectdiscovery/dnsx/cmd/dnsx
+go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
 ```
 
 ### Running dnsx
