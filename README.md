@@ -155,7 +155,7 @@ support.hackerone.com [104.16.53.111]
 **dnsx** can be used to extract **A** records for the given list of subdomains, for example:-
 
 ```sh
-▶ subfinder -silent -d hackerone.com | dnsx -silent -a -resp-only
+subfinder -silent -d hackerone.com | dnsx -silent -a -resp-only
 
 104.16.99.52
 104.16.100.52
