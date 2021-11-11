@@ -1,21 +1,35 @@
+before:
+  hooks:
+    - go mod tidy
+
 builds:
-    - binary: dnsx
-      main: cmd/dnsx/dnsx.go
-      goos:
-        - linux
-        - windows
-        - darwin
-      goarch:
-        - amd64
-        - 386
-        - arm
-        - arm64
-  
+- env:
+  - CGO_ENABLED=0
+  goos:
+    - windows
+    - linux
+    - darwin
+  goarch:
+    - amd64
+    - 386
+    - arm
+    - arm64
+
+  ignore:
+    - goos: darwin
+      goarch: '386'
+    - goos: windows
+      goarch: 'arm'
+    - goos: windows
+      goarch: 'arm64'
+
+  binary: '{{ .ProjectName }}'
+  main: cmd/dnsx/dnsx.go
+
 archives:
-    - id: tgz
-      format: tar.gz
-      replacements:
-          darwin: macOS
-      format_overrides:
-          - goos: windows
-            format: zip
+- format: zip
+  replacements:
+      darwin: macOS
+
+checksum:
+  algorithm: sha256
