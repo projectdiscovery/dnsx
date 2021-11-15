@@ -1,0 +1,31 @@
+www.example.com {{binary}}
+www.example.com {{binary}} -r http://example.com -retry 5 -resp
+www.example.com {{binary}} -l file.txt
+www.example.com {{binary}} -t 10
+www.example.com {{binary}} -retry 1 -o file.txt
+www.example.com {{binary}} -rl 5
+www.example.com {{binary}} -o file.txt -version
+www.example.com {{binary}} -raw
+www.example.com {{binary}} -silent
+www.example.com {{binary}} -verbose
+www.example.com {{binary}} -version -ptr
+www.example.com {{binary}} -resp  -cname
+www.example.com {{binary}} -resp-only
+www.example.com {{binary}} -a 
+www.example.com {{binary}} -aaaa
+www.example.com {{binary}} -ns
+www.example.com {{binary}} -cname
+www.example.com {{binary}} -ptr
+www.example.com {{binary}} -mx -resp-only
+www.example.com {{binary}} -soa
+www.example.com {{binary}} -txt -silent
+www.example.com {{binary}} -json -verbose
+www.example.com {{binary}} -wt 5
+www.example.com {{binary}} -wd 
+www.example.com {{binary}} -stats
+www.example.com {{binary}} -trace -wd
+www.example.com {{binary}} -trace-max-recursion 1
+www.example.com {{binary}} -rcode 0,1,2 -raw
+www.example.com {{binary}} -resume -verbose
+www.example.com {{binary}} -flush-interval 10
+www.example.com {{binary}} -hostsfile file.txt -resp

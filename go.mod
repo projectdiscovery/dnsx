@@ -7,6 +7,7 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.43
 	github.com/onsi/gomega v1.16.0 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/clistats v0.0.8
 	github.com/projectdiscovery/fileutil v0.0.0-20210926202739-6050d0acf73c
 	github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c
