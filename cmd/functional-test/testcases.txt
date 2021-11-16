@@ -1,10 +1,10 @@
 www.example.com {{binary}}
 www.example.com {{binary}} -r http://example.com -retry 5 -resp
-www.example.com {{binary}} -l file.txt
+www.example.com {{binary}} -l test-data/file.txt
 www.example.com {{binary}} -t 10
-www.example.com {{binary}} -retry 1 -o file.txt
+www.example.com {{binary}} -retry 1 -o log.txt
 www.example.com {{binary}} -rl 5
-www.example.com {{binary}} -o file.txt -version
+www.example.com {{binary}} -o log.txt -version
 www.example.com {{binary}} -raw
 www.example.com {{binary}} -silent
 www.example.com {{binary}} -verbose
@@ -28,4 +28,4 @@ www.example.com {{binary}} -trace-max-recursion 1
 www.example.com {{binary}} -rcode 0,1,2 -raw
 www.example.com {{binary}} -resume -verbose
 www.example.com {{binary}} -flush-interval 10
-www.example.com {{binary}} -hostsfile file.txt -resp
+www.example.com {{binary}} -hostsfile test-data/file.txt -resp
