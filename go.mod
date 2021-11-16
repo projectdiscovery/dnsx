@@ -11,6 +11,7 @@ require (
 	github.com/projectdiscovery/clistats v0.0.8
 	github.com/projectdiscovery/fileutil v0.0.0-20210926202739-6050d0acf73c
 	github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c
+	github.com/projectdiscovery/goflags v0.0.7 // indirect
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/hmap v0.0.1
 	github.com/projectdiscovery/iputil v0.0.0-20210804143329-3a30fcde43f3
