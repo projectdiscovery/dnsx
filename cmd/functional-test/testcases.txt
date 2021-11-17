@@ -1,0 +1,22 @@
+example.com {{binary}} -silent
+example.com {{binary}} -silent -l test-data/file.txt
+example.com {{binary}} -silent -raw
+example.com {{binary}} -silent -resp
+example.com {{binary}} -silent -resp-only
+example.com {{binary}} -silent -a
+example.com {{binary}} -silent -a -resp 
+example.com {{binary}} -silent -aaaa
+example.com {{binary}} -silent -aaaa -resp 
+example.com {{binary}} -silent -ns
+example.com {{binary}} -silent -ns -resp
+example.com {{binary}} -silent -mx
+example.com {{binary}} -silent -mx -resp
+example.com {{binary}} -silent -soa
+example.com {{binary}} -silent -soa -resp
+example.com {{binary}} -silent -txt
+example.com {{binary}} -silent -txt -resp
+example.com {{binary}} -silent -rcode 0,1,2
+1.1.1.1 {{binary}} -silent -ptr
+1.1.1.1 {{binary}} -silent -ptr -resp
+www.projectdiscovery.io {{binary}} -silent -cname
+www.projectdiscovery.io {{binary}} -silent -cname -resp
