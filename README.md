@@ -48,6 +48,15 @@
  - Handles wildcard subdomains in automated way.
  - **Stdin** and **stdout** support to work with other tools.
 
+# Installation Instructions
+
+
+dnsx requires **go1.17** to install successfully. Run the following command to get the repo -
+
+```sh
+go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
+```
+
 # Usage
 
 ```sh
@@ -102,17 +111,6 @@ CONFIGURATIONS:
    -r, -resolver string          List of resolvers (file or comma separated)
    -wt, -wildcard-threshold int  Wildcard Filter Threshold (default 5)
    -wd, -wildcard-domain string  Domain name for wildcard filtering (other flags will be ignored)
-```
-
-
-
-# Installation Instructions
-
-
-dnsx requires **go1.17** to install successfully. Run the following command to get the repo -
-
-```sh
-go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
 ```
 
 ### Running dnsx
