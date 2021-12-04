@@ -111,7 +111,7 @@ func ParseOptions() *Options {
 	)
 
 	createGroup(flagSet, "optimization", "Optimization",
-		flagSet.IntVar(&options.Retries, "retry", 1, "Number of DNS retries"),
+		flagSet.IntVar(&options.Retries, "retry", 2, "Number of DNS retries"),
 		flagSet.BoolVarP(&options.HostsFile, "hostsfile", "hf", false, "Parse system host file"),
 		flagSet.BoolVar(&options.Trace, "trace", false, "Perform DNS trace"),
 		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace"),
