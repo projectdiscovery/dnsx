@@ -3,6 +3,7 @@ package runner
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
@@ -168,34 +169,48 @@ func (r *Runner) prepareInput() error {
 			return err
 		}
 		defer f.Close()
-	} else if r.options.WordDictFile != "" {
-		if r.options.Domain != "" {
-			var err error
-			f, err = os.Open(r.options.WordDictFile)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-		} else {
-			return fmt.Errorf("domain not provided")
+	} else if r.options.WordListFile != "" {
+		var err error
+		f, err = os.Open(r.options.WordListFile)
+		if err != nil {
+			return err
 		}
+		defer f.Close()
 	} else if (stat.Mode() & os.ModeCharDevice) == 0 {
 		f = os.Stdin
 	} else {
 		return fmt.Errorf("hosts file or stdin not provided")
 	}
 
+	var domains []string
+	if r.options.Domain != "" {
+		domains = []string{r.options.Domain}
+	} else if r.options.DomainsFile != "" {
+		content, err := ioutil.ReadFile(r.options.DomainsFile)
+		if err != nil {
+			return err
+		}
+		domains = strings.Split(string(content), "\n")
+	}
+
 	numHosts := 0
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
 		item := strings.TrimSpace(sc.Text())
-		if r.options.Domain != "" {
-			item = item + "." + r.options.Domain
+		var hosts []string
+		if len(domains) != 0 {
+			var subdomain string
+			for _, domain := range domains {
+				subdomain = item + "." + strings.TrimSpace(domain)
+				hosts = append(hosts, subdomain)
+			}
+		} else {
+			hosts = []string{item}
+			if iputil.IsCIDR(item) {
+				hosts, _ = mapcidr.IPAddresses(item)
+			}
 		}
-		hosts := []string{item}
-		if iputil.IsCIDR(item) {
-			hosts, _ = mapcidr.IPAddresses(item)
-		}
+
 		for _, host := range hosts {
 			// Used just to get the exact number of targets
 			if _, ok := r.hm.Get(host); ok {
