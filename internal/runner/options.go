@@ -162,6 +162,10 @@ func (options *Options) validateOptions() {
 	if options.Response && options.ResponseOnly {
 		gologger.Fatal().Msgf("resp and resp-only can't be used at the same time")
 	}
+
+	if (options.Domain != "" || options.DomainsFile != "") && options.Hosts != "" {
+		gologger.Fatal().Msgf("-l and -d/-dL can't be used at the same time")
+	}
 }
 
 // configureOutput configures the output on the screen
