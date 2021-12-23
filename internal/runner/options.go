@@ -166,6 +166,10 @@ func (options *Options) validateOptions() {
 	if (options.Domain != "" || options.DomainsFile != "") && options.Hosts != "" {
 		gologger.Fatal().Msgf("-l and -d/-dL can't be used at the same time")
 	}
+
+	if (options.Domain != "" || options.DomainsFile != "") && options.WordListFile == "" {
+		gologger.Fatal().Msgf("-d/-dL must set wordlist(-w)")
+	}
 }
 
 // configureOutput configures the output on the screen
