@@ -167,7 +167,7 @@ func (options *Options) validateOptions() {
 		gologger.Fatal().Msgf("-l and -d/-dL can't be used at the same time")
 	}
 
-	if (options.Domain != "" || options.DomainsFile != "") && options.WordListFile == "" {
+	if (options.Domain != "" || options.DomainsFile != "") && (options.WordListFile == "" && !fileutil.HasStdin()) {
 		gologger.Fatal().Msgf("-d/-dL must set wordlist(-w)")
 	}
 }
