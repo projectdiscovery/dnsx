@@ -21,6 +21,8 @@ const (
 type Options struct {
 	Resolvers         string
 	Hosts             string
+	Domain            string
+	WordDictFile      string
 	Threads           int
 	RateLimit         int
 	Retries           int
@@ -73,6 +75,8 @@ func ParseOptions() *Options {
 
 	createGroup(flagSet, "input", "Input",
 		flagSet.StringVarP(&options.Hosts, "list", "l", "", "File input with list of sub(domains)/hosts"),
+		flagSet.StringVarP(&options.Domain, "domain", "d", "", "Domain or Host"),
+		flagSet.StringVarP(&options.WordDictFile, "word", "w", "", "File input with list of subdomain dict"),
 	)
 
 	createGroup(flagSet, "query", "Query",

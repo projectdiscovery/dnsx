@@ -168,6 +168,17 @@ func (r *Runner) prepareInput() error {
 			return err
 		}
 		defer f.Close()
+	} else if r.options.WordDictFile != "" {
+		if r.options.Domain != "" {
+			var err error
+			f, err = os.Open(r.options.WordDictFile)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+		} else {
+			return fmt.Errorf("domain not provided")
+		}
 	} else if (stat.Mode() & os.ModeCharDevice) == 0 {
 		f = os.Stdin
 	} else {
@@ -178,6 +189,9 @@ func (r *Runner) prepareInput() error {
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
 		item := strings.TrimSpace(sc.Text())
+		if r.options.Domain != "" {
+			item = item + "." + r.options.Domain
+		}
 		hosts := []string{item}
 		if iputil.IsCIDR(item) {
 			hosts, _ = mapcidr.IPAddresses(item)
