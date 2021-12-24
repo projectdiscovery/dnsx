@@ -169,28 +169,20 @@ func (r *Runner) prepareInput() error {
 			return err
 		}
 		defer f.Close()
-	} else if r.options.WordListFile != "" {
-		var err error
-		f, err = os.Open(r.options.WordListFile)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
 	} else if (stat.Mode() & os.ModeCharDevice) == 0 {
 		f = os.Stdin
 	} else {
 		return fmt.Errorf("hosts file or stdin not provided")
 	}
 
-	var domains []string
-	if r.options.Domain != "" {
-		domains = []string{r.options.Domain}
-	} else if r.options.DomainsFile != "" {
-		content, err := ioutil.ReadFile(r.options.DomainsFile)
+	// read wordlist file
+	var prefixs []string
+	if r.options.Enum {
+		content, err := ioutil.ReadFile(r.options.WordListFile)
 		if err != nil {
 			return err
 		}
-		domains = strings.Split(string(content), "\n")
+		prefixs = strings.Split(string(content), "\n")
 	}
 
 	numHosts := 0
@@ -198,10 +190,11 @@ func (r *Runner) prepareInput() error {
 	for sc.Scan() {
 		item := strings.TrimSpace(sc.Text())
 		var hosts []string
-		if len(domains) != 0 {
+		if r.options.Enum {
 			var subdomain string
-			for _, domain := range domains {
-				subdomain = item + "." + strings.TrimSpace(domain)
+			for _, prefix := range prefixs {
+				// domains Cartesian product with wordlist
+				subdomain = strings.TrimSpace(prefix) + "." + item
 				hosts = append(hosts, subdomain)
 			}
 		} else {
