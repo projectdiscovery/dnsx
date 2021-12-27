@@ -5,13 +5,13 @@ go 1.16
 require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/miekg/dns v1.1.43
+	github.com/miekg/dns v1.1.45
 	github.com/onsi/gomega v1.16.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/clistats v0.0.8
 	github.com/projectdiscovery/fileutil v0.0.0-20210926202739-6050d0acf73c
 	github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c
-	github.com/projectdiscovery/goflags v0.0.7 // indirect
+	github.com/projectdiscovery/goflags v0.0.7
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/hmap v0.0.1
 	github.com/projectdiscovery/iputil v0.0.0-20210804143329-3a30fcde43f3
