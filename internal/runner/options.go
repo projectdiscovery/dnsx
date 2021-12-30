@@ -28,7 +28,6 @@ type Options struct {
 	Retries           int
 	OutputFormat      string
 	OutputFile        string
-	Enum              bool
 	Raw               bool
 	Silent            bool
 	Verbose           bool
@@ -121,7 +120,6 @@ func ParseOptions() *Options {
 		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace"),
 		flagSet.IntVar(&options.FlushInterval, "flush-interval", 10, "Flush interval of output file"),
 		flagSet.BoolVar(&options.Resume, "resume", false, "Resume"),
-		flagSet.BoolVar(&options.Enum, "enum", false, "enum"),
 		flagSet.StringVarP(&options.WordList, "words", "w", "", "List of subdomains to bruteforce  (file)"),
 	)
 
@@ -161,10 +159,6 @@ func ParseOptions() *Options {
 func (options *Options) validateOptions() {
 	if options.Response && options.ResponseOnly {
 		gologger.Fatal().Msgf("resp and resp-only can't be used at the same time")
-	}
-
-	if options.WordList == "" && options.Enum {
-		gologger.Fatal().Msgf("please input wordlist file with -w flag")
 	}
 }
 

@@ -184,7 +184,7 @@ func (r *Runner) prepareInput() error {
 
 	//read wordlist file
 	var prefixs []string
-	if r.options.Enum {
+	if r.options.WordList != "" {
 		if fileutil.FileExists(r.options.WordList) {
 			content, err := ioutil.ReadFile(r.options.WordList)
 			if err != nil {
@@ -200,7 +200,7 @@ func (r *Runner) prepareInput() error {
 	for sc.Scan() {
 		item := strings.TrimSpace(sc.Text())
 		var hosts = []string{item}
-		if r.options.Enum {
+		if r.options.WordList != "" {
 			var subdomain string
 			for _, prefix := range prefixs {
 				// domains Cartesian product with wordlist
