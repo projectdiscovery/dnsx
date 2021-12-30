@@ -195,7 +195,7 @@ func (r *Runner) prepareInput() error {
 	numHosts := 0
 	for sc.Scan() {
 		item := strings.TrimSpace(sc.Text())
-		var hosts []string
+		var hosts = []string{item}
 		if r.options.Enum {
 			var subdomain string
 			for _, prefix := range prefixs {
@@ -204,7 +204,6 @@ func (r *Runner) prepareInput() error {
 				hosts = append(hosts, subdomain)
 			}
 		} else {
-			hosts = []string{item}
 			if iputil.IsCIDR(item) {
 				hosts, _ = mapcidr.IPAddresses(item)
 			}
