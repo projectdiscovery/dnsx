@@ -21,8 +21,7 @@ const (
 type Options struct {
 	Resolvers         string
 	Hosts             string
-	Domain            string
-	DomainsFile       string
+	Domains           string
 	WordListFile      string
 	Threads           int
 	RateLimit         int
@@ -77,6 +76,7 @@ func ParseOptions() *Options {
 
 	createGroup(flagSet, "input", "Input",
 		flagSet.StringVarP(&options.Hosts, "list", "l", "", "File input with list of sub(domains)/hosts"),
+		flagSet.StringVarP(&options.Domains, "domains", "d", "", "List of domain (comma separated)"),
 	)
 
 	createGroup(flagSet, "query", "Query",
@@ -121,8 +121,8 @@ func ParseOptions() *Options {
 		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace"),
 		flagSet.IntVar(&options.FlushInterval, "flush-interval", 10, "Flush interval of output file"),
 		flagSet.BoolVar(&options.Resume, "resume", false, "Resume"),
-		flagSet.BoolVar(&options.Enum, "enum", false, "emun"),
-		flagSet.StringVarP(&options.WordListFile, "words", "w", "", "File input with list of subdomain dict"),
+		flagSet.BoolVar(&options.Enum, "enum", false, "enum"),
+		flagSet.StringVarP(&options.WordListFile, "words", "w", "", "List of subdomains to bruteforce  (file)"),
 	)
 
 	createGroup(flagSet, "configs", "Configurations",

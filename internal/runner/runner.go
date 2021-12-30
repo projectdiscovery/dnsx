@@ -2,6 +2,7 @@ package runner
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -161,6 +162,7 @@ func (r *Runner) InputWorker() {
 func (r *Runner) prepareInput() error {
 	// process file if specified
 	var f *os.File
+	var sc *bufio.Scanner
 	stat, _ := os.Stdin.Stat()
 	if r.options.Hosts != "" {
 		var err error
@@ -168,14 +170,19 @@ func (r *Runner) prepareInput() error {
 		if err != nil {
 			return err
 		}
+		sc = bufio.NewScanner(f)
 		defer f.Close()
 	} else if (stat.Mode() & os.ModeCharDevice) == 0 {
 		f = os.Stdin
+		sc = bufio.NewScanner(f)
+	} else if r.options.Domains != "" {
+		content := strings.Replace(r.options.Domains, ",", "\n", -1)
+		sc = bufio.NewScanner(bytes.NewReader([]byte(content)))
 	} else {
 		return fmt.Errorf("hosts file or stdin not provided")
 	}
 
-	// read wordlist file
+	//read wordlist file
 	var prefixs []string
 	if r.options.Enum {
 		content, err := ioutil.ReadFile(r.options.WordListFile)
@@ -186,7 +193,6 @@ func (r *Runner) prepareInput() error {
 	}
 
 	numHosts := 0
-	sc := bufio.NewScanner(f)
 	for sc.Scan() {
 		item := strings.TrimSpace(sc.Text())
 		var hosts []string
