@@ -185,11 +185,15 @@ func (r *Runner) prepareInput() error {
 	//read wordlist file
 	var prefixs []string
 	if r.options.Enum {
-		content, err := ioutil.ReadFile(r.options.WordListFile)
-		if err != nil {
-			return err
+		if fileutil.FileExists(r.options.WordList) {
+			content, err := ioutil.ReadFile(r.options.WordList)
+			if err != nil {
+				gologger.Fatal().Msgf("%s\n", err)
+			}
+			prefixs = strings.Split(string(content), "\n")
+		} else {
+			prefixs = strings.Split(r.options.WordList, ",")
 		}
-		prefixs = strings.Split(string(content), "\n")
 	}
 
 	numHosts := 0

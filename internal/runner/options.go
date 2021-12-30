@@ -22,7 +22,7 @@ type Options struct {
 	Resolvers         string
 	Hosts             string
 	Domains           string
-	WordListFile      string
+	WordList          string
 	Threads           int
 	RateLimit         int
 	Retries           int
@@ -122,7 +122,7 @@ func ParseOptions() *Options {
 		flagSet.IntVar(&options.FlushInterval, "flush-interval", 10, "Flush interval of output file"),
 		flagSet.BoolVar(&options.Resume, "resume", false, "Resume"),
 		flagSet.BoolVar(&options.Enum, "enum", false, "enum"),
-		flagSet.StringVarP(&options.WordListFile, "words", "w", "", "List of subdomains to bruteforce  (file)"),
+		flagSet.StringVarP(&options.WordList, "words", "w", "", "List of subdomains to bruteforce  (file)"),
 	)
 
 	createGroup(flagSet, "configs", "Configurations",
@@ -163,7 +163,7 @@ func (options *Options) validateOptions() {
 		gologger.Fatal().Msgf("resp and resp-only can't be used at the same time")
 	}
 
-	if options.WordListFile == "" && options.Enum {
+	if options.WordList == "" && options.Enum {
 		gologger.Fatal().Msgf("please input wordlist file with -w flag")
 	}
 }
