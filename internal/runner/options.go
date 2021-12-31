@@ -74,8 +74,9 @@ func ParseOptions() *Options {
 	flagSet.SetDescription(`dnsx is a fast and multi-purpose DNS toolkit allow to run multiple probes using retryabledns library.`)
 
 	createGroup(flagSet, "input", "Input",
-		flagSet.StringVarP(&options.Hosts, "list", "l", "", "File input with list of sub(domains)/hosts"),
-		flagSet.StringVarP(&options.Domains, "domains", "d", "", "List of domain (comma separated)"),
+		flagSet.StringVarP(&options.Hosts, "list", "l", "", "List of sub(domains)/hosts to resolve (file)"),
+		flagSet.StringVarP(&options.Domains, "domain", "d", "", "List of domain to bruteforce (file or comma separated)"),
+		flagSet.StringVarP(&options.WordList, "wordlist", "w", "", "List of words to bruteforce (file or comma separated)"),
 	)
 
 	createGroup(flagSet, "query", "Query",
@@ -120,7 +121,6 @@ func ParseOptions() *Options {
 		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace"),
 		flagSet.IntVar(&options.FlushInterval, "flush-interval", 10, "Flush interval of output file"),
 		flagSet.BoolVar(&options.Resume, "resume", false, "Resume"),
-		flagSet.StringVarP(&options.WordList, "words", "w", "", "List of subdomains to bruteforce  (file)"),
 	)
 
 	createGroup(flagSet, "configs", "Configurations",
