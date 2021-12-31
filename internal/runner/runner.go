@@ -2,7 +2,9 @@ package runner
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
@@ -160,6 +162,7 @@ func (r *Runner) InputWorker() {
 func (r *Runner) prepareInput() error {
 	// process file if specified
 	var f *os.File
+	var sc *bufio.Scanner
 	stat, _ := os.Stdin.Stat()
 	if r.options.Hosts != "" {
 		var err error
@@ -167,21 +170,49 @@ func (r *Runner) prepareInput() error {
 		if err != nil {
 			return err
 		}
+		sc = bufio.NewScanner(f)
 		defer f.Close()
 	} else if (stat.Mode() & os.ModeCharDevice) == 0 {
 		f = os.Stdin
+		sc = bufio.NewScanner(f)
+	} else if r.options.Domains != "" {
+		content := strings.Replace(r.options.Domains, ",", "\n", -1)
+		sc = bufio.NewScanner(bytes.NewReader([]byte(content)))
 	} else {
 		return fmt.Errorf("hosts file or stdin not provided")
 	}
 
+	//read wordlist file
+	var prefixs []string
+	if r.options.WordList != "" {
+		if fileutil.FileExists(r.options.WordList) {
+			content, err := ioutil.ReadFile(r.options.WordList)
+			if err != nil {
+				gologger.Fatal().Msgf("%s\n", err)
+			}
+			prefixs = strings.Split(string(content), "\n")
+		} else {
+			prefixs = strings.Split(r.options.WordList, ",")
+		}
+	}
+
 	numHosts := 0
-	sc := bufio.NewScanner(f)
 	for sc.Scan() {
 		item := strings.TrimSpace(sc.Text())
-		hosts := []string{item}
-		if iputil.IsCIDR(item) {
-			hosts, _ = mapcidr.IPAddresses(item)
+		var hosts = []string{item}
+		if r.options.WordList != "" {
+			var subdomain string
+			for _, prefix := range prefixs {
+				// domains Cartesian product with wordlist
+				subdomain = strings.TrimSpace(prefix) + "." + item
+				hosts = append(hosts, subdomain)
+			}
+		} else {
+			if iputil.IsCIDR(item) {
+				hosts, _ = mapcidr.IPAddresses(item)
+			}
 		}
+
 		for _, host := range hosts {
 			// Used just to get the exact number of targets
 			if _, ok := r.hm.Get(host); ok {

@@ -21,6 +21,8 @@ const (
 type Options struct {
 	Resolvers         string
 	Hosts             string
+	Domains           string
+	WordList          string
 	Threads           int
 	RateLimit         int
 	Retries           int
@@ -72,7 +74,9 @@ func ParseOptions() *Options {
 	flagSet.SetDescription(`dnsx is a fast and multi-purpose DNS toolkit allow to run multiple probes using retryabledns library.`)
 
 	createGroup(flagSet, "input", "Input",
-		flagSet.StringVarP(&options.Hosts, "list", "l", "", "File input with list of sub(domains)/hosts"),
+		flagSet.StringVarP(&options.Hosts, "list", "l", "", "List of sub(domains)/hosts to resolve (file)"),
+		flagSet.StringVarP(&options.Domains, "domain", "d", "", "List of domain to bruteforce (file or comma separated)"),
+		flagSet.StringVarP(&options.WordList, "wordlist", "w", "", "List of words to bruteforce (file or comma separated)"),
 	)
 
 	createGroup(flagSet, "query", "Query",
