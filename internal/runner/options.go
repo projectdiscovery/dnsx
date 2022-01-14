@@ -160,6 +160,15 @@ func (options *Options) validateOptions() {
 	if options.Response && options.ResponseOnly {
 		gologger.Fatal().Msgf("resp and resp-only can't be used at the same time")
 	}
+
+	// stdin can be set only on one flag
+	if argumentHasStdin(options.Domains) && argumentHasStdin(options.WordList) {
+		gologger.Fatal().Msgf("stdin can be set for one flag")
+	}
+}
+
+func argumentHasStdin(arg string) bool {
+	return arg == stdinMarker
 }
 
 // configureOutput configures the output on the screen

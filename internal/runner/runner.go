@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
+	"github.com/pkg/errors"
 	"github.com/projectdiscovery/clistats"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/fileutil"
@@ -160,39 +161,40 @@ func (r *Runner) InputWorker() {
 }
 
 func (r *Runner) prepareInput() error {
-	// process file if specified
-	var f *os.File
+	var dataDomains []byte
 	var sc *bufio.Scanner
-	stat, _ := os.Stdin.Stat()
-	if r.options.Hosts != "" {
-		var err error
-		f, err = os.Open(r.options.Hosts)
+
+	// prepare wordlist
+	var prefixs []string
+	if r.options.WordList != "" {
+		dataWordList, err := preProcessArgument(r.options.WordList)
 		if err != nil {
 			return err
 		}
-		sc = bufio.NewScanner(f)
-		defer f.Close()
-	} else if (stat.Mode() & os.ModeCharDevice) == 0 {
-		f = os.Stdin
-		sc = bufio.NewScanner(f)
-	} else if r.options.Domains != "" {
-		content := strings.Replace(r.options.Domains, ",", "\n", -1)
-		sc = bufio.NewScanner(bytes.NewReader([]byte(content)))
-	} else {
-		return fmt.Errorf("hosts file or stdin not provided")
+		prefixs = normalizeToSlice(dataWordList)
 	}
 
-	//read wordlist file
-	var prefixs []string
-	if r.options.WordList != "" {
-		if fileutil.FileExists(r.options.WordList) {
-			content, err := ioutil.ReadFile(r.options.WordList)
+	if r.options.Domains != "" {
+		var err error
+		dataDomains, err = preProcessArgument(r.options.Domains)
+		if err != nil {
+			return err
+		}
+		sc = bufio.NewScanner(bytes.NewReader(dataDomains))
+	}
+
+	if sc == nil {
+		// attempt to load list from file
+		if fileutil.FileExists(r.options.Hosts) {
+			f, err := os.Open(r.options.Hosts)
 			if err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
+				return err
 			}
-			prefixs = strings.Split(string(content), "\n")
+			sc = bufio.NewScanner(f)
+		} else if argumentHasStdin(r.options.Hosts) || hasStdin() {
+			sc = bufio.NewScanner(os.Stdin)
 		} else {
-			prefixs = strings.Split(r.options.WordList, ",")
+			return errors.New("hosts file or stdin not provided")
 		}
 	}
 
@@ -234,6 +236,50 @@ func (r *Runner) prepareInput() error {
 	}
 
 	return nil
+}
+
+func hasStdin() bool {
+	stat, _ := os.Stdin.Stat()
+	return (stat.Mode() & os.ModeCharDevice) == 0
+}
+
+func preProcessArgument(arg string) ([]byte, error) {
+	var (
+		data []byte
+		err  error
+	)
+	// read from:
+	// file
+	switch {
+	case fileutil.FileExists(arg):
+		data, err = os.ReadFile(arg)
+		if err != nil {
+			return nil, err
+		}
+	// stdin
+	case argumentHasStdin(arg):
+		data, err = ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, err
+		}
+	// inline
+	case arg != "":
+		data = []byte(arg)
+	default:
+		return nil, errors.New("empty argument")
+	}
+
+	return bytes.Replace(data, []byte(Comma), []byte(NewLine), -1), nil
+}
+
+func normalizeToSlice(data []byte) []string {
+	var s []string
+	sc := bufio.NewScanner(bytes.NewReader(data))
+	for sc.Scan() {
+		item := strings.TrimSpace(sc.Text())
+		s = append(s, item)
+	}
+	return s
 }
 
 // nolint:deadcode
