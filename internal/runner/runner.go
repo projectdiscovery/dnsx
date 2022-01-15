@@ -43,6 +43,8 @@ type Runner struct {
 }
 
 func New(options *Options) (*Runner, error) {
+	retryabledns.CheckInternalIPs = true
+
 	dnsxOptions := dnsx.DefaultOptions
 	dnsxOptions.MaxRetries = options.Retries
 	dnsxOptions.TraceMaxRecursion = options.TraceMaxRecursion
