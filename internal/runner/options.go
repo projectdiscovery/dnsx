@@ -161,6 +161,21 @@ func (options *Options) validateOptions() {
 		gologger.Fatal().Msgf("resp and resp-only can't be used at the same time")
 	}
 
+	wordListPresent := options.WordList != ""
+	domainsPresent := options.Domains != ""
+	hostsPresent := options.Hosts != ""
+
+	if hostsPresent && (wordListPresent || domainsPresent) {
+		gologger.Fatal().Msgf("list(l) flag can not be used domain(d) or wordlist(w) flag")
+	}
+
+	if wordListPresent && !domainsPresent {
+		gologger.Fatal().Msg("missing domain(d) flag required with wordlist(w) input")
+	}
+	if domainsPresent && !wordListPresent {
+		gologger.Fatal().Msgf("missing wordlist(w) flag required with domain(d) input")
+	}
+
 	// stdin can be set only on one flag
 	if argumentHasStdin(options.Domains) && argumentHasStdin(options.WordList) {
 		gologger.Fatal().Msgf("stdin can be set for one flag")
