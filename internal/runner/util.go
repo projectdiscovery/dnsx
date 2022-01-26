@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+const (
+	stdinMarker = "-"
+	Comma       = ","
+	NewLine     = "\n"
+)
+
 func linesInFile(fileName string) ([]string, error) {
 	result := []string{}
 	f, err := os.Open(fileName)
