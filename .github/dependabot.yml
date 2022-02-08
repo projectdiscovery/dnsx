@@ -20,7 +20,7 @@ updates:
 
   # Maintain dependencies for go modules
   - package-ecosystem: "gomod"
-    directory: "v2/"
+    directory: "/"
     schedule:
       interval: "daily"
     target-branch: "dev"
