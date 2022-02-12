@@ -203,9 +203,10 @@ func (r *Runner) prepareInput() error {
 	numHosts := 0
 	for sc.Scan() {
 		item := strings.TrimSpace(sc.Text())
-		var hosts []string
+		var hosts = []string{item}
 		if r.options.WordList != "" {
 			var subdomain string
+			hosts = nil
 			for _, prefix := range prefixs {
 				// domains Cartesian product with wordlist
 				subdomain = strings.TrimSpace(prefix) + "." + item
