@@ -6,7 +6,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/miekg/dns v1.1.45
+	github.com/miekg/dns v1.1.46
 	github.com/onsi/gomega v1.16.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/blackrock v0.0.0-20210903102120-5a9d2412d21d // indirect
@@ -25,7 +25,6 @@ require (
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/net v0.0.0-20220121210141-e204ce36a2ba // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
-	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.9 // indirect
 	gopkg.in/ini.v1 v1.66.3 // indirect
 )
