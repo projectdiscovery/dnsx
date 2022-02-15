@@ -203,19 +203,18 @@ func (r *Runner) prepareInput() error {
 	numHosts := 0
 	for sc.Scan() {
 		item := strings.TrimSpace(sc.Text())
-		var hosts = []string{item}
-		if r.options.WordList != "" {
-			var subdomain string
-			hosts = nil
+		var hosts []string
+		switch {
+		case r.options.WordList != "":
 			for _, prefix := range prefixs {
 				// domains Cartesian product with wordlist
-				subdomain = strings.TrimSpace(prefix) + "." + item
+				subdomain := strings.TrimSpace(prefix) + "." + item
 				hosts = append(hosts, subdomain)
 			}
-		} else {
-			if iputil.IsCIDR(item) {
-				hosts, _ = mapcidr.IPAddresses(item)
-			}
+		case iputil.IsCIDR(item):
+			hosts, _ = mapcidr.IPAddresses(item)
+		default:
+			hosts = []string{item}
 		}
 
 		for _, host := range hosts {
