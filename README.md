@@ -3,10 +3,7 @@
   <br>
 </h1>
 
-
 <h4 align="center">Fast and multi-purpose DNS toolkit allow to run multiple DNS queries.</h4>
-
-
 
 <p align="center">
 <a href="https://goreportcard.com/report/github.com/projectdiscovery/dnsx"><img src="https://goreportcard.com/badge/github.com/projectdiscovery/dnsx"></a>
@@ -42,11 +39,13 @@
 
 
  - Simple and Handy utility to query DNS records.
- - Supports **A, AAAA, CNAME, PTR, NS, MX, TXT, SOA**
- - Supports DNS Status Code probing
- - Supports DNS Tracing
- - Handles wildcard subdomains in automated way.
- - **Stdin** and **stdout** support to work with other tools.
+ - **A, AAAA, CNAME, PTR, NS, MX, TXT, SOA** query support
+ - DNS **Resolution** support
+ - DNS **Brute-force** support
+ - DNS **Status** code probe support
+ - DNS **Tracing** support
+ - Automatic **wildcard** handling support
+ - **stdin** and **stdout** support
 
 # Installation Instructions
 
@@ -67,57 +66,61 @@ This will display help for the tool. Here are all the switches it supports.
 
 ```console
 INPUT:
-   -l, -list string  File input with list of sub(domains)/hosts
+   -l, -list string      list of sub(domains)/hosts to resolve (file or stdin)
+   -d, -domain string    list of domain to bruteforce (file or comma separated or stdin)
+   -w, -wordlist string  list of words to bruteforce (file or comma separated or stdin)
 
 QUERY:
-   -a      Query A record (default)
-   -aaaa   Query AAAA record
-   -cname  Query CNAME record
-   -ns     Query NS record
-   -txt    Query TXT record
-   -ptr    Query PTR record
-   -mx     Query MX record
-   -soa    Query SOA record
+   -a      query A record (default)
+   -aaaa   query AAAA record
+   -cname  query CNAME record
+   -ns     query NS record
+   -txt    query TXT record
+   -ptr    query PTR record
+   -mx     query MX record
+   -soa    query SOA record
 
 FILTERS:
-   -resp               Display DNS response
-   -resp-only          Display DNS response only
-   -rcode, -rc string  Display DNS status code (eg. -rcode noerror,servfail,refused)
+   -resp               display dns response
+   -resp-only          display dns response only
+   -rcode, -rc string  filter result by dns status code (eg. -rcode noerror,servfail,refused)
 
 RATE-LIMIT:
-   -t, -c int            Number of concurrent threads to use (default 100)
-   -rl, -rate-limit int  Number of DNS request/second (disabled as default) (default -1)
+   -t, -c int            number of concurrent threads to use (default 100)
+   -rl, -rate-limit int  number of dns request/second to make (disabled as default) (default -1)
 
 OUTPUT:
-   -o, -output string  File to write output (optional)
-   -json               Write output in JSONL(ines) format
+   -o, -output string  file to write output
+   -json               write output in JSONL(ines) format
 
 DEBUG:
-   -silent       Show only results in the output
-   -v, -verbose  Verbose output
-   -raw, -debug  Display RAW DNS response
-   -stats        Display stats of the running scan
-   -version      Show version of dnsx
+   -silent       display only results in the output
+   -v, -verbose  display verbose output
+   -raw, -debug  display raw dns response
+   -stats        display stats of the running scan
+   -version      display version of dnsx
 
 OPTIMIZATION:
-   -retry int                Number of DNS retries (default 1)
-   -hf, -hostsfile           Parse system host file
-   -trace                    Perform DNS trace
+   -retry int                number of dns retries to make (default 2)
+   -hf, -hostsfile           use system host file
+   -trace                    perform dns tracing
    -trace-max-recursion int  Max recursion for dns trace (default 32767)
-   -flush-interval int       Flush interval of output file (default 10)
-   -resume                   Resume
+   -flush-interval int       flush interval of output file (default 10)
+   -resume                   resume existing scan
 
 CONFIGURATIONS:
-   -r, -resolver string          List of resolvers (file or comma separated)
-   -wt, -wildcard-threshold int  Wildcard Filter Threshold (default 5)
-   -wd, -wildcard-domain string  Domain name for wildcard filtering (other flags will be ignored)
+   -r, -resolver string          list of resolvers to use (file or comma separated)
+   -wt, -wildcard-threshold int  wildcard filter threshold (default 5)
+   -wd, -wildcard-domain string  domain name for wildcard filtering (other flags will be ignored)
 ```
 
-### Running dnsx
+## Running dnsx
 
-**dnsx** can be used to filter dead records from the list of passive subdomains obtained from various sources, for example:-
+### DNS Resolving
 
-```sh
+**dnsx** can be used to filter active hostnames from the list of passive subdomains obtained from various sources, for example:-
+
+```console
 subfinder -silent -d hackerone.com | dnsx -silent
 
 a.ns.hackerone.com
@@ -135,24 +138,56 @@ support.hackerone.com
 
 **dnsx** can be used to print **A** records for the given list of subdomains, for example:-
 
-```sh
-subfinder -silent -d hackerone.com | dnsx -silent -a -resp
+```console
+subfinder -silent -d hackerone.com | dnsx -silent -a -cname -resp
 
-a.ns.hackerone.com [162.159.0.31]
-b.ns.hackerone.com [162.159.1.31]
-mta-sts.hackerone.com [185.199.108.153]
-events.hackerone.com [208.100.11.134]
-mta-sts.managed.hackerone.com [185.199.108.153]
-resources.hackerone.com [52.60.160.16]
-resources.hackerone.com [52.60.165.183]
 www.hackerone.com [104.16.100.52]
+www.hackerone.com [104.16.99.52]
+hackerone.com [104.16.99.52]
+hackerone.com [104.16.100.52]
+api.hackerone.com [104.16.99.52]
+api.hackerone.com [104.16.100.52]
+mta-sts.forwarding.hackerone.com [185.199.108.153]
+mta-sts.forwarding.hackerone.com [185.199.109.153]
+mta-sts.forwarding.hackerone.com [185.199.110.153]
+mta-sts.forwarding.hackerone.com [185.199.111.153]
+mta-sts.forwarding.hackerone.com [hacker0x01.github.io]
+a.ns.hackerone.com [162.159.0.31]
+resources.hackerone.com [52.60.160.16]
+resources.hackerone.com [3.98.63.202]
+resources.hackerone.com [52.60.165.183]
+resources.hackerone.com [read.uberflip.com]
+resources.hackerone.com [nlb-ext-traefik-ca-central-1-d39d611502919b07.elb.ca-central-1.amazonaws.com]
+mta-sts.hackerone.com [185.199.110.153]
+mta-sts.hackerone.com [185.199.111.153]
+mta-sts.hackerone.com [185.199.109.153]
+mta-sts.hackerone.com [185.199.108.153]
+mta-sts.hackerone.com [hacker0x01.github.io]
+gslink.hackerone.com [13.35.210.17]
+gslink.hackerone.com [13.35.210.38]
+gslink.hackerone.com [13.35.210.83]
+gslink.hackerone.com [13.35.210.19]
+gslink.hackerone.com [d3rxkn2g2bbsjp.cloudfront.net]
+b.ns.hackerone.com [162.159.1.31]
+docs.hackerone.com [185.199.109.153]
+docs.hackerone.com [185.199.110.153]
+docs.hackerone.com [185.199.111.153]
+docs.hackerone.com [185.199.108.153]
+docs.hackerone.com [hacker0x01.github.io]
+support.hackerone.com [104.16.51.111]
 support.hackerone.com [104.16.53.111]
+support.hackerone.com [hackerone.zendesk.com]
+mta-sts.managed.hackerone.com [185.199.108.153]
+mta-sts.managed.hackerone.com [185.199.109.153]
+mta-sts.managed.hackerone.com [185.199.110.153]
+mta-sts.managed.hackerone.com [185.199.111.153]
+mta-sts.managed.hackerone.com [hacker0x01.github.io]
 ```
 
 
 **dnsx** can be used to extract **A** records for the given list of subdomains, for example:-
 
-```sh
+```console
 subfinder -silent -d hackerone.com | dnsx -silent -a -resp-only
 
 104.16.99.52
@@ -176,7 +211,7 @@ subfinder -silent -d hackerone.com | dnsx -silent -a -resp-only
 
 **dnsx** can be used to extract **CNAME** records for the given list of subdomains, for example:-
 
-```sh
+```console
 subfinder -silent -d hackerone.com | dnsx -silent -cname -resp
 
 support.hackerone.com [hackerone.zendesk.com]
@@ -186,9 +221,9 @@ mta-sts.forwarding.hackerone.com [hacker0x01.github.io]
 events.hackerone.com [whitelabel.bigmarker.com]
 ```
 
-**dnsx** can be used to probe [DNS Staus code](https://github.com/projectdiscovery/dnsx/wiki/RCODE-ID-VALUE-Mapping) on given list of subdomains, for example:-
+**dnsx** can be used to probe by given [dns status code](https://github.com/projectdiscovery/dnsx/wiki/RCODE-ID-VALUE-Mapping) on given list of sub(domains), for example:-
 
-```sh
+```console
 subfinder -silent -d hackerone.com | dnsx -silent -rcode noerror,servfail,refused
 
 ns.hackerone.com [NOERROR]
@@ -204,7 +239,7 @@ docs.hackerone.com [NOERROR]
 
 **dnsx** can be used to extract subdomains from given network range using `PTR` query, for example:-
 
-```sh
+```console
 echo 173.0.84.0/24 | dnsx -silent -resp-only -ptr
 
 cors.api.paypal.com
@@ -220,14 +255,81 @@ slc-a-origin-pointofsale.paypal.com
 fpdbs.paypal.com
 ```
 
+---------
 
+### DNS Bruteforce
+
+**dnsx** can be used to bruteforce subdomains for given domain or list of domains using `d` and `w` flag.
+
+```console
+dnsx -silent -d facebook.com -w dns_worldlist.txt
+
+blog.facebook.com
+booking.facebook.com
+api.facebook.com
+analytics.facebook.com
+beta.facebook.com
+apollo.facebook.com
+ads.facebook.com
+box.facebook.com
+alpha.facebook.com
+apps.facebook.com
+connect.facebook.com
+c.facebook.com
+careers.facebook.com
+code.facebook.com
+```
+
+**dnsx** can be used to bruteforce targeted subdomain using single or multiple keyword input, as `d` or `w` flag supports file or comma separated keyword inputs.
+
+```console
+dnsx -silent -d domains.txt -w jira,grafana,jenkins
+
+grafana.1688.com
+grafana.8x8.vc
+grafana.airmap.com
+grafana.aerius.nl
+jenkins.1688.com
+jenkins.airbnb.app
+jenkins.airmap.com
+jenkins.ahn.nl
+jenkins.achmea.nl
+jira.amocrm.com
+jira.amexgbt.com
+jira.amitree.com
+jira.arrival.com
+jira.atlassian.net
+jira.atlassian.com
+```
+
+**dnsx** support **stdin** input for all the input flags (`list`,`domain`,`wordlist`), as default `l` flag is supported for `stdin`, other input flag can be used by specifying the flag input with dash (`-`).
+
+```console
+cat domains.txt | dnsx -silent -w jira,grafana,jenkins -d -
+
+grafana.1688.com
+grafana.8x8.vc
+grafana.airmap.com
+grafana.aerius.nl
+jenkins.1688.com
+jenkins.airbnb.app
+jenkins.airmap.com
+jenkins.ahn.nl
+jenkins.achmea.nl
+jira.amocrm.com
+jira.amexgbt.com
+jira.amitree.com
+jira.arrival.com
+jira.atlassian.net
+jira.atlassian.com
+```
 
 ### Wildcard filtering
 
 A special feature of **dnsx** is its ability to handle **multi-level DNS based wildcards** and do it so with very less number of DNS requests. Sometimes all the subdomains will resolve which will lead to lots of garbage in the results. The way **dnsx** handles this is it will keep track of how many subdomains point to an IP and if the count of the Subdomains increase beyond a certain small threshold, it will check for wildcard on all the levels of the hosts for that IP iteratively.
 
-```sh
-dnsx -l airbnb-subs.txt -wd airbnb.com -o output.txt
+```console
+dnsx -l subdomain_list.txt -wd airbnb.com -o output.txt
 ```
 
 # 📋 Notes
@@ -235,7 +337,8 @@ dnsx -l airbnb-subs.txt -wd airbnb.com -o output.txt
 - As default, **dnsx** checks for **A** record.
 - As default dnsx uses Google, Cloudflare, Quad9 [resolver](https://github.com/projectdiscovery/dnsx/blob/43af78839e237ea8cbafe571df1ab0d6cbe7f445/libs/dnsx/dnsx.go#L31).
 - Custom resolver list can be used using `r` flag.
-- Domain name input is mandatory for wildcard elimination.
+- Domain name (`wd`) input is mandatory for wildcard elimination.
 - DNS record flag can not be used when using wildcard filtering.
+- DNS resolution (`l`) and DNS Bruteforcing (`w`) can't be used together.
 
 dnsx is made with 🖤 by the [projectdiscovery](https://projectdiscovery.io) team.
