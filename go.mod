@@ -18,7 +18,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.1
 	github.com/projectdiscovery/iputil v0.0.0-20210804143329-3a30fcde43f3
 	github.com/projectdiscovery/mapcidr v0.0.8
-	github.com/projectdiscovery/retryabledns v1.0.13-0.20220127061702-003711f5f9b4
+	github.com/projectdiscovery/retryabledns v1.0.13-0.20220302095022-63c6d2f85ddf
 	github.com/projectdiscovery/stringsutil v0.0.0-20220120150443-138d7af18587 // indirect
 	github.com/rs/xid v1.3.0
 	go.uber.org/atomic v1.9.0 // indirect
