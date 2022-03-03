@@ -40,12 +40,11 @@
 
  - Simple and Handy utility to query DNS records.
  - **A, AAAA, CNAME, PTR, NS, MX, TXT, SOA** query support
- - DNS **Resolution** support
- - DNS **Brute-force** support
- - DNS **Status** code probe support
- - DNS **Tracing** support
- - Automatic **wildcard** handling support
+ - DNS **Resolution** / **Brute-force** support
+ - Custom **resolver** input support
+ - Multiple resolver format **(TCP/UDP/DOH/DOT)** support
  - **stdin** and **stdout** support
+ - Automatic **wildcard** handling support
 
 # Installation Instructions
 
