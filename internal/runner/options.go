@@ -55,6 +55,7 @@ type Options struct {
 	resumeCfg         *ResumeCfg
 	FlushInterval     int
 	HostsFile         bool
+	Stream            bool
 }
 
 // ShouldLoadResume resume file
@@ -74,6 +75,7 @@ func ParseOptions() *Options {
 	flagSet.SetDescription(`dnsx is a fast and multi-purpose DNS toolkit allow to run multiple probes using retryabledns library.`)
 
 	createGroup(flagSet, "input", "Input",
+		flagSet.BoolVar(&options.Stream, "stream", false, "stream mode (wordlist, wildcard, stats and stop/resume will be disabled)"),
 		flagSet.StringVarP(&options.Hosts, "list", "l", "", "list of sub(domains)/hosts to resolve (file or stdin)"),
 		flagSet.StringVarP(&options.Domains, "domain", "d", "", "list of domain to bruteforce (file or comma separated or stdin)"),
 		flagSet.StringVarP(&options.WordList, "wordlist", "w", "", "list of words to bruteforce (file or comma separated or stdin)"),
@@ -178,7 +180,28 @@ func (options *Options) validateOptions() {
 
 	// stdin can be set only on one flag
 	if argumentHasStdin(options.Domains) && argumentHasStdin(options.WordList) {
+		if options.Stream {
+			gologger.Fatal().Msgf("argument stdin not supported in stream mode")
+		}
 		gologger.Fatal().Msgf("stdin can be set for one flag")
+	}
+
+	if options.Stream {
+		if wordListPresent {
+			gologger.Fatal().Msgf("wordlist not supported in stream mode")
+		}
+		if domainsPresent {
+			gologger.Fatal().Msgf("domains not supported in stream mode")
+		}
+		if options.Resume {
+			gologger.Fatal().Msgf("resume not supported in stream mode")
+		}
+		if options.WildcardDomain != "" {
+			gologger.Fatal().Msgf("wildcard not supported in stream mode")
+		}
+		if options.ShowStatistics {
+			gologger.Fatal().Msgf("stats not supported in stream mode")
+		}
 	}
 }
 

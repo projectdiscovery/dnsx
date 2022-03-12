@@ -143,6 +143,31 @@ func New(options *Options) (*Runner, error) {
 	return &r, nil
 }
 
+func (r *Runner) InputWorkerStream() {
+	var sc *bufio.Scanner
+	// attempt to load list from file
+	if fileutil.FileExists(r.options.Hosts) {
+		f, _ := os.Open(r.options.Hosts)
+		sc = bufio.NewScanner(f)
+	} else if fileutil.HasStdin() {
+		sc = bufio.NewScanner(os.Stdin)
+	}
+
+	for sc.Scan() {
+		item := strings.TrimSpace(sc.Text())
+
+		hosts := []string{item}
+		if iputil.IsCIDR(item) {
+			hosts, _ = mapcidr.IPAddresses(item)
+		}
+
+		for _, host := range hosts {
+			r.workerchan <- host
+		}
+	}
+	close(r.workerchan)
+}
+
 func (r *Runner) InputWorker() {
 	r.hm.Scan(func(k, _ []byte) error {
 		if r.options.ShowStatistics {
@@ -330,6 +355,14 @@ func (r *Runner) SaveResumeConfig() error {
 }
 
 func (r *Runner) Run() error {
+	if r.options.Stream {
+		return r.runStream()
+	}
+
+	return r.run()
+}
+
+func (r *Runner) run() error {
 	err := r.prepareInput()
 	if err != nil {
 		return err
@@ -437,6 +470,17 @@ func (r *Runner) Run() error {
 	return nil
 }
 
+func (r *Runner) runStream() error {
+	r.startWorkers()
+
+	r.wgresolveworkers.Wait()
+
+	close(r.outputchan)
+	r.wgoutputworker.Wait()
+
+	return nil
+}
+
 func (r *Runner) HandleOutput() {
 	defer r.wgoutputworker.Done()
 
@@ -484,7 +528,11 @@ func (r *Runner) startOutputWorker() {
 }
 
 func (r *Runner) startWorkers() {
-	go r.InputWorker()
+	if r.options.Stream {
+		go r.InputWorkerStream()
+	} else {
+		go r.InputWorker()
+	}
 
 	r.startOutputWorker()
 	// resolve workers
