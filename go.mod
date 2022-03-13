@@ -11,7 +11,7 @@ require (
 	github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c
 	github.com/projectdiscovery/goflags v0.0.7
 	github.com/projectdiscovery/gologger v1.1.4
-	github.com/projectdiscovery/hmap v0.0.2-0.20220308104318-929a45d8e775
+	github.com/projectdiscovery/hmap v0.0.2
 	github.com/projectdiscovery/iputil v0.0.0-20210804143329-3a30fcde43f3
 	github.com/projectdiscovery/mapcidr v0.0.8
 	github.com/projectdiscovery/retryabledns v1.0.13
@@ -22,7 +22,7 @@ require (
 require (
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
-	github.com/akrylysov/pogreb v0.10.0 // indirect
+	github.com/akrylysov/pogreb v0.10.1 // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
