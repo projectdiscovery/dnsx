@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/miekg/dns v1.1.46
+	github.com/miekg/dns v1.1.47
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/clistats v0.0.8
 	github.com/projectdiscovery/fileutil v0.0.0-20220308101036-16c79af1cf5d
