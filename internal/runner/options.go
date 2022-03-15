@@ -56,6 +56,7 @@ type Options struct {
 	FlushInterval     int
 	HostsFile         bool
 	Stream            bool
+	CAA               bool
 }
 
 // ShouldLoadResume resume file
@@ -90,6 +91,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.PTR, "ptr", false, "query PTR record"),
 		flagSet.BoolVar(&options.MX, "mx", false, "query MX record"),
 		flagSet.BoolVar(&options.SOA, "soa", false, "query SOA record"),
+		flagSet.BoolVar(&options.CAA, "caa", false, "query CAA record"),
 	)
 
 	createGroup(flagSet, "filters", "Filters",
