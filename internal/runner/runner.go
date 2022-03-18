@@ -95,6 +95,10 @@ func New(options *Options) (*Runner, error) {
 	if options.NS {
 		questionTypes = append(questionTypes, dns.TypeNS)
 	}
+	if options.AXFR {
+		questionTypes = append(questionTypes, dns.TypeAXFR)
+	}
+
 	// If no option is specified or wildcard filter has been requested use query type A
 	if len(questionTypes) == 0 || options.WildcardDomain != "" {
 		options.A = true
@@ -606,6 +610,16 @@ func (r *Runner) worker() {
 		if r.options.hasRCodes {
 			r.outputResponseCode(domain, dnsData.StatusCodeRaw)
 			continue
+		}
+		if r.options.AXFR {
+			r.outputRecordType(domain, dnsData.A)
+			r.outputRecordType(domain, dnsData.AAAA)
+			r.outputRecordType(domain, dnsData.CNAME)
+			r.outputRecordType(domain, dnsData.PTR)
+			r.outputRecordType(domain, dnsData.MX)
+			r.outputRecordType(domain, dnsData.NS)
+			r.outputRecordType(domain, dnsData.SOA)
+			r.outputRecordType(domain, dnsData.TXT)
 		}
 		if r.options.A {
 			r.outputRecordType(domain, dnsData.A)
