@@ -95,6 +95,9 @@ func New(options *Options) (*Runner, error) {
 	if options.NS {
 		questionTypes = append(questionTypes, dns.TypeNS)
 	}
+	if options.CAA {
+		questionTypes = append(questionTypes, dns.TypeCAA)
+	}
 
 	// If no option is specified or wildcard filter has been requested use query type A
 	if len(questionTypes) == 0 || options.WildcardDomain != "" {
@@ -638,6 +641,9 @@ func (r *Runner) worker() {
 		}
 		if r.options.TXT {
 			r.outputRecordType(domain, dnsData.TXT)
+		}
+		if r.options.CAA {
+			r.outputRecordType(domain, dnsData.CAA)
 		}
 	}
 }
