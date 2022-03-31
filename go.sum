@@ -181,7 +181,6 @@ github.com/mattn/goveralls v0.0.2/go.mod h1:8d1ZMHsd7fW6IRPKQh46F2WRpyib5/X4FOpe
 github.com/mediocregopher/mediocre-go-lib v0.0.0-20181029021733-cb65787f37ed/go.mod h1:dSsfyI2zABAdhcbvkXqgxOxrCsbYeHCPgrZkku60dSg=
 github.com/mediocregopher/radix/v3 v3.3.0/go.mod h1:EmfVyvspXz1uZEyPBMyGK+kjWiKQGvsUt6O3Pj+LDCQ=
 github.com/microcosm-cc/bluemonday v1.0.2/go.mod h1:iVP4YcDBq+n/5fb23BhYFvIMq/leAFZyRl6bYmGDlGc=
-github.com/miekg/dns v1.1.46/go.mod h1:e3IlAVfNqAllflbibAZEWOXOQ+Ynzk/dDozDxY7XnME=
 github.com/miekg/dns v1.1.47 h1:J9bWiXbqMbnZPcY8Qi2E3EWIBsIm6MZzzJB9VRg5gL8=
 github.com/miekg/dns v1.1.47/go.mod h1:e3IlAVfNqAllflbibAZEWOXOQ+Ynzk/dDozDxY7XnME=
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
@@ -248,10 +247,8 @@ github.com/projectdiscovery/mapcidr v0.0.8 h1:16U05F2x3o/jSTsxSCY2hCuCs9xOSwVxjo
 github.com/projectdiscovery/mapcidr v0.0.8/go.mod h1:7CzdUdjuLVI0s33dQ33lWgjg3vPuLFw2rQzZ0RxkT00=
 github.com/projectdiscovery/reflectutil v0.0.0-20210804085554-4d90952bf92f h1:HR3R/nhELwLXufUlO1ZkKVqrZl4lN1cWFBdN8RcMuLo=
 github.com/projectdiscovery/reflectutil v0.0.0-20210804085554-4d90952bf92f/go.mod h1:3L0WfNIcVWXIDur8k+gKDLZLWY2F+rs0SQXtcn/3AYU=
-github.com/projectdiscovery/retryabledns v1.0.13 h1:Ogfv0fl3Nszb+Nq2S2qQmE+PJDlStVxyLkmTotMohZY=
-github.com/projectdiscovery/retryabledns v1.0.13/go.mod h1:EeqHcAPp0g2GljT4qkxKSAE47Dj0ZrJQ46R9ct3Muhk=
-github.com/projectdiscovery/retryabledns v1.0.14-0.20220318102840-4c913ddb8bb5 h1:TcGTsicjBgyXPWTU8FBYQKKZoJAhXx/jOycGu/cDahE=
-github.com/projectdiscovery/retryabledns v1.0.14-0.20220318102840-4c913ddb8bb5/go.mod h1:RrXHShR/fxx8VLmj5sqKDJdvMaTdEZRp9TYVBO57CYU=
+github.com/projectdiscovery/retryabledns v1.0.14-0.20220331083837-0df3d0c111a5 h1:vWD/hkE/sEXFcI4a+H6czR1ecXaU6TAc3gjHfI5wMMQ=
+github.com/projectdiscovery/retryabledns v1.0.14-0.20220331083837-0df3d0c111a5/go.mod h1:RrXHShR/fxx8VLmj5sqKDJdvMaTdEZRp9TYVBO57CYU=
 github.com/projectdiscovery/retryablehttp-go v1.0.2 h1:LV1/KAQU+yeWhNVlvveaYFsjBYRwXlNEq0PvrezMV0U=
 github.com/projectdiscovery/retryablehttp-go v1.0.2/go.mod h1:dx//aY9V247qHdsRf0vdWHTBZuBQ2vm6Dq5dagxrDYI=
 github.com/projectdiscovery/stringsutil v0.0.0-20210804142656-fd3c28dbaafe/go.mod h1:oTRc18WBv9t6BpaN9XBY+QmG28PUpsyDzRht56Qf49I=
@@ -283,8 +280,8 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
+github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMTY=
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/syndtr/goleveldb v1.0.0 h1:fBdIW9lB4Iz0n9khmH8w27SJ3QEJ7+IgjPEwGSZiFdE=
 github.com/syndtr/goleveldb v1.0.0/go.mod h1:ZVVdQEZoIme9iO1Ch2Jdy24qqXrMMOU6lpPAyBWyWuQ=

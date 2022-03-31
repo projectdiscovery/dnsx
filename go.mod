@@ -14,7 +14,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.2
 	github.com/projectdiscovery/iputil v0.0.0-20210804143329-3a30fcde43f3
 	github.com/projectdiscovery/mapcidr v0.0.8
-	github.com/projectdiscovery/retryabledns v1.0.14-0.20220318102840-4c913ddb8bb5
+	github.com/projectdiscovery/retryabledns v1.0.14-0.20220331083837-0df3d0c111a5
 	github.com/rs/xid v1.3.0
 	go.uber.org/ratelimit v0.2.0
 )

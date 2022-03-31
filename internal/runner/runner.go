@@ -20,7 +20,7 @@ import (
 	"github.com/projectdiscovery/hmap/store/hybrid"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/mapcidr"
-	retryabledns "github.com/projectdiscovery/retryabledns"
+	"github.com/projectdiscovery/retryabledns"
 	"go.uber.org/ratelimit"
 )
 
@@ -94,9 +94,6 @@ func New(options *Options) (*Runner, error) {
 	}
 	if options.NS {
 		questionTypes = append(questionTypes, dns.TypeNS)
-	}
-	if options.AXFR {
-		questionTypes = append(questionTypes, dns.TypeAXFR)
 	}
 
 	// If no option is specified or wildcard filter has been requested use query type A
@@ -592,6 +589,13 @@ func (r *Runner) worker() {
 			}
 		}
 
+		if r.options.AXFR {
+			axfrData, _ := r.dnsx.AXFR(domain)
+			if axfrData != nil {
+				dnsData.AXFRData = axfrData
+			}
+		}
+
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			// nolint:errcheck
@@ -610,16 +614,6 @@ func (r *Runner) worker() {
 		if r.options.hasRCodes {
 			r.outputResponseCode(domain, dnsData.StatusCodeRaw)
 			continue
-		}
-		if r.options.AXFR {
-			r.outputRecordType(domain, dnsData.A)
-			r.outputRecordType(domain, dnsData.AAAA)
-			r.outputRecordType(domain, dnsData.CNAME)
-			r.outputRecordType(domain, dnsData.PTR)
-			r.outputRecordType(domain, dnsData.MX)
-			r.outputRecordType(domain, dnsData.NS)
-			r.outputRecordType(domain, dnsData.SOA)
-			r.outputRecordType(domain, dnsData.TXT)
 		}
 		if r.options.A {
 			r.outputRecordType(domain, dnsData.A)
