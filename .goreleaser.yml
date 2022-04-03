@@ -33,3 +33,31 @@ archives:
 
 checksum:
   algorithm: sha256
+
+
+snapcrafts:
+  - id: dnsx
+    replacements:
+      darwin: macOS
+    name: dnsx
+    publish: false
+    summary: Fast and multi-purpose DNS toolkit allow to run multiple DNS queries.
+    description: |
+      Dnsx is a fast and multi-purpose DNS toolkit allow to run multiple probes using retryabledns library, that allows you to perform multiple DNS queries of your choice with a list of user supplied resolvers, additionally supports DNS wildcard filtering like shuffledns.
+    grade: stable
+    confinement: strict
+    license: MIT
+    base: core18
+    apps:
+      dnsx:
+        command: dnsx
+        plugs:
+          - home
+          - network
+          - removable-media
+          - dot-dnsx
+    plugs:
+      dot-dnsx:
+        interface: personal-files
+        write:
+          - $HOME/.config/dnsx
