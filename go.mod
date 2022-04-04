@@ -14,7 +14,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.2
 	github.com/projectdiscovery/iputil v0.0.0-20210804143329-3a30fcde43f3
 	github.com/projectdiscovery/mapcidr v0.0.8
-	github.com/projectdiscovery/retryabledns v1.0.14-0.20220331085203-fca4475f9e95
+	github.com/projectdiscovery/retryabledns v1.0.14-0.20220404054947-f40567f4e5a7
 	github.com/rs/xid v1.4.0
 	go.uber.org/ratelimit v0.2.0
 )
@@ -51,6 +51,7 @@ require (
 	github.com/projectdiscovery/blackrock v0.0.0-20210903102120-5a9d2412d21d // indirect
 	github.com/projectdiscovery/reflectutil v0.0.0-20210804085554-4d90952bf92f // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.2 // indirect
+	github.com/projectdiscovery/sliceutil v0.0.0-20220225084130-8392ac12fa6d // indirect
 	github.com/projectdiscovery/stringsutil v0.0.0-20220208075244-7c05502ca8e9 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	go.etcd.io/bbolt v1.3.5 // indirect
