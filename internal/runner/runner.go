@@ -20,7 +20,7 @@ import (
 	"github.com/projectdiscovery/hmap/store/hybrid"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/mapcidr"
-	retryabledns "github.com/projectdiscovery/retryabledns"
+	"github.com/projectdiscovery/retryabledns"
 	"go.uber.org/ratelimit"
 )
 
@@ -98,6 +98,7 @@ func New(options *Options) (*Runner, error) {
 	if options.CAA {
 		questionTypes = append(questionTypes, dns.TypeCAA)
 	}
+
 	// If no option is specified or wildcard filter has been requested use query type A
 	if len(questionTypes) == 0 || options.WildcardDomain != "" {
 		options.A = true
@@ -588,6 +589,13 @@ func (r *Runner) worker() {
 					}
 					data.RawResp = nil
 				}
+			}
+		}
+
+		if r.options.AXFR {
+			axfrData, _ := r.dnsx.AXFR(domain)
+			if axfrData != nil {
+				dnsData.AXFRData = axfrData
 			}
 		}
 

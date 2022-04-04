@@ -88,3 +88,8 @@ func (d *DNSX) QueryMultiple(hostname string) (*retryabledns.DNSData, error) {
 func (d *DNSX) Trace(hostname string) (*retryabledns.TraceData, error) {
 	return d.dnsClient.Trace(hostname, d.Options.QuestionTypes[0], d.Options.TraceMaxRecursion)
 }
+
+// Trace performs a DNS trace of the specified types and returns raw responses
+func (d *DNSX) AXFR(hostname string) (*retryabledns.AXFRData, error) {
+	return d.dnsClient.AXFR(hostname)
+}
