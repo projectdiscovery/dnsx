@@ -199,7 +199,8 @@ func (r *Runner) prepareInput() error {
 	)
 
 	// copy stdin to a temporary file
-	if fileutil.HasStdin() {
+	hasStdin := fileutil.HasStdin()
+	if hasStdin {
 		tmpStdinFile, err := fileutil.GetTempFileName()
 		if err != nil {
 			return err
@@ -234,8 +235,8 @@ func (r *Runner) prepareInput() error {
 				return err
 			}
 			sc = f
-		} else if argumentHasStdin(r.options.Hosts) || fileutil.HasStdin() {
-			sc, err = fileutil.ReadFileWithReader(os.Stdin)
+		} else if argumentHasStdin(r.options.Hosts) || hasStdin {
+			sc, err = fileutil.ReadFile(r.tmpStdinFile)
 			if err != nil {
 				return err
 			}
