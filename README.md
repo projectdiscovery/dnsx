@@ -1,9 +1,9 @@
 <h1 align="center">
-  <img src="static/dnsx-logo.png" alt="dnsx" width="200px"></a>
+  <img src="static/dnsx-logo.png" alt="dnsx" width="200px">
   <br>
 </h1>
 
-<h4 align="center">Fast and multi-purpose DNS toolkit allow to run multiple DNS queries.</h4>
+<h4 align="center">A fast and multi-purpose DNS toolkit designed for running DNS queries</h4>
 
 <p align="center">
 <a href="https://goreportcard.com/report/github.com/projectdiscovery/dnsx"><img src="https://goreportcard.com/badge/github.com/projectdiscovery/dnsx"></a>
@@ -17,7 +17,7 @@
   <a href="#features">Features</a> •
   <a href="#installation-instructions">Installation</a> •
   <a href="#usage">Usage</a> •
-  <a href="#running-dnsx">Running dnsx</a> •
+  <a href="#running-dnsx">Running `dnsx`</a> •
   <a href="#wildcard-filtering">Wildcard</a> •
   <a href="#-notes">Notes</a> •
   <a href="https://discord.gg/projectdiscovery">Join Discord</a>
@@ -27,7 +27,7 @@
 ---
 
 
-**dnsx** is a fast and multi-purpose DNS toolkit allow to run multiple probes using [retryabledns](https://github.com/projectdiscovery/retryabledns) library, that allows you to perform multiple DNS queries of your choice with a list of user supplied resolvers, additionally supports DNS wildcard filtering like [shuffledns](https://github.com/projectdiscovery/shuffledns).
+`dnsx` is a fast and multi-purpose DNS toolkit designed for running various probes through the [retryabledns](https://github.com/projectdiscovery/retryabledns) library. It supports multiple DNS queries, user supplied resolvers, DNS wildcard filtering like [shuffledns](https://github.com/projectdiscovery/shuffledns) etc.
 
 
 # Features
@@ -49,7 +49,7 @@
 # Installation Instructions
 
 
-dnsx requires **go1.17** to install successfully. Run the following command to get the repo -
+`dnsx` requires **go1.17** to install successfully. Run the following command to install the latest version: 
 
 ```sh
 go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
@@ -117,9 +117,9 @@ CONFIGURATIONS:
 
 ### DNS Resolving
 
-**dnsx** can be used to filter active hostnames from the list of passive subdomains obtained from various sources, for example:-
+Filter active hostnames from the list of passive subdomains, obtained from various sources:
 
-```console
+```shell
 subfinder -silent -d hackerone.com | dnsx -silent
 
 a.ns.hackerone.com
@@ -135,9 +135,9 @@ events.hackerone.com
 support.hackerone.com
 ```
 
-**dnsx** can be used to print **A** records for the given list of subdomains, for example:-
+Print **A** records for the given list of subdomains:
 
-```console
+```shell
 subfinder -silent -d hackerone.com | dnsx -silent -a -cname -resp
 
 www.hackerone.com [104.16.100.52]
@@ -183,10 +183,9 @@ mta-sts.managed.hackerone.com [185.199.111.153]
 mta-sts.managed.hackerone.com [hacker0x01.github.io]
 ```
 
+Extract **A** records for the given list of subdomains:
 
-**dnsx** can be used to extract **A** records for the given list of subdomains, for example:-
-
-```console
+```shell
 subfinder -silent -d hackerone.com | dnsx -silent -a -resp-only
 
 104.16.99.52
@@ -208,9 +207,9 @@ subfinder -silent -d hackerone.com | dnsx -silent -a -resp-only
 185.199.111.153
 ```
 
-**dnsx** can be used to extract **CNAME** records for the given list of subdomains, for example:-
+Extract **CNAME** records for the given list of subdomains:
 
-```console
+```shell
 subfinder -silent -d hackerone.com | dnsx -silent -cname -resp
 
 support.hackerone.com [hackerone.zendesk.com]
@@ -220,9 +219,9 @@ mta-sts.forwarding.hackerone.com [hacker0x01.github.io]
 events.hackerone.com [whitelabel.bigmarker.com]
 ```
 
-**dnsx** can be used to probe by given [dns status code](https://github.com/projectdiscovery/dnsx/wiki/RCODE-ID-VALUE-Mapping) on given list of sub(domains), for example:-
+Probe using [dns status code](https://github.com/projectdiscovery/dnsx/wiki/RCODE-ID-VALUE-Mapping) on given list of (sub)domains:
 
-```console
+```shell
 subfinder -silent -d hackerone.com | dnsx -silent -rcode noerror,servfail,refused
 
 ns.hackerone.com [NOERROR]
@@ -236,9 +235,9 @@ mta-sts.forwarding.hackerone.com [NOERROR]
 docs.hackerone.com [NOERROR]
 ```
 
-**dnsx** can be used to extract subdomains from given network range using `PTR` query, for example:-
+Extract subdomains from given network range using `PTR` query:
 
-```console
+```shell
 echo 173.0.84.0/24 | dnsx -silent -resp-only -ptr
 
 cors.api.paypal.com
@@ -258,9 +257,9 @@ fpdbs.paypal.com
 
 ### DNS Bruteforce
 
-**dnsx** can be used to bruteforce subdomains for given domain or list of domains using `d` and `w` flag.
+Bruteforce subdomains for given domain or list of domains using `d` and `w` flag:
 
-```console
+```shell
 dnsx -silent -d facebook.com -w dns_worldlist.txt
 
 blog.facebook.com
@@ -279,9 +278,9 @@ careers.facebook.com
 code.facebook.com
 ```
 
-**dnsx** can be used to bruteforce targeted subdomain using single or multiple keyword input, as `d` or `w` flag supports file or comma separated keyword inputs.
+Bruteforce targeted subdomain using single or multiple keyword input, as `d` or `w` flag supports file or comma separated keyword inputs:
 
-```console
+```shell
 dnsx -silent -d domains.txt -w jira,grafana,jenkins
 
 grafana.1688.com
@@ -301,9 +300,9 @@ jira.atlassian.net
 jira.atlassian.com
 ```
 
-**dnsx** support **stdin** input for all the input flags (`list`,`domain`,`wordlist`), as default `l` flag is supported for `stdin`, other input flag can be used by specifying the flag input with dash (`-`).
+Values are accepted from **stdin** for all the input types (`-list`, `-domain`, `-wordlist`). The `-list` flag defaults to `stdin`, but the same can be achieved for other input types by adding a `-` (dash) as parameter:
 
-```console
+```shell
 cat domains.txt | dnsx -silent -w jira,grafana,jenkins -d -
 
 grafana.1688.com
@@ -325,7 +324,7 @@ jira.atlassian.com
 
 ### Wildcard filtering
 
-A special feature of **dnsx** is its ability to handle **multi-level DNS based wildcards** and do it so with very less number of DNS requests. Sometimes all the subdomains will resolve which will lead to lots of garbage in the results. The way **dnsx** handles this is it will keep track of how many subdomains point to an IP and if the count of the Subdomains increase beyond a certain small threshold, it will check for wildcard on all the levels of the hosts for that IP iteratively.
+A special feature of `dnsx` is its ability to handle **multi-level DNS based wildcards**, and do it so with a very reduced number of DNS requests. Sometimes all the subdomains will resolve, which leads to lots of garbage in the output. The way `dnsx` handles this is by keeping track of how many subdomains point to an IP and if the count of the subdomains increase beyond a certain threshold, it will check for wildcards on all the levels of the hosts for that IP iteratively.
 
 ```console
 dnsx -l subdomain_list.txt -wd airbnb.com -o output.txt
@@ -333,11 +332,11 @@ dnsx -l subdomain_list.txt -wd airbnb.com -o output.txt
 
 # 📋 Notes
 
-- As default, **dnsx** checks for **A** record.
-- As default dnsx uses Google, Cloudflare, Quad9 [resolver](https://github.com/projectdiscovery/dnsx/blob/43af78839e237ea8cbafe571df1ab0d6cbe7f445/libs/dnsx/dnsx.go#L31).
-- Custom resolver list can be used using `r` flag.
+- As default, `dnsx` checks for **A** record.
+- As default `dnsx` uses Google, Cloudflare, Quad9 [resolver](https://github.com/projectdiscovery/dnsx/blob/43af78839e237ea8cbafe571df1ab0d6cbe7f445/libs/dnsx/dnsx.go#L31).
+- Custom resolver list can be loaded using the `r` flag.
 - Domain name (`wd`) input is mandatory for wildcard elimination.
 - DNS record flag can not be used when using wildcard filtering.
-- DNS resolution (`l`) and DNS Bruteforcing (`w`) can't be used together.
+- DNS resolution (`l`) and DNS brute-forcing (`w`) can't be used together.
 
-dnsx is made with 🖤 by the [projectdiscovery](https://projectdiscovery.io) team.
+`dnsx` is made with 🖤 by the [projectdiscovery](https://projectdiscovery.io) team.
