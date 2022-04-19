@@ -2,9 +2,8 @@ package runner
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -41,6 +40,7 @@ type Runner struct {
 	limiter             ratelimit.Limiter
 	hm                  *hybrid.HybridMap
 	stats               clistats.StatisticsClient
+	tmpStdinFile        string
 }
 
 func New(options *Options) (*Runner, error) {
@@ -192,50 +192,71 @@ func (r *Runner) InputWorker() {
 }
 
 func (r *Runner) prepareInput() error {
-	var dataDomains []byte
-	var sc *bufio.Scanner
+	var (
+		dataDomains chan string
+		sc          chan string
+		err         error
+	)
 
-	// prepare wordlist
-	var prefixs []string
-	if r.options.WordList != "" {
-		dataWordList, err := preProcessArgument(r.options.WordList)
+	// copy stdin to a temporary file
+	hasStdin := fileutil.HasStdin()
+	if hasStdin {
+		tmpStdinFile, err := fileutil.GetTempFileName()
 		if err != nil {
 			return err
 		}
-		prefixs = normalizeToSlice(dataWordList)
+		r.tmpStdinFile = tmpStdinFile
+
+		stdinFile, err := os.Create(r.tmpStdinFile)
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(stdinFile, os.Stdin); err != nil {
+			return err
+		}
+		// closes the file as we will read it multiple times to build the iterations
+		stdinFile.Close()
+		defer os.RemoveAll(r.tmpStdinFile)
 	}
 
 	if r.options.Domains != "" {
-		var err error
-		dataDomains, err = preProcessArgument(r.options.Domains)
+		dataDomains, err = r.preProcessArgument(r.options.Domains)
 		if err != nil {
 			return err
 		}
-		sc = bufio.NewScanner(bytes.NewReader(dataDomains))
+		sc = dataDomains
 	}
 
 	if sc == nil {
 		// attempt to load list from file
 		if fileutil.FileExists(r.options.Hosts) {
-			f, err := os.Open(r.options.Hosts)
+			f, err := fileutil.ReadFile(r.options.Hosts)
 			if err != nil {
 				return err
 			}
-			sc = bufio.NewScanner(f)
-		} else if argumentHasStdin(r.options.Hosts) || hasStdin() {
-			sc = bufio.NewScanner(os.Stdin)
+			sc = f
+		} else if argumentHasStdin(r.options.Hosts) || hasStdin {
+			sc, err = fileutil.ReadFile(r.tmpStdinFile)
+			if err != nil {
+				return err
+			}
 		} else {
 			return errors.New("hosts file or stdin not provided")
 		}
 	}
 
 	numHosts := 0
-	for sc.Scan() {
-		item := strings.TrimSpace(sc.Text())
+	for item := range sc {
+		item := normalize(item)
 		var hosts []string
 		switch {
 		case r.options.WordList != "":
-			for _, prefix := range prefixs {
+			// prepare wordlist
+			prefixes, err := r.preProcessArgument(r.options.WordList)
+			if err != nil {
+				return err
+			}
+			for prefix := range prefixes {
 				// domains Cartesian product with wordlist
 				subdomain := strings.TrimSpace(prefix) + "." + item
 				hosts = append(hosts, subdomain)
@@ -269,48 +290,26 @@ func (r *Runner) prepareInput() error {
 	return nil
 }
 
-func hasStdin() bool {
-	stat, _ := os.Stdin.Stat()
-	return (stat.Mode() & os.ModeCharDevice) == 0
-}
-
-func preProcessArgument(arg string) ([]byte, error) {
-	var (
-		data []byte
-		err  error
-	)
+func (r *Runner) preProcessArgument(arg string) (chan string, error) {
 	// read from:
 	// file
 	switch {
 	case fileutil.FileExists(arg):
-		data, err = os.ReadFile(arg)
-		if err != nil {
-			return nil, err
-		}
+		return fileutil.ReadFile(arg)
 	// stdin
 	case argumentHasStdin(arg):
-		data, err = ioutil.ReadAll(os.Stdin)
-		if err != nil {
-			return nil, err
-		}
+		return fileutil.ReadFile(r.tmpStdinFile)
 	// inline
 	case arg != "":
-		data = []byte(arg)
+		data := strings.ReplaceAll(arg, Comma, NewLine)
+		return fileutil.ReadFileWithReader(strings.NewReader(data))
 	default:
 		return nil, errors.New("empty argument")
 	}
-
-	return bytes.Replace(data, []byte(Comma), []byte(NewLine), -1), nil
 }
 
-func normalizeToSlice(data []byte) []string {
-	var s []string
-	sc := bufio.NewScanner(bytes.NewReader(data))
-	for sc.Scan() {
-		item := strings.TrimSpace(sc.Text())
-		s = append(s, item)
-	}
-	return s
+func normalize(data string) string {
+	return strings.TrimSpace(data)
 }
 
 // nolint:deadcode
