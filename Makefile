@@ -14,6 +14,6 @@ all: build
 build:
 	$(GOBUILD) $(GOFLAGS) -ldflags '$(LDFLAGS)' -o "dnsx" cmd/dnsx/dnsx.go
 test: 
-	$(GOTEST) -v ./...
+	$(GOTEST) $(GOFLAGS) ./...
 tidy:
 	$(GOMOD) tidy
