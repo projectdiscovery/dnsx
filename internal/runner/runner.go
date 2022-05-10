@@ -501,24 +501,13 @@ func (r *Runner) HandleOutput() {
 		defer foutput.Close()
 		w = bufio.NewWriter(foutput)
 		defer w.Flush()
-		var flushTicker *time.Ticker
-		if r.options.FlushInterval >= 0 {
-			flushTicker = time.NewTicker(time.Duration(r.options.FlushInterval) * time.Second)
-			defer flushTicker.Stop()
-			go func() {
-				for range flushTicker.C {
-					w.Flush()
-				}
-			}()
-		}
 	}
 	for item := range r.outputchan {
-		if r.options.OutputFile != "" {
+		if foutput != nil {
 			// uses a buffer to write to file
-			// nolint:errcheck
-			w.WriteString(item + "\n")
+			_, _ = w.WriteString(item + "\n")
 		}
-		// otherwise writes sequentially to stdout
+		// writes sequentially to stdout
 		gologger.Silent().Msgf("%s\n", item)
 	}
 }

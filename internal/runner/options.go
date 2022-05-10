@@ -54,7 +54,6 @@ type Options struct {
 	hasRCodes         bool
 	Resume            bool
 	resumeCfg         *ResumeCfg
-	FlushInterval     int
 	HostsFile         bool
 	Stream            bool
 	CAA               bool
@@ -125,7 +124,6 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.HostsFile, "hostsfile", "hf", false, "use system host file"),
 		flagSet.BoolVar(&options.Trace, "trace", false, "perform dns tracing"),
 		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace"),
-		flagSet.IntVar(&options.FlushInterval, "flush-interval", 10, "flush interval of output file"),
 		flagSet.BoolVar(&options.Resume, "resume", false, "resume existing scan"),
 	)
 
