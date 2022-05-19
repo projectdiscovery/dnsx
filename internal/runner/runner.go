@@ -50,7 +50,7 @@ func New(options *Options) (*Runner, error) {
 	dnsxOptions.MaxRetries = options.Retries
 	dnsxOptions.TraceMaxRecursion = options.TraceMaxRecursion
 	dnsxOptions.Hostsfile = options.HostsFile
-
+	dnsxOptions.OutputCDN = options.OutputCDN
 	if options.Resolvers != "" {
 		dnsxOptions.BaseResolvers = []string{}
 		// If it's a file load resolvers from it
@@ -554,11 +554,12 @@ func (r *Runner) worker() {
 			domain = extractDomain(domain)
 		}
 		r.limiter.Take()
-
+		dnsData := dnsx.ResponseData{}
 		// Ignoring errors as partial results are still good
-		dnsData, _ := r.dnsx.QueryMultiple(domain)
+		//dnsData, _ := r.dnsx.QueryMultiple(domain)
+		dnsData.DNSData, _ = r.dnsx.QueryMultiple(domain)
 		// Just skipping nil responses (in case of critical errors)
-		if dnsData == nil {
+		if dnsData.DNSData == nil {
 			continue
 		}
 
@@ -598,11 +599,14 @@ func (r *Runner) worker() {
 				dnsData.AXFRData = axfrData
 			}
 		}
-
+		// add flags for cdn
+		if r.options.OutputCDN {
+			dnsData.IsCDNIP, dnsData.CDNName, _ = r.dnsx.CdnCheck(domain)
+		}
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			// nolint:errcheck
-			r.storeDNSData(dnsData)
+			r.storeDNSData(dnsData.DNSData)
 			continue
 		}
 		if r.options.JSON {
@@ -645,6 +649,9 @@ func (r *Runner) worker() {
 		if r.options.CAA {
 			r.outputRecordType(domain, dnsData.CAA)
 		}
+		if dnsData.IsCDNIP {
+			r.outputCdnResponse(domain, dnsData.CDNName)
+		}
 	}
 }
 
@@ -667,6 +674,14 @@ func (r *Runner) outputResponseCode(domain string, responsecode int) {
 	responseCodeExt, ok := dns.RcodeToString[responsecode]
 	if ok {
 		r.outputchan <- domain + " [" + responseCodeExt + "]"
+	}
+}
+
+func (r *Runner) outputCdnResponse(domain string, cdnName string) {
+	if r.options.ResponseOnly {
+		r.outputchan <- cdnName
+	} else {
+		r.outputchan <- domain + " [" + cdnName + "]"
 	}
 }
 

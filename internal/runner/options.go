@@ -58,6 +58,7 @@ type Options struct {
 	HostsFile         bool
 	Stream            bool
 	CAA               bool
+	OutputCDN         bool
 }
 
 // ShouldLoadResume resume file
@@ -118,6 +119,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.Raw, "debug", "raw", false, "display raw dns response"),
 		flagSet.BoolVar(&options.ShowStatistics, "stats", false, "display stats of the running scan"),
 		flagSet.BoolVar(&options.Version, "version", false, "display version of dnsx"),
+		flagSet.BoolVarP(&options.OutputCDN, "cdn", "display-cdn", false, "skip full port scans for CDN's (only checks for 80,443)"),
 	)
 
 	createGroup(flagSet, "optimization", "Optimization",

@@ -6,6 +6,7 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.48
 	github.com/pkg/errors v0.9.1
+	github.com/projectdiscovery/cdncheck v0.0.3
 	github.com/projectdiscovery/clistats v0.0.8
 	github.com/projectdiscovery/fileutil v0.0.0-20220308101036-16c79af1cf5d
 	github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c
@@ -54,6 +55,7 @@ require (
 	github.com/projectdiscovery/sliceutil v0.0.0-20220225084130-8392ac12fa6d // indirect
 	github.com/projectdiscovery/stringsutil v0.0.0-20220208075244-7c05502ca8e9 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
+	github.com/yl2chen/cidranger v1.0.2 // indirect
 	go.etcd.io/bbolt v1.3.5 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
