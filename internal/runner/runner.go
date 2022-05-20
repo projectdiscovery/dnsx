@@ -623,48 +623,48 @@ func (r *Runner) worker() {
 			continue
 		}
 		if r.options.A {
-			r.outputRecordType(domain, dnsData.A)
+			r.outputRecordType(domain, dnsData.A, dnsData.CDNName)
 		}
 		if r.options.AAAA {
-			r.outputRecordType(domain, dnsData.AAAA)
+			r.outputRecordType(domain, dnsData.AAAA, dnsData.CDNName)
 		}
 		if r.options.CNAME {
-			r.outputRecordType(domain, dnsData.CNAME)
+			r.outputRecordType(domain, dnsData.CNAME, dnsData.CDNName)
 		}
 		if r.options.PTR {
-			r.outputRecordType(domain, dnsData.PTR)
+			r.outputRecordType(domain, dnsData.PTR, dnsData.CDNName)
 		}
 		if r.options.MX {
-			r.outputRecordType(domain, dnsData.MX)
+			r.outputRecordType(domain, dnsData.MX, dnsData.CDNName)
 		}
 		if r.options.NS {
-			r.outputRecordType(domain, dnsData.NS)
+			r.outputRecordType(domain, dnsData.NS, dnsData.CDNName)
 		}
 		if r.options.SOA {
-			r.outputRecordType(domain, dnsData.SOA)
+			r.outputRecordType(domain, dnsData.SOA, dnsData.CDNName)
 		}
 		if r.options.TXT {
-			r.outputRecordType(domain, dnsData.TXT)
+			r.outputRecordType(domain, dnsData.TXT, dnsData.CDNName)
 		}
 		if r.options.CAA {
-			r.outputRecordType(domain, dnsData.CAA)
-		}
-		if dnsData.IsCDNIP {
-			r.outputCdnResponse(domain, dnsData.CDNName)
+			r.outputRecordType(domain, dnsData.CAA, dnsData.CDNName)
 		}
 	}
 }
 
-func (r *Runner) outputRecordType(domain string, items []string) {
+func (r *Runner) outputRecordType(domain string, items []string, cdnName string) {
+	if cdnName != "" {
+		cdnName = fmt.Sprintf(" [%s]", cdnName)
+	}
 	for _, item := range items {
 		item := strings.ToLower(item)
 		if r.options.ResponseOnly {
-			r.outputchan <- item
+			r.outputchan <- item + cdnName
 		} else if r.options.Response {
-			r.outputchan <- domain + " [" + item + "]"
+			r.outputchan <- domain + " [" + item + "]" + cdnName
 		} else {
 			// just prints out the domain if it has a record type and exit
-			r.outputchan <- domain
+			r.outputchan <- domain + cdnName
 			break
 		}
 	}
@@ -674,14 +674,6 @@ func (r *Runner) outputResponseCode(domain string, responsecode int) {
 	responseCodeExt, ok := dns.RcodeToString[responsecode]
 	if ok {
 		r.outputchan <- domain + " [" + responseCodeExt + "]"
-	}
-}
-
-func (r *Runner) outputCdnResponse(domain string, cdnName string) {
-	if r.options.ResponseOnly {
-		r.outputchan <- cdnName
-	} else {
-		r.outputchan <- domain + " [" + cdnName + "]"
 	}
 }
 
