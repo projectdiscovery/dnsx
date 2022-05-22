@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/miekg/dns v1.1.48
+	github.com/miekg/dns v1.1.49
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/cdncheck v0.0.3
 	github.com/projectdiscovery/clistats v0.0.8
@@ -14,7 +14,7 @@ require (
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/hmap v0.0.2
 	github.com/projectdiscovery/iputil v0.0.0-20210804143329-3a30fcde43f3
-	github.com/projectdiscovery/mapcidr v0.0.8
+	github.com/projectdiscovery/mapcidr v0.0.9
 	github.com/projectdiscovery/retryabledns v1.0.14-0.20220404054947-f40567f4e5a7
 	github.com/rs/xid v1.4.0
 	go.uber.org/ratelimit v0.2.0
