@@ -556,7 +556,6 @@ func (r *Runner) worker() {
 		r.limiter.Take()
 		dnsData := dnsx.ResponseData{}
 		// Ignoring errors as partial results are still good
-		//dnsData, _ := r.dnsx.QueryMultiple(domain)
 		dnsData.DNSData, _ = r.dnsx.QueryMultiple(domain)
 		// Just skipping nil responses (in case of critical errors)
 		if dnsData.DNSData == nil {
