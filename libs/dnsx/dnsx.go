@@ -1,10 +1,12 @@
 package dnsx
 
 import (
+	"encoding/json"
 	"errors"
 	"math"
 
 	miekgdns "github.com/miekg/dns"
+	"github.com/projectdiscovery/cdncheck"
 	"github.com/projectdiscovery/iputil"
 	retryabledns "github.com/projectdiscovery/retryabledns"
 )
@@ -13,6 +15,7 @@ import (
 type DNSX struct {
 	dnsClient *retryabledns.Client
 	Options   *Options
+	cdn       *cdncheck.Client
 }
 
 // Options contains configuration options
@@ -23,6 +26,19 @@ type Options struct {
 	Trace             bool
 	TraceMaxRecursion int
 	Hostsfile         bool
+	OutputCDN         bool
+}
+
+// ResponseData to show output result
+type ResponseData struct {
+	*retryabledns.DNSData
+	IsCDNIP bool   `json:"cdn,omitempty" csv:"cdn"`
+	CDNName string `json:"cdn-name,omitempty" csv:"cdn-name"`
+}
+
+func (d *ResponseData) JSON() (string, error) {
+	b, err := json.Marshal(&d)
+	return string(b), err
 }
 
 // DefaultOptions contains the default configuration options
@@ -52,8 +68,15 @@ func New(options Options) (*DNSX, error) {
 
 	dnsClient := retryabledns.NewWithOptions(retryablednsOptions)
 	dnsClient.TCPFallback = true
-
-	return &DNSX{dnsClient: dnsClient, Options: &options}, nil
+	dnsx := &DNSX{dnsClient: dnsClient, Options: &options}
+	if options.OutputCDN {
+		var err error
+		dnsx.cdn, err = cdncheck.NewWithCache()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return dnsx, nil
 }
 
 // Lookup performs a DNS A question and returns corresponding IPs

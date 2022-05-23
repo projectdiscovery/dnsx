@@ -50,7 +50,7 @@ func New(options *Options) (*Runner, error) {
 	dnsxOptions.MaxRetries = options.Retries
 	dnsxOptions.TraceMaxRecursion = options.TraceMaxRecursion
 	dnsxOptions.Hostsfile = options.HostsFile
-
+	dnsxOptions.OutputCDN = options.OutputCDN
 	if options.Resolvers != "" {
 		dnsxOptions.BaseResolvers = []string{}
 		// If it's a file load resolvers from it
@@ -542,11 +542,11 @@ func (r *Runner) worker() {
 			domain = extractDomain(domain)
 		}
 		r.limiter.Take()
-
+		dnsData := dnsx.ResponseData{}
 		// Ignoring errors as partial results are still good
-		dnsData, _ := r.dnsx.QueryMultiple(domain)
+		dnsData.DNSData, _ = r.dnsx.QueryMultiple(domain)
 		// Just skipping nil responses (in case of critical errors)
-		if dnsData == nil {
+		if dnsData.DNSData == nil {
 			continue
 		}
 
@@ -586,11 +586,14 @@ func (r *Runner) worker() {
 				dnsData.AXFRData = axfrData
 			}
 		}
-
+		// add flags for cdn
+		if r.options.OutputCDN {
+			dnsData.IsCDNIP, dnsData.CDNName, _ = r.dnsx.CdnCheck(domain)
+		}
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			// nolint:errcheck
-			r.storeDNSData(dnsData)
+			r.storeDNSData(dnsData.DNSData)
 			continue
 		}
 		if r.options.JSON {
@@ -607,45 +610,48 @@ func (r *Runner) worker() {
 			continue
 		}
 		if r.options.A {
-			r.outputRecordType(domain, dnsData.A)
+			r.outputRecordType(domain, dnsData.A, dnsData.CDNName)
 		}
 		if r.options.AAAA {
-			r.outputRecordType(domain, dnsData.AAAA)
+			r.outputRecordType(domain, dnsData.AAAA, dnsData.CDNName)
 		}
 		if r.options.CNAME {
-			r.outputRecordType(domain, dnsData.CNAME)
+			r.outputRecordType(domain, dnsData.CNAME, dnsData.CDNName)
 		}
 		if r.options.PTR {
-			r.outputRecordType(domain, dnsData.PTR)
+			r.outputRecordType(domain, dnsData.PTR, dnsData.CDNName)
 		}
 		if r.options.MX {
-			r.outputRecordType(domain, dnsData.MX)
+			r.outputRecordType(domain, dnsData.MX, dnsData.CDNName)
 		}
 		if r.options.NS {
-			r.outputRecordType(domain, dnsData.NS)
+			r.outputRecordType(domain, dnsData.NS, dnsData.CDNName)
 		}
 		if r.options.SOA {
-			r.outputRecordType(domain, dnsData.SOA)
+			r.outputRecordType(domain, dnsData.SOA, dnsData.CDNName)
 		}
 		if r.options.TXT {
-			r.outputRecordType(domain, dnsData.TXT)
+			r.outputRecordType(domain, dnsData.TXT, dnsData.CDNName)
 		}
 		if r.options.CAA {
-			r.outputRecordType(domain, dnsData.CAA)
+			r.outputRecordType(domain, dnsData.CAA, dnsData.CDNName)
 		}
 	}
 }
 
-func (r *Runner) outputRecordType(domain string, items []string) {
+func (r *Runner) outputRecordType(domain string, items []string, cdnName string) {
+	if cdnName != "" {
+		cdnName = fmt.Sprintf(" [%s]", cdnName)
+	}
 	for _, item := range items {
 		item := strings.ToLower(item)
 		if r.options.ResponseOnly {
-			r.outputchan <- item
+			r.outputchan <- item + cdnName
 		} else if r.options.Response {
-			r.outputchan <- domain + " [" + item + "]"
+			r.outputchan <- domain + " [" + item + "]" + cdnName
 		} else {
 			// just prints out the domain if it has a record type and exit
-			r.outputchan <- domain
+			r.outputchan <- domain + cdnName
 			break
 		}
 	}
