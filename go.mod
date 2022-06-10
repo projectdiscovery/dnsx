@@ -8,13 +8,13 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/cdncheck v0.0.3
 	github.com/projectdiscovery/clistats v0.0.8
-	github.com/projectdiscovery/fileutil v0.0.0-20220308101036-16c79af1cf5d
+	github.com/projectdiscovery/fileutil v0.0.0-20220506114156-c4ab20801483
 	github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c
-	github.com/projectdiscovery/goflags v0.0.7
+	github.com/projectdiscovery/goflags v0.0.8-0.20220426153734-2ffbfbff923c
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/hmap v0.0.2
 	github.com/projectdiscovery/iputil v0.0.0-20210804143329-3a30fcde43f3
-	github.com/projectdiscovery/mapcidr v0.0.9
+	github.com/projectdiscovery/mapcidr v1.0.0
 	github.com/projectdiscovery/retryabledns v1.0.14-0.20220404054947-f40567f4e5a7
 	github.com/rs/xid v1.4.0
 	go.uber.org/ratelimit v0.2.0
@@ -53,7 +53,7 @@ require (
 	github.com/projectdiscovery/reflectutil v0.0.0-20210804085554-4d90952bf92f // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.2 // indirect
 	github.com/projectdiscovery/sliceutil v0.0.0-20220225084130-8392ac12fa6d // indirect
-	github.com/projectdiscovery/stringsutil v0.0.0-20220208075244-7c05502ca8e9 // indirect
+	github.com/projectdiscovery/stringsutil v0.0.0-20220422150559-b54fb5dc6833 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/yl2chen/cidranger v1.0.2 // indirect
 	go.etcd.io/bbolt v1.3.5 // indirect
@@ -68,5 +68,5 @@ require (
 	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/ini.v1 v1.66.3 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
