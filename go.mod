@@ -13,7 +13,7 @@ require (
 	github.com/projectdiscovery/goflags v0.0.8-0.20220426153734-2ffbfbff923c
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/hmap v0.0.2
-	github.com/projectdiscovery/iputil v0.0.0-20210804143329-3a30fcde43f3
+	github.com/projectdiscovery/iputil v0.0.0-20220613112553-9b6873b2c619
 	github.com/projectdiscovery/mapcidr v1.0.0
 	github.com/projectdiscovery/retryabledns v1.0.14-0.20220404054947-f40567f4e5a7
 	github.com/rs/xid v1.4.0
