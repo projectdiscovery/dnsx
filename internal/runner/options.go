@@ -58,6 +58,7 @@ type Options struct {
 	Stream            bool
 	CAA               bool
 	OutputCDN         bool
+	HealthCheck       bool
 }
 
 // ShouldLoadResume resume file
@@ -76,14 +77,14 @@ func ParseOptions() *Options {
 	flagSet := goflags.NewFlagSet()
 	flagSet.SetDescription(`dnsx is a fast and multi-purpose DNS toolkit allow to run multiple probes using retryabledns library.`)
 
-	createGroup(flagSet, "input", "Input",
+	flagSet.CreateGroup("input", "Input",
 		flagSet.BoolVar(&options.Stream, "stream", false, "stream mode (wordlist, wildcard, stats and stop/resume will be disabled)"),
 		flagSet.StringVarP(&options.Hosts, "list", "l", "", "list of sub(domains)/hosts to resolve (file or stdin)"),
 		flagSet.StringVarP(&options.Domains, "domain", "d", "", "list of domain to bruteforce (file or comma separated or stdin)"),
 		flagSet.StringVarP(&options.WordList, "wordlist", "w", "", "list of words to bruteforce (file or comma separated or stdin)"),
 	)
 
-	createGroup(flagSet, "query", "Query",
+	flagSet.CreateGroup("query", "Query",
 		flagSet.BoolVar(&options.A, "a", false, "query A record (default)"),
 		flagSet.BoolVar(&options.AAAA, "aaaa", false, "query AAAA record"),
 		flagSet.BoolVar(&options.CNAME, "cname", false, "query CNAME record"),
@@ -96,23 +97,24 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.CAA, "caa", false, "query CAA record"),
 	)
 
-	createGroup(flagSet, "filters", "Filters",
+	flagSet.CreateGroup("filters", "Filters",
 		flagSet.BoolVar(&options.Response, "resp", false, "display dns response"),
 		flagSet.BoolVar(&options.ResponseOnly, "resp-only", false, "display dns response only"),
 		flagSet.StringVarP(&options.RCode, "rc", "rcode", "", "filter result by dns status code (eg. -rcode noerror,servfail,refused)"),
 	)
 
-	createGroup(flagSet, "rate-limit", "Rate-limit",
+	flagSet.CreateGroup("rate-limit", "Rate-limit",
 		flagSet.IntVarP(&options.Threads, "c", "t", 100, "number of concurrent threads to use"),
 		flagSet.IntVarP(&options.RateLimit, "rate-limit", "rl", -1, "number of dns request/second to make (disabled as default)"),
 	)
 
-	createGroup(flagSet, "output", "Output",
+	flagSet.CreateGroup("output", "Output",
 		flagSet.StringVarP(&options.OutputFile, "output", "o", "", "file to write output"),
 		flagSet.BoolVar(&options.JSON, "json", false, "write output in JSONL(ines) format"),
 	)
 
-	createGroup(flagSet, "debug", "Debug",
+	flagSet.CreateGroup("debug", "Debug",
+		flagSet.BoolVarP(&options.HealthCheck, "hc", "health-check", false, "run diagnostic check up"),
 		flagSet.BoolVar(&options.Silent, "silent", false, "display only results in the output"),
 		flagSet.BoolVarP(&options.Verbose, "verbose", "v", false, "display verbose output"),
 		flagSet.BoolVarP(&options.Raw, "debug", "raw", false, "display raw dns response"),
@@ -121,7 +123,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.OutputCDN, "cdn", "display-cdn", false, "skip full port scans for CDN's (only checks for 80,443)"),
 	)
 
-	createGroup(flagSet, "optimization", "Optimization",
+	flagSet.CreateGroup("optimization", "Optimization",
 		flagSet.IntVar(&options.Retries, "retry", 2, "number of dns retries to make"),
 		flagSet.BoolVarP(&options.HostsFile, "hostsfile", "hf", false, "use system host file"),
 		flagSet.BoolVar(&options.Trace, "trace", false, "perform dns tracing"),
@@ -129,13 +131,18 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.Resume, "resume", false, "resume existing scan"),
 	)
 
-	createGroup(flagSet, "configs", "Configurations",
+	flagSet.CreateGroup("configs", "Configurations",
 		flagSet.StringVarP(&options.Resolvers, "resolver", "r", "", "list of resolvers to use (file or comma separated)"),
 		flagSet.IntVarP(&options.WildcardThreshold, "wildcard-threshold", "wt", 5, "wildcard filter threshold"),
 		flagSet.StringVarP(&options.WildcardDomain, "wildcard-domain", "wd", "", "domain name for wildcard filtering (other flags will be ignored)"),
 	)
 
 	_ = flagSet.Parse()
+
+	if options.HealthCheck {
+		gologger.Print().Msgf("%s\n", DoHealthCheck(options))
+		os.Exit(0)
+	}
 
 	// Read the inputs and configure the logging
 	options.configureOutput()
@@ -298,11 +305,4 @@ func (options *Options) configureResume() error {
 
 	}
 	return nil
-}
-
-func createGroup(flagSet *goflags.FlagSet, groupName, description string, flags ...*goflags.FlagData) {
-	flagSet.SetGroup(groupName, description)
-	for _, currentFlag := range flags {
-		currentFlag.Group(groupName)
-	}
 }
