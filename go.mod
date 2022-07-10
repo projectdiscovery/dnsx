@@ -15,7 +15,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.2
 	github.com/projectdiscovery/iputil v0.0.0-20220613112553-9b6873b2c619
 	github.com/projectdiscovery/mapcidr v1.0.0
-	github.com/projectdiscovery/retryabledns v1.0.14-0.20220404054947-f40567f4e5a7
+	github.com/projectdiscovery/retryabledns v1.0.14-0.20220710203543-796a6b0e17dd
 	github.com/rs/xid v1.4.0
 	go.uber.org/ratelimit v0.2.0
 )
@@ -46,7 +46,7 @@ require (
 	github.com/klauspost/compress v1.11.7 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/microcosm-cc/bluemonday v1.0.18 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.19 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/onsi/ginkgo v1.16.4 // indirect
