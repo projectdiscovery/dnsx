@@ -14,7 +14,7 @@ require (
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/hmap v0.0.2
 	github.com/projectdiscovery/iputil v0.0.0-20220613112553-9b6873b2c619
-	github.com/projectdiscovery/mapcidr v1.0.0
+	github.com/projectdiscovery/mapcidr v1.0.1
 	github.com/projectdiscovery/retryabledns v1.0.14-0.20220404054947-f40567f4e5a7
 	github.com/rs/xid v1.4.0
 	go.uber.org/ratelimit v0.2.0
@@ -54,7 +54,7 @@ require (
 	github.com/projectdiscovery/blackrock v0.0.0-20210903102120-5a9d2412d21d // indirect
 	github.com/projectdiscovery/reflectutil v0.0.0-20210804085554-4d90952bf92f // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.2 // indirect
-	github.com/projectdiscovery/sliceutil v0.0.0-20220225084130-8392ac12fa6d // indirect
+	github.com/projectdiscovery/sliceutil v0.0.0-20220617151003-15892688e1d6 // indirect
 	github.com/projectdiscovery/stringsutil v0.0.0-20220612082425-0037ce9f89f3 // indirect
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
