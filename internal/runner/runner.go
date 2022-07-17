@@ -554,10 +554,13 @@ func (r *Runner) worker() {
 			continue
 		}
 
-		// skip responses not having the expected response code
-		if len(r.options.rcodes) > 0 {
-			if _, ok := r.options.rcodes[dnsData.StatusCodeRaw]; !ok {
-				continue
+		// results from hosts file are always returned
+		if !dnsData.HostsFile {
+			// skip responses not having the expected response code
+			if len(r.options.rcodes) > 0 {
+				if _, ok := r.options.rcodes[dnsData.StatusCodeRaw]; !ok {
+					continue
+				}
 			}
 		}
 
