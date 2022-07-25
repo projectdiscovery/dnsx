@@ -66,7 +66,10 @@ func New(options Options) (*DNSX, error) {
 		Hostsfile:     options.Hostsfile,
 	}
 
-	dnsClient := retryabledns.NewWithOptions(retryablednsOptions)
+	dnsClient, err := retryabledns.NewWithOptions(retryablednsOptions)
+	if err != nil {
+		return nil, err
+	}
 	dnsClient.TCPFallback = true
 	dnsx := &DNSX{dnsClient: dnsClient, Options: &options}
 	if options.OutputCDN {
