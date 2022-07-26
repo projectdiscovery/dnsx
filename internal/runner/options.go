@@ -124,7 +124,7 @@ func ParseOptions() *Options {
 	)
 
 	flagSet.CreateGroup("optimization", "Optimization",
-		flagSet.IntVar(&options.Retries, "retry", 2, "number of dns retries to make"),
+		flagSet.IntVar(&options.Retries, "retry", 2, "number of dns attempts to make (must be at least 1)"),
 		flagSet.BoolVarP(&options.HostsFile, "hostsfile", "hf", false, "use system host file"),
 		flagSet.BoolVar(&options.Trace, "trace", false, "perform dns tracing"),
 		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace"),
@@ -172,6 +172,10 @@ func ParseOptions() *Options {
 func (options *Options) validateOptions() {
 	if options.Response && options.ResponseOnly {
 		gologger.Fatal().Msgf("resp and resp-only can't be used at the same time")
+	}
+
+	if options.Retries == 0 {
+		gologger.Fatal().Msgf("retries must be at least 1")
 	}
 
 	wordListPresent := options.WordList != ""
