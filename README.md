@@ -331,6 +331,58 @@ A special feature of **dnsx** is its ability to handle **multi-level DNS based w
 dnsx -l subdomain_list.txt -wd airbnb.com -o output.txt
 ```
 
+---------
+
+### Dnsx as a library
+
+It's possible to use the library directly in your golang programs. The following code snippets is an example of use in golang programs. Please refer to [here](https://pkg.go.dev/github.com/projectdiscovery/dnsx@v1.1.0/libs/dnsx) for detailed package configuration and usage.
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/projectdiscovery/dnsx/libs/dnsx"
+)
+
+func main() {
+	// Create DNS Resolver with default options
+	dnsClient, err := dnsx.New(dnsx.DefaultOptions)
+	if err != nil {
+		fmt.Printf("err: %v\n", err)
+		return
+	}
+
+	// DNS A question and returns corresponding IPs
+	result, err := dnsClient.Lookup("hackerone.com")
+	if err != nil {
+		fmt.Printf("err: %v\n", err)
+		return
+	}
+	for idx, msg := range result {
+		fmt.Printf("%d: %s\n", idx+1, msg)
+	}
+
+	// Query
+	rawResp, err := dnsClient.QueryOne("hackerone.com")
+	if err != nil {
+		fmt.Printf("err: %v\n", err)
+		return
+	}
+	fmt.Printf("rawResp: %v\n", rawResp)
+
+	jsonStr, err := rawResp.JSON()
+	if err != nil {
+		fmt.Printf("err: %v\n", err)
+		return
+	}
+	fmt.Println(jsonStr)
+
+	return
+}
+```
+
 # 📋 Notes
 
 - As default, **dnsx** checks for **A** record.
