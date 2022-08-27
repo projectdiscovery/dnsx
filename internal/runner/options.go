@@ -78,7 +78,6 @@ func ParseOptions() *Options {
 	flagSet.SetDescription(`dnsx is a fast and multi-purpose DNS toolkit allow to run multiple probes using retryabledns library.`)
 
 	flagSet.CreateGroup("input", "Input",
-		flagSet.BoolVar(&options.Stream, "stream", false, "stream mode (wordlist, wildcard, stats and stop/resume will be disabled)"),
 		flagSet.StringVarP(&options.Hosts, "list", "l", "", "list of sub(domains)/hosts to resolve (file or stdin)"),
 		flagSet.StringVarP(&options.Domains, "domain", "d", "", "list of domain to bruteforce (file or comma separated or stdin)"),
 		flagSet.StringVarP(&options.WordList, "wordlist", "w", "", "list of words to bruteforce (file or comma separated or stdin)"),
@@ -97,14 +96,18 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.CAA, "caa", false, "query CAA record"),
 	)
 
-	flagSet.CreateGroup("filters", "Filters",
-		flagSet.BoolVar(&options.Response, "resp", false, "display dns response"),
-		flagSet.BoolVar(&options.ResponseOnly, "resp-only", false, "display dns response only"),
-		flagSet.StringVarP(&options.RCode, "rc", "rcode", "", "filter result by dns status code (eg. -rcode noerror,servfail,refused)"),
+	flagSet.CreateGroup("filter", "Filter",
+		flagSet.BoolVarP(&options.Response, "resp", "re", false, "display dns response"),
+		flagSet.BoolVarP(&options.ResponseOnly, "resp-only", "ro", false, "display dns response only"),
+		flagSet.StringVarP(&options.RCode, "rcode", "rc", "", "filter result by dns status code (eg. -rcode noerror,servfail,refused)"),
+	)
+
+	flagSet.CreateGroup("probe", "Probe",
+		flagSet.BoolVar(&options.OutputCDN, "cdn", false, "display cdn name"),
 	)
 
 	flagSet.CreateGroup("rate-limit", "Rate-limit",
-		flagSet.IntVarP(&options.Threads, "c", "t", 100, "number of concurrent threads to use"),
+		flagSet.IntVarP(&options.Threads, "threads", "t", 100, "number of concurrent threads to use"),
 		flagSet.IntVarP(&options.RateLimit, "rate-limit", "rl", -1, "number of dns request/second to make (disabled as default)"),
 	)
 
@@ -114,13 +117,12 @@ func ParseOptions() *Options {
 	)
 
 	flagSet.CreateGroup("debug", "Debug",
-		flagSet.BoolVarP(&options.HealthCheck, "hc", "health-check", false, "run diagnostic check up"),
+		flagSet.BoolVarP(&options.HealthCheck, "health-check", "hc", false, "run diagnostic check up"),
 		flagSet.BoolVar(&options.Silent, "silent", false, "display only results in the output"),
 		flagSet.BoolVarP(&options.Verbose, "verbose", "v", false, "display verbose output"),
 		flagSet.BoolVarP(&options.Raw, "debug", "raw", false, "display raw dns response"),
 		flagSet.BoolVar(&options.ShowStatistics, "stats", false, "display stats of the running scan"),
 		flagSet.BoolVar(&options.Version, "version", false, "display version of dnsx"),
-		flagSet.BoolVarP(&options.OutputCDN, "cdn", "display-cdn", false, "skip full port scans for CDN's (only checks for 80,443)"),
 	)
 
 	flagSet.CreateGroup("optimization", "Optimization",
@@ -129,6 +131,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.Trace, "trace", false, "perform dns tracing"),
 		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace"),
 		flagSet.BoolVar(&options.Resume, "resume", false, "resume existing scan"),
+		flagSet.BoolVar(&options.Stream, "stream", false, "stream mode (wordlist, wildcard, stats and stop/resume will be disabled)"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",

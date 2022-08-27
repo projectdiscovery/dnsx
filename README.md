@@ -78,14 +78,19 @@ QUERY:
    -ptr    query PTR record
    -mx     query MX record
    -soa    query SOA record
+   -axfr   query AXFR
+   -caa    query CAA record
 
-FILTERS:
-   -resp               display dns response
-   -resp-only          display dns response only
-   -rcode, -rc string  filter result by dns status code (eg. -rcode noerror,servfail,refused)
+FILTER:
+   -re, -resp          display dns response
+   -ro, -resp-only     display dns response only
+   -rc, -rcode string  filter result by dns status code (eg. -rcode noerror,servfail,refused)
+
+PROBE:
+   -cdn  display cdn name
 
 RATE-LIMIT:
-   -t, -c int            number of concurrent threads to use (default 100)
+   -t, -threads int      number of concurrent threads to use (default 100)
    -rl, -rate-limit int  number of dns request/second to make (disabled as default) (default -1)
 
 OUTPUT:
@@ -93,19 +98,20 @@ OUTPUT:
    -json               write output in JSONL(ines) format
 
 DEBUG:
-   -silent       display only results in the output
-   -v, -verbose  display verbose output
-   -raw, -debug  display raw dns response
-   -stats        display stats of the running scan
-   -version      display version of dnsx
+   -hc, -health-check  run diagnostic check up
+   -silent             display only results in the output
+   -v, -verbose        display verbose output
+   -raw, -debug        display raw dns response
+   -stats              display stats of the running scan
+   -version            display version of dnsx
 
 OPTIMIZATION:
-   -retry int                number of dns retries to make (default 2)
+   -retry int                number of dns attempts to make (must be at least 1) (default 2)
    -hf, -hostsfile           use system host file
    -trace                    perform dns tracing
    -trace-max-recursion int  Max recursion for dns trace (default 32767)
-   -flush-interval int       flush interval of output file (default 10)
    -resume                   resume existing scan
+   -stream                   stream mode (wordlist, wildcard, stats and stop/resume will be disabled)
 
 CONFIGURATIONS:
    -r, -resolver string          list of resolvers to use (file or comma separated)
@@ -119,7 +125,7 @@ CONFIGURATIONS:
 
 Filter active hostnames from the list of passive subdomains, obtained from various sources:
 
-```shell
+```console
 subfinder -silent -d hackerone.com | dnsx -silent
 
 a.ns.hackerone.com
@@ -137,8 +143,8 @@ support.hackerone.com
 
 Print **A** records for the given list of subdomains:
 
-```shell
-subfinder -silent -d hackerone.com | dnsx -silent -a -cname -resp
+```console
+subfinder -silent -d hackerone.com | dnsx -silent -a -resp
 
 www.hackerone.com [104.16.100.52]
 www.hackerone.com [104.16.99.52]
@@ -150,42 +156,35 @@ mta-sts.forwarding.hackerone.com [185.199.108.153]
 mta-sts.forwarding.hackerone.com [185.199.109.153]
 mta-sts.forwarding.hackerone.com [185.199.110.153]
 mta-sts.forwarding.hackerone.com [185.199.111.153]
-mta-sts.forwarding.hackerone.com [hacker0x01.github.io]
 a.ns.hackerone.com [162.159.0.31]
 resources.hackerone.com [52.60.160.16]
 resources.hackerone.com [3.98.63.202]
 resources.hackerone.com [52.60.165.183]
 resources.hackerone.com [read.uberflip.com]
-resources.hackerone.com [nlb-ext-traefik-ca-central-1-d39d611502919b07.elb.ca-central-1.amazonaws.com]
 mta-sts.hackerone.com [185.199.110.153]
 mta-sts.hackerone.com [185.199.111.153]
 mta-sts.hackerone.com [185.199.109.153]
 mta-sts.hackerone.com [185.199.108.153]
-mta-sts.hackerone.com [hacker0x01.github.io]
 gslink.hackerone.com [13.35.210.17]
 gslink.hackerone.com [13.35.210.38]
 gslink.hackerone.com [13.35.210.83]
 gslink.hackerone.com [13.35.210.19]
-gslink.hackerone.com [d3rxkn2g2bbsjp.cloudfront.net]
 b.ns.hackerone.com [162.159.1.31]
 docs.hackerone.com [185.199.109.153]
 docs.hackerone.com [185.199.110.153]
 docs.hackerone.com [185.199.111.153]
 docs.hackerone.com [185.199.108.153]
-docs.hackerone.com [hacker0x01.github.io]
 support.hackerone.com [104.16.51.111]
 support.hackerone.com [104.16.53.111]
-support.hackerone.com [hackerone.zendesk.com]
 mta-sts.managed.hackerone.com [185.199.108.153]
 mta-sts.managed.hackerone.com [185.199.109.153]
 mta-sts.managed.hackerone.com [185.199.110.153]
 mta-sts.managed.hackerone.com [185.199.111.153]
-mta-sts.managed.hackerone.com [hacker0x01.github.io]
 ```
 
 Extract **A** records for the given list of subdomains:
 
-```shell
+```console
 subfinder -silent -d hackerone.com | dnsx -silent -a -resp-only
 
 104.16.99.52
@@ -209,7 +208,7 @@ subfinder -silent -d hackerone.com | dnsx -silent -a -resp-only
 
 Extract **CNAME** records for the given list of subdomains:
 
-```shell
+```console
 subfinder -silent -d hackerone.com | dnsx -silent -cname -resp
 
 support.hackerone.com [hackerone.zendesk.com]
@@ -221,7 +220,7 @@ events.hackerone.com [whitelabel.bigmarker.com]
 
 Probe using [dns status code](https://github.com/projectdiscovery/dnsx/wiki/RCODE-ID-VALUE-Mapping) on given list of (sub)domains:
 
-```shell
+```console
 subfinder -silent -d hackerone.com | dnsx -silent -rcode noerror,servfail,refused
 
 ns.hackerone.com [NOERROR]
@@ -237,7 +236,7 @@ docs.hackerone.com [NOERROR]
 
 Extract subdomains from given network range using `PTR` query:
 
-```shell
+```console
 echo 173.0.84.0/24 | dnsx -silent -resp-only -ptr
 
 cors.api.paypal.com
@@ -259,7 +258,7 @@ fpdbs.paypal.com
 
 Bruteforce subdomains for given domain or list of domains using `d` and `w` flag:
 
-```shell
+```console
 dnsx -silent -d facebook.com -w dns_worldlist.txt
 
 blog.facebook.com
@@ -280,7 +279,7 @@ code.facebook.com
 
 Bruteforce targeted subdomain using single or multiple keyword input, as `d` or `w` flag supports file or comma separated keyword inputs:
 
-```shell
+```console
 dnsx -silent -d domains.txt -w jira,grafana,jenkins
 
 grafana.1688.com
@@ -302,7 +301,7 @@ jira.atlassian.com
 
 Values are accepted from **stdin** for all the input types (`-list`, `-domain`, `-wordlist`). The `-list` flag defaults to `stdin`, but the same can be achieved for other input types by adding a `-` (dash) as parameter:
 
-```shell
+```console
 cat domains.txt | dnsx -silent -w jira,grafana,jenkins -d -
 
 grafana.1688.com
