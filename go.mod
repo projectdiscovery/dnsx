@@ -8,13 +8,13 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/cdncheck v0.0.3
 	github.com/projectdiscovery/clistats v0.0.8
-	github.com/projectdiscovery/fileutil v0.0.0-20220705195237-01becc2a8963
+	github.com/projectdiscovery/fileutil v0.0.1
 	github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c
-	github.com/projectdiscovery/goflags v0.0.10-0.20220912115102-d9ea875a0a6a
+	github.com/projectdiscovery/goflags v0.1.0
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/hmap v0.0.2
 	github.com/projectdiscovery/iputil v0.0.0-20220712175312-b9406f31cdd8
-	github.com/projectdiscovery/mapcidr v1.0.2
+	github.com/projectdiscovery/mapcidr v1.0.1
 	github.com/projectdiscovery/retryabledns v1.0.15
 	github.com/rs/xid v1.4.0
 	go.uber.org/ratelimit v0.2.0
@@ -64,7 +64,7 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
+	golang.org/x/net v0.0.0-20220927171203-f486391704dc // indirect
 	golang.org/x/sys v0.0.0-20220731174439-a90be440212d // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.12 // indirect
