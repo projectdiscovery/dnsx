@@ -592,7 +592,7 @@ func (r *Runner) worker() {
 			}
 
 			// if the query type is only AFXR then output only if we have results (ref: https://github.com/projectdiscovery/dnsx/issues/230#issuecomment-1256659249)
-			if len(r.dnsx.Options.QuestionTypes) == 1 && !hasAxfrData {
+			if len(r.dnsx.Options.QuestionTypes) == 1 && !hasAxfrData && !r.options.JSON {
 				continue
 			}
 		}
