@@ -2,9 +2,8 @@ package runner
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -20,7 +19,7 @@ import (
 	"github.com/projectdiscovery/hmap/store/hybrid"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/mapcidr"
-	retryabledns "github.com/projectdiscovery/retryabledns"
+	"github.com/projectdiscovery/retryabledns"
 	"go.uber.org/ratelimit"
 )
 
@@ -41,6 +40,7 @@ type Runner struct {
 	limiter             ratelimit.Limiter
 	hm                  *hybrid.HybridMap
 	stats               clistats.StatisticsClient
+	tmpStdinFile        string
 }
 
 func New(options *Options) (*Runner, error) {
@@ -50,7 +50,7 @@ func New(options *Options) (*Runner, error) {
 	dnsxOptions.MaxRetries = options.Retries
 	dnsxOptions.TraceMaxRecursion = options.TraceMaxRecursion
 	dnsxOptions.Hostsfile = options.HostsFile
-
+	dnsxOptions.OutputCDN = options.OutputCDN
 	if options.Resolvers != "" {
 		dnsxOptions.BaseResolvers = []string{}
 		// If it's a file load resolvers from it
@@ -95,6 +95,10 @@ func New(options *Options) (*Runner, error) {
 	if options.NS {
 		questionTypes = append(questionTypes, dns.TypeNS)
 	}
+	if options.CAA {
+		questionTypes = append(questionTypes, dns.TypeCAA)
+	}
+
 	// If no option is specified or wildcard filter has been requested use query type A
 	if len(questionTypes) == 0 || options.WildcardDomain != "" {
 		options.A = true
@@ -188,50 +192,71 @@ func (r *Runner) InputWorker() {
 }
 
 func (r *Runner) prepareInput() error {
-	var dataDomains []byte
-	var sc *bufio.Scanner
+	var (
+		dataDomains chan string
+		sc          chan string
+		err         error
+	)
 
-	// prepare wordlist
-	var prefixs []string
-	if r.options.WordList != "" {
-		dataWordList, err := preProcessArgument(r.options.WordList)
+	// copy stdin to a temporary file
+	hasStdin := fileutil.HasStdin()
+	if hasStdin {
+		tmpStdinFile, err := fileutil.GetTempFileName()
 		if err != nil {
 			return err
 		}
-		prefixs = normalizeToSlice(dataWordList)
+		r.tmpStdinFile = tmpStdinFile
+
+		stdinFile, err := os.Create(r.tmpStdinFile)
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(stdinFile, os.Stdin); err != nil {
+			return err
+		}
+		// closes the file as we will read it multiple times to build the iterations
+		stdinFile.Close()
+		defer os.RemoveAll(r.tmpStdinFile)
 	}
 
 	if r.options.Domains != "" {
-		var err error
-		dataDomains, err = preProcessArgument(r.options.Domains)
+		dataDomains, err = r.preProcessArgument(r.options.Domains)
 		if err != nil {
 			return err
 		}
-		sc = bufio.NewScanner(bytes.NewReader(dataDomains))
+		sc = dataDomains
 	}
 
 	if sc == nil {
 		// attempt to load list from file
 		if fileutil.FileExists(r.options.Hosts) {
-			f, err := os.Open(r.options.Hosts)
+			f, err := fileutil.ReadFile(r.options.Hosts)
 			if err != nil {
 				return err
 			}
-			sc = bufio.NewScanner(f)
-		} else if argumentHasStdin(r.options.Hosts) || hasStdin() {
-			sc = bufio.NewScanner(os.Stdin)
+			sc = f
+		} else if argumentHasStdin(r.options.Hosts) || hasStdin {
+			sc, err = fileutil.ReadFile(r.tmpStdinFile)
+			if err != nil {
+				return err
+			}
 		} else {
 			return errors.New("hosts file or stdin not provided")
 		}
 	}
 
 	numHosts := 0
-	for sc.Scan() {
-		item := strings.TrimSpace(sc.Text())
+	for item := range sc {
+		item := normalize(item)
 		var hosts []string
 		switch {
 		case r.options.WordList != "":
-			for _, prefix := range prefixs {
+			// prepare wordlist
+			prefixes, err := r.preProcessArgument(r.options.WordList)
+			if err != nil {
+				return err
+			}
+			for prefix := range prefixes {
 				// domains Cartesian product with wordlist
 				subdomain := strings.TrimSpace(prefix) + "." + item
 				hosts = append(hosts, subdomain)
@@ -265,48 +290,26 @@ func (r *Runner) prepareInput() error {
 	return nil
 }
 
-func hasStdin() bool {
-	stat, _ := os.Stdin.Stat()
-	return (stat.Mode() & os.ModeCharDevice) == 0
-}
-
-func preProcessArgument(arg string) ([]byte, error) {
-	var (
-		data []byte
-		err  error
-	)
+func (r *Runner) preProcessArgument(arg string) (chan string, error) {
 	// read from:
 	// file
 	switch {
 	case fileutil.FileExists(arg):
-		data, err = os.ReadFile(arg)
-		if err != nil {
-			return nil, err
-		}
+		return fileutil.ReadFile(arg)
 	// stdin
 	case argumentHasStdin(arg):
-		data, err = ioutil.ReadAll(os.Stdin)
-		if err != nil {
-			return nil, err
-		}
+		return fileutil.ReadFile(r.tmpStdinFile)
 	// inline
 	case arg != "":
-		data = []byte(arg)
+		data := strings.ReplaceAll(arg, Comma, NewLine)
+		return fileutil.ReadFileWithReader(strings.NewReader(data))
 	default:
 		return nil, errors.New("empty argument")
 	}
-
-	return bytes.Replace(data, []byte(Comma), []byte(NewLine), -1), nil
 }
 
-func normalizeToSlice(data []byte) []string {
-	var s []string
-	sc := bufio.NewScanner(bytes.NewReader(data))
-	for sc.Scan() {
-		item := strings.TrimSpace(sc.Text())
-		s = append(s, item)
-	}
-	return s
+func normalize(data string) string {
+	return strings.TrimSpace(data)
 }
 
 // nolint:deadcode
@@ -498,24 +501,13 @@ func (r *Runner) HandleOutput() {
 		defer foutput.Close()
 		w = bufio.NewWriter(foutput)
 		defer w.Flush()
-		var flushTicker *time.Ticker
-		if r.options.FlushInterval >= 0 {
-			flushTicker = time.NewTicker(time.Duration(r.options.FlushInterval) * time.Second)
-			defer flushTicker.Stop()
-			go func() {
-				for range flushTicker.C {
-					w.Flush()
-				}
-			}()
-		}
 	}
 	for item := range r.outputchan {
-		if r.options.OutputFile != "" {
+		if foutput != nil {
 			// uses a buffer to write to file
-			// nolint:errcheck
-			w.WriteString(item + "\n")
+			_, _ = w.WriteString(item + "\n")
 		}
-		// otherwise writes sequentially to stdout
+		// writes sequentially to stdout
 		gologger.Silent().Msgf("%s\n", item)
 	}
 }
@@ -550,11 +542,11 @@ func (r *Runner) worker() {
 			domain = extractDomain(domain)
 		}
 		r.limiter.Take()
-
+		dnsData := dnsx.ResponseData{}
 		// Ignoring errors as partial results are still good
-		dnsData, _ := r.dnsx.QueryMultiple(domain)
+		dnsData.DNSData, _ = r.dnsx.QueryMultiple(domain)
 		// Just skipping nil responses (in case of critical errors)
-		if dnsData == nil {
+		if dnsData.DNSData == nil {
 			continue
 		}
 
@@ -562,10 +554,13 @@ func (r *Runner) worker() {
 			continue
 		}
 
-		// skip responses not having the expected response code
-		if len(r.options.rcodes) > 0 {
-			if _, ok := r.options.rcodes[dnsData.StatusCodeRaw]; !ok {
-				continue
+		// results from hosts file are always returned
+		if !dnsData.HostsFile {
+			// skip responses not having the expected response code
+			if len(r.options.rcodes) > 0 {
+				if _, ok := r.options.rcodes[dnsData.StatusCodeRaw]; !ok {
+					continue
+				}
 			}
 		}
 
@@ -588,10 +583,27 @@ func (r *Runner) worker() {
 			}
 		}
 
+		if r.options.AXFR {
+			hasAxfrData := false
+			axfrData, _ := r.dnsx.AXFR(domain)
+			if axfrData != nil {
+				dnsData.AXFRData = axfrData
+				hasAxfrData = len(axfrData.DNSData) > 0
+			}
+
+			// if the query type is only AFXR then output only if we have results (ref: https://github.com/projectdiscovery/dnsx/issues/230#issuecomment-1256659249)
+			if len(r.dnsx.Options.QuestionTypes) == 1 && !hasAxfrData && !r.options.JSON {
+				continue
+			}
+		}
+		// add flags for cdn
+		if r.options.OutputCDN {
+			dnsData.IsCDNIP, dnsData.CDNName, _ = r.dnsx.CdnCheck(domain)
+		}
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			// nolint:errcheck
-			r.storeDNSData(dnsData)
+			r.storeDNSData(dnsData.DNSData)
 			continue
 		}
 		if r.options.JSON {
@@ -608,42 +620,48 @@ func (r *Runner) worker() {
 			continue
 		}
 		if r.options.A {
-			r.outputRecordType(domain, dnsData.A)
+			r.outputRecordType(domain, dnsData.A, dnsData.CDNName)
 		}
 		if r.options.AAAA {
-			r.outputRecordType(domain, dnsData.AAAA)
+			r.outputRecordType(domain, dnsData.AAAA, dnsData.CDNName)
 		}
 		if r.options.CNAME {
-			r.outputRecordType(domain, dnsData.CNAME)
+			r.outputRecordType(domain, dnsData.CNAME, dnsData.CDNName)
 		}
 		if r.options.PTR {
-			r.outputRecordType(domain, dnsData.PTR)
+			r.outputRecordType(domain, dnsData.PTR, dnsData.CDNName)
 		}
 		if r.options.MX {
-			r.outputRecordType(domain, dnsData.MX)
+			r.outputRecordType(domain, dnsData.MX, dnsData.CDNName)
 		}
 		if r.options.NS {
-			r.outputRecordType(domain, dnsData.NS)
+			r.outputRecordType(domain, dnsData.NS, dnsData.CDNName)
 		}
 		if r.options.SOA {
-			r.outputRecordType(domain, dnsData.SOA)
+			r.outputRecordType(domain, dnsData.SOA, dnsData.CDNName)
 		}
 		if r.options.TXT {
-			r.outputRecordType(domain, dnsData.TXT)
+			r.outputRecordType(domain, dnsData.TXT, dnsData.CDNName)
+		}
+		if r.options.CAA {
+			r.outputRecordType(domain, dnsData.CAA, dnsData.CDNName)
 		}
 	}
 }
 
-func (r *Runner) outputRecordType(domain string, items []string) {
+func (r *Runner) outputRecordType(domain string, items []string, cdnName string) {
+	if cdnName != "" {
+		cdnName = fmt.Sprintf(" [%s]", cdnName)
+	}
 	for _, item := range items {
 		item := strings.ToLower(item)
 		if r.options.ResponseOnly {
-			r.outputchan <- item
+			r.outputchan <- item + cdnName
 		} else if r.options.Response {
-			r.outputchan <- domain + " [" + item + "]"
+			r.outputchan <- domain + " [" + item + "]" + cdnName
 		} else {
 			// just prints out the domain if it has a record type and exit
-			r.outputchan <- domain
+			r.outputchan <- domain + cdnName
 			break
 		}
 	}
