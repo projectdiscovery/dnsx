@@ -2,6 +2,7 @@ package runner
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -19,8 +20,8 @@ import (
 	"github.com/projectdiscovery/hmap/store/hybrid"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/mapcidr"
+	"github.com/projectdiscovery/ratelimit"
 	"github.com/projectdiscovery/retryabledns"
-	"go.uber.org/ratelimit"
 )
 
 // Runner is a client for running the enumeration process.
@@ -37,7 +38,7 @@ type Runner struct {
 	wildcardsmutex      sync.RWMutex
 	wildcardscache      map[string][]string
 	wildcardscachemutex sync.Mutex
-	limiter             ratelimit.Limiter
+	limiter             *ratelimit.Limiter
 	hm                  *hybrid.HybridMap
 	stats               clistats.StatisticsClient
 	tmpStdinFile        string
@@ -111,9 +112,9 @@ func New(options *Options) (*Runner, error) {
 		return nil, err
 	}
 
-	limiter := ratelimit.NewUnlimited()
+	limiter := ratelimit.NewUnlimited(context.Background())
 	if options.RateLimit > 0 {
-		limiter = ratelimit.New(options.RateLimit)
+		limiter = ratelimit.New(context.Background(), options.RateLimit, time.Second)
 	}
 
 	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
