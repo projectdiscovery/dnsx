@@ -20,6 +20,7 @@ import (
 	"github.com/projectdiscovery/hmap/store/hybrid"
 	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/mapcidr"
+	"github.com/projectdiscovery/mapcidr/asn"
 	"github.com/projectdiscovery/ratelimit"
 	"github.com/projectdiscovery/retryabledns"
 )
@@ -42,6 +43,7 @@ type Runner struct {
 	hm                  *hybrid.HybridMap
 	stats               clistats.StatisticsClient
 	tmpStdinFile        string
+	asnClient           asn.ASNClient
 }
 
 func New(options *Options) (*Runner, error) {
@@ -143,6 +145,7 @@ func New(options *Options) (*Runner, error) {
 		limiter:            limiter,
 		hm:                 hm,
 		stats:              stats,
+		asnClient:          asn.New(),
 	}
 
 	return &r, nil
@@ -160,15 +163,21 @@ func (r *Runner) InputWorkerStream() {
 
 	for sc.Scan() {
 		item := strings.TrimSpace(sc.Text())
-
-		hosts := []string{item}
 		if iputil.IsCIDR(item) {
-			hosts, _ = mapcidr.IPAddresses(item)
+			hostsC, _ := mapcidr.IPAddressesAsStream(item)
+			for host := range hostsC {
+				r.workerchan <- host
+			}
+			continue
 		}
-
-		for _, host := range hosts {
-			r.workerchan <- host
+		if asn.IsASN(item) {
+			hostsC, _ := r.asnClient.GetIPAddressesAsStream(item)
+			for host := range hostsC {
+				r.workerchan <- host
+			}
+			continue
 		}
+		r.workerchan <- item
 	}
 	close(r.workerchan)
 }
@@ -262,20 +271,22 @@ func (r *Runner) prepareInput() error {
 				subdomain := strings.TrimSpace(prefix) + "." + item
 				hosts = append(hosts, subdomain)
 			}
+			numHosts += r.addHostsToHMapFromList(hosts)
 		case iputil.IsCIDR(item):
-			hosts, _ = mapcidr.IPAddresses(item)
+			hostC, err := mapcidr.IPAddressesAsStream(item)
+			if err != nil {
+				return err
+			}
+			numHosts += r.addHostsToHMapFromChan(hostC)
+		case asn.IsASN(item):
+			hostC, err := r.asnClient.GetIPAddressesAsStream(item)
+			if err != nil {
+				return err
+			}
+			numHosts += r.addHostsToHMapFromChan(hostC)
 		default:
 			hosts = []string{item}
-		}
-
-		for _, host := range hosts {
-			// Used just to get the exact number of targets
-			if _, ok := r.hm.Get(host); ok {
-				continue
-			}
-			numHosts++
-			// nolint:errcheck
-			r.hm.Set(host, nil)
+			numHosts += r.addHostsToHMapFromList(hosts)
 		}
 	}
 
@@ -287,8 +298,33 @@ func (r *Runner) prepareInput() error {
 		// nolint:errcheck
 		r.stats.Start(makePrintCallback(), time.Duration(5)*time.Second)
 	}
-
 	return nil
+}
+
+func (r *Runner) addHostsToHMapFromList(hosts []string) (numHosts int) {
+	for _, host := range hosts {
+		// Used just to get the exact number of targets
+		if _, ok := r.hm.Get(host); ok {
+			continue
+		}
+		numHosts++
+		// nolint:errcheck
+		r.hm.Set(host, nil)
+	}
+	return
+}
+
+func (r *Runner) addHostsToHMapFromChan(hosts chan string) (numHosts int) {
+	for host := range hosts {
+		// Used just to get the exact number of targets
+		if _, ok := r.hm.Get(host); ok {
+			continue
+		}
+		numHosts++
+		// nolint:errcheck
+		r.hm.Set(host, nil)
+	}
+	return
 }
 
 func (r *Runner) preProcessArgument(arg string) (chan string, error) {
