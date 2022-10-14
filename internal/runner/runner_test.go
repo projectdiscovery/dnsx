@@ -21,7 +21,8 @@ func TestRunner_singleDomain_prepareInput(t *testing.T) {
 		hm:      hm,
 	}
 	// call the prepareInput
-	r.prepareInput()
+	err = r.prepareInput()
+	require.Nil(t, err, "failed to prepare input")
 	expected := []string{"one.one.one.one"}
 	got := []string{}
 	r.hm.Scan(func(k, v []byte) error {
@@ -43,7 +44,8 @@ func TestRunner_domainWildCard_prepareInput(t *testing.T) {
 		hm:      hm,
 	}
 	// call the prepareInput
-	r.prepareInput()
+	err = r.prepareInput()
+	require.Nil(t, err, "failed to prepare input")
 	expected := []string{"jenkins.projectdiscovery.io", "beta.projectdiscovery.io"}
 	got := []string{}
 	r.hm.Scan(func(k, v []byte) error {
@@ -64,7 +66,8 @@ func TestRunner_cidrInput_prepareInput(t *testing.T) {
 		hm:      hm,
 	}
 	// call the prepareInput
-	r.prepareInput()
+	err = r.prepareInput()
+	require.Nil(t, err, "failed to prepare input")
 	expected := []string{"173.0.84.0", "173.0.84.1", "173.0.84.2", "173.0.84.3"}
 	got := []string{}
 	r.hm.Scan(func(k, v []byte) error {
@@ -86,7 +89,8 @@ func TestRunner_asnInput_prepareInput(t *testing.T) {
 		asnClient: asn.New(),
 	}
 	// call the prepareInput
-	r.prepareInput()
+	err = r.prepareInput()
+	require.Nil(t, err, "failed to prepare input")
 	expectedOutputFile := "tests/AS14421.txt"
 	// read the expected IPs from the file
 	fileContent, err := os.ReadFile(expectedOutputFile)
@@ -111,7 +115,8 @@ func TestRunner_fileInput_prepareInput(t *testing.T) {
 		hm:      hm,
 	}
 	// call the prepareInput
-	r.prepareInput()
+	err = r.prepareInput()
+	require.Nil(t, err, "failed to prepare input")
 	expected := []string{"one.one.one.one", "example.com"}
 	got := []string{}
 	r.hm.Scan(func(k, v []byte) error {
