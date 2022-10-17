@@ -12,6 +12,7 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
+	asnmap "github.com/projectdiscovery/asnmap/libs"
 	"github.com/projectdiscovery/clistats"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/fileutil"
@@ -573,7 +574,6 @@ func (r *Runner) startWorkers() {
 
 func (r *Runner) worker() {
 	defer r.wgresolveworkers.Done()
-
 	for domain := range r.workerchan {
 		if isURL(domain) {
 			domain = extractDomain(domain)
@@ -637,6 +637,25 @@ func (r *Runner) worker() {
 		if r.options.OutputCDN {
 			dnsData.IsCDNIP, dnsData.CDNName, _ = r.dnsx.CdnCheck(domain)
 		}
+		if r.options.ASN {
+			var results []asnmap.Response
+			for _, ip := range dnsData.A {
+				result := r.asnClient.Client.GetData(asnmap.IP(ip))
+				results = append(results, result...)
+			}
+			if iputil.IsIP(domain) {
+				results = r.asnClient.Client.GetData(asnmap.IP(domain))
+			}
+			dnsData.ASN.Input = domain
+			if len(results) > 0 {
+				dnsData.ASN.ASN_org = results[0].Org
+				dnsData.ASN.AS_country = results[0].Country
+				dnsData.ASN.ASN = fmt.Sprintf("AS%v", results[0].ASN)
+			}
+			for _, cidr := range asnmap.GetCIDR(results) {
+				dnsData.ASN.AS_range = append(dnsData.ASN.AS_range, cidr.String())
+			}
+		}
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			// nolint:errcheck
@@ -657,48 +676,52 @@ func (r *Runner) worker() {
 			continue
 		}
 		if r.options.A {
-			r.outputRecordType(domain, dnsData.A, dnsData.CDNName)
+			r.outputRecordType(domain, dnsData.A, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.AAAA {
-			r.outputRecordType(domain, dnsData.AAAA, dnsData.CDNName)
+			r.outputRecordType(domain, dnsData.AAAA, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.CNAME {
-			r.outputRecordType(domain, dnsData.CNAME, dnsData.CDNName)
+			r.outputRecordType(domain, dnsData.CNAME, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.PTR {
-			r.outputRecordType(domain, dnsData.PTR, dnsData.CDNName)
+			r.outputRecordType(domain, dnsData.PTR, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.MX {
-			r.outputRecordType(domain, dnsData.MX, dnsData.CDNName)
+			r.outputRecordType(domain, dnsData.MX, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.NS {
-			r.outputRecordType(domain, dnsData.NS, dnsData.CDNName)
+			r.outputRecordType(domain, dnsData.NS, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.SOA {
-			r.outputRecordType(domain, dnsData.SOA, dnsData.CDNName)
+			r.outputRecordType(domain, dnsData.SOA, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.TXT {
-			r.outputRecordType(domain, dnsData.TXT, dnsData.CDNName)
+			r.outputRecordType(domain, dnsData.TXT, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.CAA {
-			r.outputRecordType(domain, dnsData.CAA, dnsData.CDNName)
+			r.outputRecordType(domain, dnsData.CAA, dnsData.CDNName, dnsData.ASN)
 		}
 	}
 }
 
-func (r *Runner) outputRecordType(domain string, items []string, cdnName string) {
+func (r *Runner) outputRecordType(domain string, items []string, cdnName string, asn asnmap.Result) {
+	var details string
 	if cdnName != "" {
-		cdnName = fmt.Sprintf(" [%s]", cdnName)
+		details = fmt.Sprintf(" [%s]", cdnName)
+	}
+	if asn.ASN != "" {
+		details = details + fmt.Sprintf(" [%s %s %s]", asn.ASN, asn.ASN_org, asn.AS_country)
 	}
 	for _, item := range items {
 		item := strings.ToLower(item)
 		if r.options.ResponseOnly {
-			r.outputchan <- item + cdnName
+			r.outputchan <- item + details
 		} else if r.options.Response {
-			r.outputchan <- domain + " [" + item + "]" + cdnName
+			r.outputchan <- domain + " [" + item + "]" + details
 		} else {
 			// just prints out the domain if it has a record type and exit
-			r.outputchan <- domain + cdnName
+			r.outputchan <- domain + details
 			break
 		}
 	}
