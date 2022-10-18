@@ -638,22 +638,20 @@ func (r *Runner) worker() {
 			dnsData.IsCDNIP, dnsData.CDNName, _ = r.dnsx.CdnCheck(domain)
 		}
 		if r.options.ASN {
-			var results []asnmap.Response
+			results := []asnmap.Response{}
 			for _, ip := range dnsData.A {
-				result := r.asnClient.Client.GetData(asnmap.IP(ip))
-				results = append(results, result...)
+				results = append(results, asnmap.NewClient().GetData(asnmap.IP(ip))...)
 			}
 			if iputil.IsIP(domain) {
-				results = r.asnClient.Client.GetData(asnmap.IP(domain))
+				results = asnmap.NewClient().GetData(asnmap.IP(domain))
 			}
-			dnsData.ASN.Input = domain
 			if len(results) > 0 {
 				dnsData.ASN.ASN_org = results[0].Org
 				dnsData.ASN.AS_country = results[0].Country
 				dnsData.ASN.ASN = fmt.Sprintf("AS%v", results[0].ASN)
-			}
-			for _, cidr := range asnmap.GetCIDR(results) {
-				dnsData.ASN.AS_range = append(dnsData.ASN.AS_range, cidr.String())
+				for _, cidr := range asnmap.GetCIDR(results) {
+					dnsData.ASN.AS_range = append(dnsData.ASN.AS_range, cidr.String())
+				}
 			}
 		}
 		// if wildcard filtering just store the data
@@ -705,23 +703,23 @@ func (r *Runner) worker() {
 	}
 }
 
-func (r *Runner) outputRecordType(domain string, items []string, cdnName string, asn asnmap.Result) {
+func (r *Runner) outputRecordType(domain string, items []string, cdnName string, asn dnsx.ASNResult) {
 	var details string
 	if cdnName != "" {
 		details = fmt.Sprintf(" [%s]", cdnName)
 	}
 	if asn.ASN != "" {
-		details = details + fmt.Sprintf(" [%s %s %s]", asn.ASN, asn.ASN_org, asn.AS_country)
+		details = fmt.Sprintf("%s [%s, %s, %s]", details, asn.ASN, asn.ASN_org, asn.AS_country)
 	}
 	for _, item := range items {
 		item := strings.ToLower(item)
 		if r.options.ResponseOnly {
-			r.outputchan <- item + details
+			r.outputchan <- fmt.Sprintf("%s%s", item, details)
 		} else if r.options.Response {
-			r.outputchan <- domain + " [" + item + "]" + details
+			r.outputchan <- fmt.Sprintf("%s [ %s ]%s", domain, item, details)
 		} else {
 			// just prints out the domain if it has a record type and exit
-			r.outputchan <- domain + details
+			r.outputchan <- fmt.Sprintf("%s%s", domain, details)
 			break
 		}
 	}

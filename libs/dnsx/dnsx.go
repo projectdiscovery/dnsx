@@ -6,7 +6,6 @@ import (
 	"math"
 
 	miekgdns "github.com/miekg/dns"
-	asnmap "github.com/projectdiscovery/asnmap/libs"
 	"github.com/projectdiscovery/cdncheck"
 	"github.com/projectdiscovery/iputil"
 	retryabledns "github.com/projectdiscovery/retryabledns"
@@ -33,9 +32,16 @@ type Options struct {
 // ResponseData to show output result
 type ResponseData struct {
 	*retryabledns.DNSData
-	IsCDNIP bool          `json:"cdn,omitempty" csv:"cdn"`
-	CDNName string        `json:"cdn-name,omitempty" csv:"cdn-name"`
-	ASN     asnmap.Result `json:"asn,omitempty" csv:"asn"`
+	IsCDNIP bool      `json:"cdn,omitempty" csv:"cdn"`
+	CDNName string    `json:"cdn-name,omitempty" csv:"cdn-name"`
+	ASN     ASNResult `json:"asn,omitempty" csv:"asn"`
+}
+
+type ASNResult struct {
+	ASN        string   `json:"as_number,omitempty" csv:"as_number"`
+	ASN_org    string   `json:"as_name,omitempty" csv:"as_name"`
+	AS_country string   `json:"as_country,omitempty" csv:"as_country"`
+	AS_range   []string `json:"as_range,omitempty" csv:"as_range"`
 }
 
 func (d *ResponseData) JSON() (string, error) {
