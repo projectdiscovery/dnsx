@@ -639,7 +639,11 @@ func (r *Runner) worker() {
 		}
 		if r.options.ASN {
 			results := []asnmap.Response{}
-			for _, ip := range dnsData.A {
+			ips := dnsData.A
+			if ips == nil {
+				ips, _ = r.dnsx.Lookup(domain)
+			}
+			for _, ip := range ips {
 				results = append(results, asnmap.NewClient().GetData(asnmap.IP(ip))...)
 			}
 			if iputil.IsIP(domain) {
@@ -680,6 +684,7 @@ func (r *Runner) worker() {
 			r.outputRecordType(domain, dnsData.AAAA, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.CNAME {
+			// fmt.Println("inside cname", dnsData.ASN)
 			r.outputRecordType(domain, dnsData.CNAME, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.PTR {
