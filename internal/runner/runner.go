@@ -578,9 +578,7 @@ func (r *Runner) worker() {
 			domain = extractDomain(domain)
 		}
 		r.limiter.Take()
-		dnsData := dnsx.ResponseData{
-			ASN: &dnsx.AsnResponse{},
-		}
+		dnsData := dnsx.ResponseData{}
 		// Ignoring errors as partial results are still good
 		dnsData.DNSData, _ = r.dnsx.QueryMultiple(domain)
 		// Just skipping nil responses (in case of critical errors)
@@ -651,14 +649,16 @@ func (r *Runner) worker() {
 				results = asnmap.NewClient().GetData(asnmap.IP(domain))
 			}
 			if len(results) > 0 {
-				dnsData.ASN.AsNumber = fmt.Sprintf("AS%v", results[0].ASN)
-				dnsData.ASN.AsName = results[0].Org
-				dnsData.ASN.AsCountry = results[0].Country
+				var cidrs []string
 				for _, cidr := range asnmap.GetCIDR(results) {
-					dnsData.ASN.AsRange = append(dnsData.ASN.AsRange, cidr.String())
+					cidrs = append(cidrs, cidr.String())
 				}
-			} else {
-				dnsData.ASN = nil
+				dnsData.ASN = &dnsx.AsnResponse{
+					AsNumber:  fmt.Sprintf("AS%v", results[0].ASN),
+					AsName:    results[0].Org,
+					AsCountry: results[0].Country,
+					AsRange:   cidrs,
+				}
 			}
 		}
 		// if wildcard filtering just store the data
