@@ -189,7 +189,7 @@ func (options *Options) validateOptions() {
 		gologger.Fatal().Msgf("list(l) flag can not be used domain(d) or wordlist(w) flag")
 	}
 
-	if wordListPresent && !domainsPresent {
+	if wordListPresent && !domainsPresent && !fileutil.HasStdin() {
 		gologger.Fatal().Msg("missing domain(d) flag required with wordlist(w) input")
 	}
 	if domainsPresent && !wordListPresent {
