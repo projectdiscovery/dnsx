@@ -164,21 +164,20 @@ func (r *Runner) InputWorkerStream() {
 
 	for sc.Scan() {
 		item := strings.TrimSpace(sc.Text())
-		if iputil.IsCIDR(item) {
+		switch {
+		case iputil.IsCIDR(item):
 			hostsC, _ := mapcidr.IPAddressesAsStream(item)
 			for host := range hostsC {
 				r.workerchan <- host
 			}
-			continue
-		}
-		if asn.IsASN(item) {
+		case asn.IsASN(item):
 			hostsC, _ := r.asnClient.GetIPAddressesAsStream(item)
 			for host := range hostsC {
 				r.workerchan <- host
 			}
-			continue
+		default:
+			r.workerchan <- item
 		}
-		r.workerchan <- item
 	}
 	close(r.workerchan)
 }
