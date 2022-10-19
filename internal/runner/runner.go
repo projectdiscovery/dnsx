@@ -716,7 +716,7 @@ func (r *Runner) outputRecordType(domain string, items []string, cdnName string,
 	if cdnName != "" {
 		details = fmt.Sprintf(" [%s]", cdnName)
 	}
-	if asn.AsNumber != "" {
+	if asn != nil {
 		details = fmt.Sprintf("%s %s", details, asn.String())
 	}
 	for _, item := range items {
