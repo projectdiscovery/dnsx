@@ -709,7 +709,7 @@ func (r *Runner) worker() {
 			r.outputRecordType(domain, dnsData.TXT, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.SRV {
-			r.outputRecordType(domain, dnsData.SRV, dnsData.CDNName)
+			r.outputRecordType(domain, dnsData.SRV, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.CAA {
 			r.outputRecordType(domain, dnsData.CAA, dnsData.CDNName, dnsData.ASN)
