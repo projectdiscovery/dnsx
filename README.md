@@ -89,6 +89,7 @@ FILTER:
 
 PROBE:
    -cdn  display cdn name
+   -asn  display host asn information
 
 RATE-LIMIT:
    -t, -threads int      number of concurrent threads to use (default 100)
@@ -218,6 +219,17 @@ mta-sts.hackerone.com [hacker0x01.github.io]
 mta-sts.forwarding.hackerone.com [hacker0x01.github.io]
 events.hackerone.com [whitelabel.bigmarker.com]
 ```
+Extract **ASN** records for the given list of subdomains:
+```console
+subfinder -silent -d hackerone.com | dnsx -silent  -asn
+
+b.ns.hackerone.com [AS13335, CLOUDFLARENET, US]
+a.ns.hackerone.com [AS13335, CLOUDFLARENET, US]
+hackerone.com [AS13335, CLOUDFLARENET, US]
+www.hackerone.com [AS13335, CLOUDFLARENET, US]
+api.hackerone.com [AS13335, CLOUDFLARENET, US]
+support.hackerone.com [AS13335, CLOUDFLARENET, US]
+```
 
 Probe using [dns status code](https://github.com/projectdiscovery/dnsx/wiki/RCODE-ID-VALUE-Mapping) on given list of (sub)domains:
 
@@ -253,6 +265,21 @@ slc-a-origin-pointofsale.paypal.com
 fpdbs.paypal.com
 ```
 
+Extract subdomains from given ASN using `PTR` query:
+```console
+echo AS17012 | dnsx -silent -resp-only -ptr 
+
+apiagw-a.paypal.com
+notify.paypal.com
+adnormserv-slc-a.paypal.com
+a.sandbox.paypal.com
+apps2.paypal-labs.com
+pilot-payflowpro.paypal.com
+www.paypallabs.com
+paypal-portal.com
+micropayments.paypal-labs.com
+minicart.paypal-labs.com
+```
 ---------
 
 ### DNS Bruteforce

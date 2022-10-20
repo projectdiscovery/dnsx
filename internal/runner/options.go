@@ -59,6 +59,7 @@ type Options struct {
 	Stream            bool
 	CAA               bool
 	OutputCDN         bool
+	ASN               bool
 	HealthCheck       bool
 }
 
@@ -106,6 +107,7 @@ func ParseOptions() *Options {
 
 	flagSet.CreateGroup("probe", "Probe",
 		flagSet.BoolVar(&options.OutputCDN, "cdn", false, "display cdn name"),
+		flagSet.BoolVar(&options.ASN, "asn", false, "display host asn information"),
 	)
 
 	flagSet.CreateGroup("rate-limit", "Rate-limit",
