@@ -17,7 +17,7 @@ require (
 	github.com/projectdiscovery/iputil v0.0.0-20220712175312-b9406f31cdd8
 	github.com/projectdiscovery/mapcidr v1.0.3
 	github.com/projectdiscovery/ratelimit v0.0.0-20221004232058-7b82379157fa
-	github.com/projectdiscovery/retryabledns v1.0.15
+	github.com/projectdiscovery/retryabledns v1.0.16
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.0
 )
