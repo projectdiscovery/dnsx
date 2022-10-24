@@ -9,7 +9,7 @@ require (
 	github.com/projectdiscovery/asnmap v0.0.1
 	github.com/projectdiscovery/cdncheck v0.0.3
 	github.com/projectdiscovery/clistats v0.0.8
-	github.com/projectdiscovery/fileutil v0.0.1
+	github.com/projectdiscovery/fileutil v0.0.2
 	github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c
 	github.com/projectdiscovery/goflags v0.1.1
 	github.com/projectdiscovery/gologger v1.1.4
