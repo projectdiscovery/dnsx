@@ -42,6 +42,7 @@ type Options struct {
 	MX                bool
 	SOA               bool
 	TXT               bool
+	SRV               bool
 	AXFR              bool
 	JSON              bool
 	Trace             bool
@@ -90,6 +91,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.CNAME, "cname", false, "query CNAME record"),
 		flagSet.BoolVar(&options.NS, "ns", false, "query NS record"),
 		flagSet.BoolVar(&options.TXT, "txt", false, "query TXT record"),
+		flagSet.BoolVar(&options.SRV, "srv", false, "query SRV record"),
 		flagSet.BoolVar(&options.PTR, "ptr", false, "query PTR record"),
 		flagSet.BoolVar(&options.MX, "mx", false, "query MX record"),
 		flagSet.BoolVar(&options.SOA, "soa", false, "query SOA record"),

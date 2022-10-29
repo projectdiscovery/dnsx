@@ -39,7 +39,7 @@
 
 
  - Simple and Handy utility to query DNS records.
- - **A, AAAA, CNAME, PTR, NS, MX, TXT, SOA** query support
+ - **A, AAAA, CNAME, PTR, NS, MX, TXT, SRV, SOA** query support
  - DNS **Resolution** / **Brute-force** support
  - Custom **resolver** input support
  - Multiple resolver format **(TCP/UDP/DOH/DOT)** support
@@ -75,6 +75,7 @@ QUERY:
    -cname  query CNAME record
    -ns     query NS record
    -txt    query TXT record
+   -srv    query SRV record
    -ptr    query PTR record
    -mx     query MX record
    -soa    query SOA record

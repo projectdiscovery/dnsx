@@ -93,6 +93,9 @@ func New(options *Options) (*Runner, error) {
 	if options.TXT {
 		questionTypes = append(questionTypes, dns.TypeTXT)
 	}
+	if options.SRV {
+		questionTypes = append(questionTypes, dns.TypeSRV)
+	}
 	if options.MX {
 		questionTypes = append(questionTypes, dns.TypeMX)
 	}
@@ -704,6 +707,9 @@ func (r *Runner) worker() {
 		}
 		if r.options.TXT {
 			r.outputRecordType(domain, dnsData.TXT, dnsData.CDNName, dnsData.ASN)
+		}
+		if r.options.SRV {
+			r.outputRecordType(domain, dnsData.SRV, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.CAA {
 			r.outputRecordType(domain, dnsData.CAA, dnsData.CDNName, dnsData.ASN)

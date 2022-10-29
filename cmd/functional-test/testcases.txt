@@ -15,6 +15,8 @@ example.com {{binary}} -silent -soa
 example.com {{binary}} -silent -soa -resp
 example.com {{binary}} -silent -txt
 example.com {{binary}} -silent -txt -resp
+example.com {{binary}} -silent -srv
+example.com {{binary}} -silent -srv -resp
 example.com {{binary}} -silent -rcode 0,1,2
 1.1.1.1 {{binary}} -silent -ptr
 1.1.1.1 {{binary}} -silent -ptr -resp
