@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/goconfig"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
 const (

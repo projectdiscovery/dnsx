@@ -15,15 +15,15 @@ import (
 	asnmap "github.com/projectdiscovery/asnmap/libs"
 	"github.com/projectdiscovery/clistats"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
-	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/goconfig"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/hmap/store/hybrid"
-	"github.com/projectdiscovery/iputil"
 	"github.com/projectdiscovery/mapcidr"
 	"github.com/projectdiscovery/mapcidr/asn"
 	"github.com/projectdiscovery/ratelimit"
 	"github.com/projectdiscovery/retryabledns"
+	fileutil "github.com/projectdiscovery/utils/file"
+	iputil "github.com/projectdiscovery/utils/ip"
 )
 
 // Runner is a client for running the enumeration process.

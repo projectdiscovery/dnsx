@@ -8,8 +8,8 @@ import (
 
 	miekgdns "github.com/miekg/dns"
 	"github.com/projectdiscovery/cdncheck"
-	"github.com/projectdiscovery/iputil"
 	retryabledns "github.com/projectdiscovery/retryabledns"
+	iputil "github.com/projectdiscovery/utils/ip"
 )
 
 // DNSX is structure to perform dns lookups
