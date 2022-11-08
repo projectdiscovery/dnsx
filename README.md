@@ -417,5 +417,6 @@ func main() {
 - Domain name (`wd`) input is mandatory for wildcard elimination.
 - DNS record flag can not be used when using wildcard filtering.
 - DNS resolution (`l`) and DNS brute-forcing (`w`) can't be used together.
+- VPN operators tend to filter high DNS/UDP traffic, therefore the tool might experience packets loss (eg. [Mullvad VPN](https://github.com/projectdiscovery/dnsx/issues/221))
 
 `dnsx` is made with 🖤 by the [projectdiscovery](https://projectdiscovery.io) team.
