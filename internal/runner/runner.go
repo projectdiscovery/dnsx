@@ -251,6 +251,15 @@ func (r *Runner) prepareInput() error {
 		item := normalize(item)
 		var hosts []string
 		switch {
+		case strings.Contains(item, "FUZZ"):
+			fuzz, err := r.preProcessArgument(r.options.WordList)
+			if err != nil {
+				return err
+			}
+			for r := range fuzz {
+				subdomain := strings.ReplaceAll(item, "FUZZ", r)
+				hosts = append(hosts, subdomain)
+			}
 		case r.options.WordList != "":
 			// prepare wordlist
 			prefixes, err := r.preProcessArgument(r.options.WordList)
@@ -278,7 +287,6 @@ func (r *Runner) prepareInput() error {
 			r.hm.Set(host, nil)
 		}
 	}
-
 	if r.options.ShowStatistics {
 		r.stats.AddStatic("hosts", numHosts)
 		r.stats.AddStatic("startedAt", time.Now())
