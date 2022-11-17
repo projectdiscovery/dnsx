@@ -8,16 +8,15 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/asnmap v0.0.1
 	github.com/projectdiscovery/cdncheck v0.0.3
-	github.com/projectdiscovery/clistats v0.0.8
-	github.com/projectdiscovery/fileutil v0.0.3
+	github.com/projectdiscovery/clistats v0.0.9
 	github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c
 	github.com/projectdiscovery/goflags v0.1.3
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/hmap v0.0.2
-	github.com/projectdiscovery/iputil v0.0.2
 	github.com/projectdiscovery/mapcidr v1.0.3
 	github.com/projectdiscovery/ratelimit v0.0.0-20221004232058-7b82379157fa
 	github.com/projectdiscovery/retryabledns v1.0.17
+	github.com/projectdiscovery/utils v0.0.2
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.1
 )
@@ -55,11 +54,12 @@ require (
 	github.com/onsi/gomega v1.16.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/blackrock v0.0.0-20220628111055-35616c71b2dc // indirect
+	github.com/projectdiscovery/fileutil v0.0.3 // indirect
+	github.com/projectdiscovery/iputil v0.0.2 // indirect
 	github.com/projectdiscovery/reflectutil v0.0.0-20210804085554-4d90952bf92f // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.2 // indirect
 	github.com/projectdiscovery/sliceutil v0.0.1 // indirect
 	github.com/projectdiscovery/stringsutil v0.0.2 // indirect
-	github.com/projectdiscovery/utils v0.0.2 // indirect
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/yl2chen/cidranger v1.0.2 // indirect
