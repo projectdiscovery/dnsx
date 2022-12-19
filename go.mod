@@ -10,13 +10,13 @@ require (
 	github.com/projectdiscovery/cdncheck v0.0.3
 	github.com/projectdiscovery/clistats v0.0.9
 	github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c
-	github.com/projectdiscovery/goflags v0.1.5
+	github.com/projectdiscovery/goflags v0.1.6
 	github.com/projectdiscovery/gologger v1.1.5
 	github.com/projectdiscovery/hmap v0.0.3
 	github.com/projectdiscovery/mapcidr v1.0.3
 	github.com/projectdiscovery/ratelimit v0.0.0-20221004232058-7b82379157fa
 	github.com/projectdiscovery/retryabledns v1.0.17
-	github.com/projectdiscovery/utils v0.0.3
+	github.com/projectdiscovery/utils v0.0.4-0.20221214110533-9f95ee986a54
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.1
 )
@@ -42,7 +42,7 @@ require (
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.11.13 // indirect
-	github.com/kr/pretty v0.3.0 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mholt/archiver v3.1.1+incompatible // indirect
@@ -64,7 +64,7 @@ require (
 	github.com/prometheus/client_model v0.2.1-0.20210607210712-147c58e9608a // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
-	github.com/rogpeppe/go-internal v1.8.0 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/tidwall/btree v1.4.3 // indirect
