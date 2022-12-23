@@ -489,12 +489,12 @@ func (r *Runner) run() error {
 				if host == r.options.WildcardDomain {
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
-						r.lookupAndOutput(host)
+						_ = r.lookupAndOutput(host)
 					}
 				} else if _, ok := r.wildcards[host]; !ok {
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
-						r.lookupAndOutput(host)
+						_ = r.lookupAndOutput(host)
 					}
 				} else {
 					if _, ok := seenRemovedSubdomains[host]; !ok {
