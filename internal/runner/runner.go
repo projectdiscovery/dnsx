@@ -489,12 +489,12 @@ func (r *Runner) run() error {
 				if host == r.options.WildcardDomain {
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
-						r.outputchan <- host
+						_ = r.lookupAndOutput(host)
 					}
 				} else if _, ok := r.wildcards[host]; !ok {
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
-						r.outputchan <- host
+						_ = r.lookupAndOutput(host)
 					}
 				} else {
 					if _, ok := seenRemovedSubdomains[host]; !ok {
@@ -510,6 +510,27 @@ func (r *Runner) run() error {
 		gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
 	}
 
+	return nil
+}
+
+func (r *Runner) lookupAndOutput(host string) error {
+	if r.options.JSON {
+		if data, ok := r.hm.Get(host); ok {
+			var dnsData retryabledns.DNSData
+			err := dnsData.Unmarshal(data)
+			if err != nil {
+				return err
+			}
+			dnsDataJson, err := dnsData.JSON()
+			if err != nil {
+				return err
+			}
+			r.outputchan <- dnsDataJson
+			return err
+		}
+	}
+
+	r.outputchan <- host
 	return nil
 }
 
