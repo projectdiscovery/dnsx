@@ -1,6 +1,6 @@
 module github.com/projectdiscovery/dnsx
 
-go 1.17
+go 1.19
 
 require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
