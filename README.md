@@ -49,7 +49,7 @@
 # Installation Instructions
 
 
-`dnsx` requires **go1.17** to install successfully. Run the following command to install the latest version: 
+`dnsx` requires **go1.19** to install successfully. Run the following command to install the latest version: 
 
 ```sh
 go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
