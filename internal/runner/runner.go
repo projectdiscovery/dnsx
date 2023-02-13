@@ -270,6 +270,7 @@ func (r *Runner) prepareInput() error {
 				subdomain := strings.ReplaceAll(item, "FUZZ", r)
 				hosts = append(hosts, subdomain)
 			}
+			numHosts += r.addHostsToHMapFromList(hosts)
 		case r.options.WordList != "":
 			// prepare wordlist
 			prefixes, err := r.preProcessArgument(r.options.WordList)
