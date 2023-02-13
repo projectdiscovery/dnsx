@@ -270,6 +270,7 @@ func (r *Runner) prepareInput() error {
 				subdomain := strings.ReplaceAll(item, "FUZZ", r)
 				hosts = append(hosts, subdomain)
 			}
+			numHosts += r.addHostsToHMapFromList(hosts)
 		case r.options.WordList != "":
 			// prepare wordlist
 			prefixes, err := r.preProcessArgument(r.options.WordList)
@@ -760,7 +761,7 @@ func (r *Runner) outputRecordType(domain string, items []string, cdnName string,
 		if r.options.ResponseOnly {
 			r.outputchan <- fmt.Sprintf("%s%s", item, details)
 		} else if r.options.Response {
-			r.outputchan <- fmt.Sprintf("%s [ %s ]%s", domain, item, details)
+			r.outputchan <- fmt.Sprintf("%s [%s]%s", domain, item, details)
 		} else {
 			// just prints out the domain if it has a record type and exit
 			r.outputchan <- fmt.Sprintf("%s%s", domain, details)
