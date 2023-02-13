@@ -761,7 +761,7 @@ func (r *Runner) outputRecordType(domain string, items []string, cdnName string,
 		if r.options.ResponseOnly {
 			r.outputchan <- fmt.Sprintf("%s%s", item, details)
 		} else if r.options.Response {
-			r.outputchan <- fmt.Sprintf("%s [ %s ]%s", domain, item, details)
+			r.outputchan <- fmt.Sprintf("%s [%s]%s", domain, item, details)
 		} else {
 			// just prints out the domain if it has a record type and exit
 			r.outputchan <- fmt.Sprintf("%s%s", domain, details)
