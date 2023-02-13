@@ -1,6 +1,7 @@
 name: 🎉 Release Binary
+
 on:
-  create:
+  push:
     tags:
       - v*
   workflow_dispatch:
@@ -17,13 +18,16 @@ jobs:
       - name: "Set up Go"
         uses: actions/setup-go@v3
         with: 
-          go-version: 1.18
+          go-version: 1.19
       
       - name: "Create release on GitHub"
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v4
         with: 
           args: "release --rm-dist"
           version: latest
           workdir: .
-        env: 
+        env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          SLACK_WEBHOOK: "${{ secrets.RELEASE_SLACK_WEBHOOK }}"
+          DISCORD_WEBHOOK_ID: "${{ secrets.DISCORD_WEBHOOK_ID }}"
+          DISCORD_WEBHOOK_TOKEN: "${{ secrets.DISCORD_WEBHOOK_TOKEN }}"

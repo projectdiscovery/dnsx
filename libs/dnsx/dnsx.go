@@ -3,12 +3,13 @@ package dnsx
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 
 	miekgdns "github.com/miekg/dns"
 	"github.com/projectdiscovery/cdncheck"
-	"github.com/projectdiscovery/iputil"
 	retryabledns "github.com/projectdiscovery/retryabledns"
+	iputil "github.com/projectdiscovery/utils/ip"
 )
 
 // DNSX is structure to perform dns lookups
@@ -32,8 +33,19 @@ type Options struct {
 // ResponseData to show output result
 type ResponseData struct {
 	*retryabledns.DNSData
-	IsCDNIP bool   `json:"cdn,omitempty" csv:"cdn"`
-	CDNName string `json:"cdn-name,omitempty" csv:"cdn-name"`
+	IsCDNIP bool         `json:"cdn,omitempty" csv:"cdn"`
+	CDNName string       `json:"cdn-name,omitempty" csv:"cdn-name"`
+	ASN     *AsnResponse `json:"asn,omitempty" csv:"asn"`
+}
+type AsnResponse struct {
+	AsNumber  string   `json:"as-number,omitempty" csv:"as_number"`
+	AsName    string   `json:"as-name,omitempty" csv:"as_name"`
+	AsCountry string   `json:"as-country,omitempty" csv:"as_country"`
+	AsRange   []string `json:"as-range,omitempty" csv:"as_range"`
+}
+
+func (o *AsnResponse) String() string {
+	return fmt.Sprintf("[%v, %v, %v]", o.AsNumber, o.AsName, o.AsCountry)
 }
 
 func (d *ResponseData) JSON() (string, error) {

@@ -39,7 +39,7 @@
 
 
  - Simple and Handy utility to query DNS records.
- - **A, AAAA, CNAME, PTR, NS, MX, TXT, SOA** query support
+ - **A, AAAA, CNAME, PTR, NS, MX, TXT, SRV, SOA** query support
  - DNS **Resolution** / **Brute-force** support
  - Custom **resolver** input support
  - Multiple resolver format **(TCP/UDP/DOH/DOT)** support
@@ -49,7 +49,7 @@
 # Installation Instructions
 
 
-`dnsx` requires **go1.17** to install successfully. Run the following command to install the latest version: 
+`dnsx` requires **go1.19** to install successfully. Run the following command to install the latest version: 
 
 ```sh
 go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
@@ -75,6 +75,7 @@ QUERY:
    -cname  query CNAME record
    -ns     query NS record
    -txt    query TXT record
+   -srv    query SRV record
    -ptr    query PTR record
    -mx     query MX record
    -soa    query SOA record
@@ -88,6 +89,7 @@ FILTER:
 
 PROBE:
    -cdn  display cdn name
+   -asn  display host asn information
 
 RATE-LIMIT:
    -t, -threads int      number of concurrent threads to use (default 100)
@@ -217,6 +219,17 @@ mta-sts.hackerone.com [hacker0x01.github.io]
 mta-sts.forwarding.hackerone.com [hacker0x01.github.io]
 events.hackerone.com [whitelabel.bigmarker.com]
 ```
+Extract **ASN** records for the given list of subdomains:
+```console
+subfinder -silent -d hackerone.com | dnsx -silent  -asn
+
+b.ns.hackerone.com [AS13335, CLOUDFLARENET, US]
+a.ns.hackerone.com [AS13335, CLOUDFLARENET, US]
+hackerone.com [AS13335, CLOUDFLARENET, US]
+www.hackerone.com [AS13335, CLOUDFLARENET, US]
+api.hackerone.com [AS13335, CLOUDFLARENET, US]
+support.hackerone.com [AS13335, CLOUDFLARENET, US]
+```
 
 Probe using [dns status code](https://github.com/projectdiscovery/dnsx/wiki/RCODE-ID-VALUE-Mapping) on given list of (sub)domains:
 
@@ -252,6 +265,21 @@ slc-a-origin-pointofsale.paypal.com
 fpdbs.paypal.com
 ```
 
+Extract subdomains from given ASN using `PTR` query:
+```console
+echo AS17012 | dnsx -silent -resp-only -ptr 
+
+apiagw-a.paypal.com
+notify.paypal.com
+adnormserv-slc-a.paypal.com
+a.sandbox.paypal.com
+apps2.paypal-labs.com
+pilot-payflowpro.paypal.com
+www.paypallabs.com
+paypal-portal.com
+micropayments.paypal-labs.com
+minicart.paypal-labs.com
+```
 ---------
 
 ### DNS Bruteforce
@@ -319,6 +347,44 @@ jira.amitree.com
 jira.arrival.com
 jira.atlassian.net
 jira.atlassian.com
+```
+
+#### DNS Bruteforce with Placeholder based wordlist
+
+```bash
+$ cat tld.txt
+
+com
+by
+de
+be
+al
+bi
+cg
+dj
+bs
+```
+
+```console
+dnsx -d google.FUZZ -w tld.txt -resp
+
+      _             __  __
+   __| | _ __   ___ \ \/ /
+  / _' || '_ \ / __| \  / 
+ | (_| || | | |\__ \ /  \ 
+  \__,_||_| |_||___//_/\_\ v1.1.2
+
+      projectdiscovery.io
+
+google.de [142.250.194.99] 
+google.com [142.250.76.206] 
+google.be [172.217.27.163] 
+google.bs [142.251.42.35] 
+google.bi [216.58.196.67] 
+google.al [216.58.196.68] 
+google.by [142.250.195.4] 
+google.cg [142.250.183.131] 
+google.dj [142.250.192.3] 
 ```
 
 ### Wildcard filtering
@@ -389,5 +455,6 @@ func main() {
 - Domain name (`wd`) input is mandatory for wildcard elimination.
 - DNS record flag can not be used when using wildcard filtering.
 - DNS resolution (`l`) and DNS brute-forcing (`w`) can't be used together.
+- VPN operators tend to filter high DNS/UDP traffic, therefore the tool might experience packets loss (eg. [Mullvad VPN](https://github.com/projectdiscovery/dnsx/issues/221))
 
 `dnsx` is made with 🖤 by the [projectdiscovery](https://projectdiscovery.io) team.

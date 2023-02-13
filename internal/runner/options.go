@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/goconfig"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
 const (
@@ -42,6 +42,7 @@ type Options struct {
 	MX                bool
 	SOA               bool
 	TXT               bool
+	SRV               bool
 	AXFR              bool
 	JSON              bool
 	Trace             bool
@@ -58,6 +59,7 @@ type Options struct {
 	Stream            bool
 	CAA               bool
 	OutputCDN         bool
+	ASN               bool
 	HealthCheck       bool
 }
 
@@ -89,6 +91,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.CNAME, "cname", false, "query CNAME record"),
 		flagSet.BoolVar(&options.NS, "ns", false, "query NS record"),
 		flagSet.BoolVar(&options.TXT, "txt", false, "query TXT record"),
+		flagSet.BoolVar(&options.SRV, "srv", false, "query SRV record"),
 		flagSet.BoolVar(&options.PTR, "ptr", false, "query PTR record"),
 		flagSet.BoolVar(&options.MX, "mx", false, "query MX record"),
 		flagSet.BoolVar(&options.SOA, "soa", false, "query SOA record"),
@@ -104,6 +107,7 @@ func ParseOptions() *Options {
 
 	flagSet.CreateGroup("probe", "Probe",
 		flagSet.BoolVar(&options.OutputCDN, "cdn", false, "display cdn name"),
+		flagSet.BoolVar(&options.ASN, "asn", false, "display host asn information"),
 	)
 
 	flagSet.CreateGroup("rate-limit", "Rate-limit",
@@ -137,13 +141,13 @@ func ParseOptions() *Options {
 	flagSet.CreateGroup("configs", "Configurations",
 		flagSet.StringVarP(&options.Resolvers, "resolver", "r", "", "list of resolvers to use (file or comma separated)"),
 		flagSet.IntVarP(&options.WildcardThreshold, "wildcard-threshold", "wt", 5, "wildcard filter threshold"),
-		flagSet.StringVarP(&options.WildcardDomain, "wildcard-domain", "wd", "", "domain name for wildcard filtering (other flags will be ignored)"),
+		flagSet.StringVarP(&options.WildcardDomain, "wildcard-domain", "wd", "", "domain name for wildcard filtering (other flags will be ignored - only json output is supported)"),
 	)
 
 	_ = flagSet.Parse()
 
 	if options.HealthCheck {
-		gologger.Print().Msgf("%s\n", DoHealthCheck(options))
+		gologger.Print().Msgf("%s\n", DoHealthCheck(options, flagSet))
 		os.Exit(0)
 	}
 

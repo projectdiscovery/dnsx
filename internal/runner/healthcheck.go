@@ -6,13 +6,13 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/goflags"
+	fileutil "github.com/projectdiscovery/utils/file"
 )
 
-func DoHealthCheck(options *Options) string {
+func DoHealthCheck(options *Options, flagSet *goflags.FlagSet) string {
 	// RW permissions on config file
-	cfgFilePath, _ := goflags.GetConfigFilePath()
+	cfgFilePath, _ := flagSet.GetConfigFilePath()
 	var test strings.Builder
 	test.WriteString(fmt.Sprintf("Version: %s\n", Version))
 	test.WriteString(fmt.Sprintf("Operative System: %s\n", runtime.GOOS))
