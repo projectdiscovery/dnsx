@@ -349,6 +349,44 @@ jira.atlassian.net
 jira.atlassian.com
 ```
 
+#### DNS Bruteforce with Placeholder based wordlist
+
+```bash
+$ cat tld.txt
+
+com
+by
+de
+be
+al
+bi
+cg
+dj
+bs
+```
+
+```console
+dnsx -d google.FUZZ -w tld.txt -resp
+
+      _             __  __
+   __| | _ __   ___ \ \/ /
+  / _' || '_ \ / __| \  / 
+ | (_| || | | |\__ \ /  \ 
+  \__,_||_| |_||___//_/\_\ v1.1.2
+
+      projectdiscovery.io
+
+google.de [142.250.194.99] 
+google.com [142.250.76.206] 
+google.be [172.217.27.163] 
+google.bs [142.251.42.35] 
+google.bi [216.58.196.67] 
+google.al [216.58.196.68] 
+google.by [142.250.195.4] 
+google.cg [142.250.183.131] 
+google.dj [142.250.192.3] 
+```
+
 ### Wildcard filtering
 
 A special feature of `dnsx` is its ability to handle **multi-level DNS based wildcards**, and do it so with a very reduced number of DNS requests. Sometimes all the subdomains will resolve, which leads to lots of garbage in the output. The way `dnsx` handles this is by keeping track of how many subdomains point to an IP and if the count of the subdomains increase beyond a certain threshold, it will check for wildcards on all the levels of the hosts for that IP iteratively.
