@@ -15,8 +15,8 @@ require (
 	github.com/projectdiscovery/hmap v0.0.7
 	github.com/projectdiscovery/mapcidr v1.0.3
 	github.com/projectdiscovery/ratelimit v0.0.0-20221004232058-7b82379157fa
-	github.com/projectdiscovery/retryabledns v1.0.20
-	github.com/projectdiscovery/utils v0.0.4-0.20221214110533-9f95ee986a54
+	github.com/projectdiscovery/retryabledns v1.0.21
+	github.com/projectdiscovery/utils v0.0.4-0.20230117135930-7371ae6a739d
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.1
 )
@@ -57,7 +57,7 @@ require (
 	github.com/projectdiscovery/blackrock v0.0.0-20220628111055-35616c71b2dc // indirect
 	github.com/projectdiscovery/freeport v0.0.4 // indirect
 	github.com/projectdiscovery/reflectutil v0.0.0-20210804085554-4d90952bf92f // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.8 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.0.10 // indirect
 	github.com/projectdiscovery/sliceutil v0.0.1 // indirect
 	github.com/projectdiscovery/stringsutil v0.0.2 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
