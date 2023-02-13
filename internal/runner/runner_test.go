@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/projectdiscovery/hmap/store/hybrid"
-	"github.com/projectdiscovery/mapcidr/asn"
 	"github.com/stretchr/testify/require"
 )
 
@@ -84,9 +83,8 @@ func TestRunner_asnInput_prepareInput(t *testing.T) {
 	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
 	require.Nil(t, err, "could not create hybrid map")
 	r := Runner{
-		options:   options,
-		hm:        hm,
-		asnClient: asn.New(),
+		options: options,
+		hm:      hm,
 	}
 	// call the prepareInput
 	err = r.prepareInput()
@@ -133,7 +131,6 @@ func TestRunner_InputWorkerStream(t *testing.T) {
 	r := Runner{
 		options:    options,
 		workerchan: make(chan string),
-		asnClient:  asn.New(),
 	}
 	go r.InputWorkerStream()
 	var got []string

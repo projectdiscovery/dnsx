@@ -44,7 +44,6 @@ type Runner struct {
 	hm                  *hybrid.HybridMap
 	stats               clistats.StatisticsClient
 	tmpStdinFile        string
-	asnClient           asn.ASNClient
 }
 
 func New(options *Options) (*Runner, error) {
@@ -149,7 +148,6 @@ func New(options *Options) (*Runner, error) {
 		limiter:            limiter,
 		hm:                 hm,
 		stats:              stats,
-		asnClient:          asn.New(),
 	}
 
 	return &r, nil
@@ -174,7 +172,7 @@ func (r *Runner) InputWorkerStream() {
 				r.workerchan <- host
 			}
 		case asn.IsASN(item):
-			hostsC, _ := r.asnClient.GetIPAddressesAsStream(item)
+			hostsC, _ := asn.GetIPAddressesAsStream(item)
 			for host := range hostsC {
 				r.workerchan <- host
 			}
@@ -291,7 +289,7 @@ func (r *Runner) prepareInput() error {
 			}
 			numHosts += r.addHostsToHMapFromChan(hostC)
 		case asn.IsASN(item):
-			hostC, err := r.asnClient.GetIPAddressesAsStream(item)
+			hostC, err := asn.GetIPAddressesAsStream(item)
 			if err != nil {
 				return err
 			}
@@ -669,27 +667,30 @@ func (r *Runner) worker() {
 			dnsData.IsCDNIP, dnsData.CDNName, _ = r.dnsx.CdnCheck(domain)
 		}
 		if r.options.ASN {
-			results := []asnmap.Response{}
+			results := []*asnmap.Response{}
 			ips := dnsData.A
 			if ips == nil {
 				ips, _ = r.dnsx.Lookup(domain)
 			}
 			for _, ip := range ips {
-				results = append(results, asnmap.NewClient().GetData(asnmap.IP(ip))...)
+				if data, err := asnmap.DefaultClient.GetData(ip); err == nil {
+					results = append(results, data...)
+				}
 			}
 			if iputil.IsIP(domain) {
-				results = asnmap.NewClient().GetData(asnmap.IP(domain))
+				if data, err := asnmap.DefaultClient.GetData(domain); err == nil {
+					results = append(results, data...)
+				}
 			}
 			if len(results) > 0 {
-				var cidrs []string
-				for _, cidr := range asnmap.GetCIDR(results) {
-					cidrs = append(cidrs, cidr.String())
-				}
+				cidrs, _ := asnmap.GetCIDR(results)
 				dnsData.ASN = &dnsx.AsnResponse{
 					AsNumber:  fmt.Sprintf("AS%v", results[0].ASN),
 					AsName:    results[0].Org,
 					AsCountry: results[0].Country,
-					AsRange:   cidrs,
+				}
+				for _, cidr := range cidrs {
+					dnsData.ASN.AsRange = append(dnsData.ASN.AsRange, cidr.String())
 				}
 			}
 		}
