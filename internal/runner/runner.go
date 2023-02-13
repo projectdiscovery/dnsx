@@ -44,7 +44,6 @@ type Runner struct {
 	hm                  *hybrid.HybridMap
 	stats               clistats.StatisticsClient
 	tmpStdinFile        string
-	asnClient           asn.ASNClient
 }
 
 func New(options *Options) (*Runner, error) {
@@ -149,7 +148,6 @@ func New(options *Options) (*Runner, error) {
 		limiter:            limiter,
 		hm:                 hm,
 		stats:              stats,
-		asnClient:          asn.New(),
 	}
 
 	return &r, nil
@@ -174,7 +172,7 @@ func (r *Runner) InputWorkerStream() {
 				r.workerchan <- host
 			}
 		case asn.IsASN(item):
-			hostsC, _ := r.asnClient.GetIPAddressesAsStream(item)
+			hostsC, _ := asn.GetIPAddressesAsStream(item)
 			for host := range hostsC {
 				r.workerchan <- host
 			}
@@ -291,7 +289,7 @@ func (r *Runner) prepareInput() error {
 			}
 			numHosts += r.addHostsToHMapFromChan(hostC)
 		case asn.IsASN(item):
-			hostC, err := r.asnClient.GetIPAddressesAsStream(item)
+			hostC, err := asn.GetIPAddressesAsStream(item)
 			if err != nil {
 				return err
 			}
