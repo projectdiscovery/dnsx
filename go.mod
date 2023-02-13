@@ -12,11 +12,11 @@ require (
 	github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c
 	github.com/projectdiscovery/goflags v0.1.6
 	github.com/projectdiscovery/gologger v1.1.8
-	github.com/projectdiscovery/hmap v0.0.7
+	github.com/projectdiscovery/hmap v0.0.8
 	github.com/projectdiscovery/mapcidr v1.0.3
 	github.com/projectdiscovery/ratelimit v0.0.0-20221004232058-7b82379157fa
 	github.com/projectdiscovery/retryabledns v1.0.21
-	github.com/projectdiscovery/utils v0.0.4-0.20230117135930-7371ae6a739d
+	github.com/projectdiscovery/utils v0.0.7
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.1
 )
@@ -78,7 +78,7 @@ require (
 	github.com/ulikunitz/xz v0.5.7 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/yl2chen/cidranger v1.0.2 // indirect
-	go.etcd.io/bbolt v1.3.6 // indirect
+	go.etcd.io/bbolt v1.3.7 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/exp v0.0.0-20221230185412-738e83a70c30 // indirect
