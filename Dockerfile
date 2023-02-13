@@ -1,4 +1,4 @@
-FROM golang:1.19-alpine3.17 AS build-env
+FROM golang:1.20-alpine3.17 AS build-env
 RUN apk add --no-cache build-base
 RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
 
