@@ -119,7 +119,7 @@ func New(options *Options) (*Runner, error) {
 
 	limiter := ratelimit.NewUnlimited(context.Background())
 	if options.RateLimit > 0 {
-		limiter = ratelimit.New(context.Background(), options.RateLimit, time.Second)
+		limiter = ratelimit.New(context.Background(), uint(options.RateLimit), time.Second)
 	}
 
 	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
