@@ -9,7 +9,7 @@ require (
 	github.com/projectdiscovery/asnmap v1.0.0
 	github.com/projectdiscovery/cdncheck v0.0.3
 	github.com/projectdiscovery/clistats v0.0.12
-	github.com/projectdiscovery/goconfig v0.0.0-20210804090219-f893ccd0c69c
+	github.com/projectdiscovery/goconfig v0.0.1
 	github.com/projectdiscovery/goflags v0.1.6
 	github.com/projectdiscovery/gologger v1.1.8
 	github.com/projectdiscovery/hmap v0.0.8
@@ -56,7 +56,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/blackrock v0.0.0-20221025011524-9e4efe804fb4 // indirect
 	github.com/projectdiscovery/freeport v0.0.4 // indirect
-	github.com/projectdiscovery/reflectutil v0.0.0-20210804085554-4d90952bf92f // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.10 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
