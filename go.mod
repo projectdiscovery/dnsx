@@ -6,17 +6,17 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.50
 	github.com/pkg/errors v0.9.1
-	github.com/projectdiscovery/asnmap v1.0.0
+	github.com/projectdiscovery/asnmap v1.0.1
 	github.com/projectdiscovery/cdncheck v0.0.3
 	github.com/projectdiscovery/clistats v0.0.12
 	github.com/projectdiscovery/goconfig v0.0.1
-	github.com/projectdiscovery/goflags v0.1.6
+	github.com/projectdiscovery/goflags v0.1.7
 	github.com/projectdiscovery/gologger v1.1.8
 	github.com/projectdiscovery/hmap v0.0.8
 	github.com/projectdiscovery/mapcidr v1.1.0
 	github.com/projectdiscovery/ratelimit v0.0.6
 	github.com/projectdiscovery/retryabledns v1.0.21
-	github.com/projectdiscovery/utils v0.0.9
+	github.com/projectdiscovery/utils v0.0.13
 	github.com/rs/xid v1.4.0
 	github.com/stretchr/testify v1.8.2
 )
@@ -80,9 +80,9 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/exp v0.0.0-20221230185412-738e83a70c30 // indirect
 	golang.org/x/mod v0.6.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/tools v0.2.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/djherbis/times.v1 v1.3.0 // indirect
