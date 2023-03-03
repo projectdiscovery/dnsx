@@ -2,6 +2,7 @@ package runner
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"os"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
+	pdtmutils "github.com/projectdiscovery/pdtm/pkg/utils"
 	fileutil "github.com/projectdiscovery/utils/file"
 )
 
@@ -19,48 +21,49 @@ const (
 )
 
 type Options struct {
-	Resolvers         string
-	Hosts             string
-	Domains           string
-	WordList          string
-	Threads           int
-	RateLimit         int
-	Retries           int
-	OutputFormat      string
-	OutputFile        string
-	Raw               bool
-	Silent            bool
-	Verbose           bool
-	Version           bool
-	Response          bool
-	ResponseOnly      bool
-	A                 bool
-	AAAA              bool
-	NS                bool
-	CNAME             bool
-	PTR               bool
-	MX                bool
-	SOA               bool
-	TXT               bool
-	SRV               bool
-	AXFR              bool
-	JSON              bool
-	Trace             bool
-	TraceMaxRecursion int
-	WildcardThreshold int
-	WildcardDomain    string
-	ShowStatistics    bool
-	rcodes            map[int]struct{}
-	RCode             string
-	hasRCodes         bool
-	Resume            bool
-	resumeCfg         *ResumeCfg
-	HostsFile         bool
-	Stream            bool
-	CAA               bool
-	OutputCDN         bool
-	ASN               bool
-	HealthCheck       bool
+	Resolvers          string
+	Hosts              string
+	Domains            string
+	WordList           string
+	Threads            int
+	RateLimit          int
+	Retries            int
+	OutputFormat       string
+	OutputFile         string
+	Raw                bool
+	Silent             bool
+	Verbose            bool
+	Version            bool
+	Response           bool
+	ResponseOnly       bool
+	A                  bool
+	AAAA               bool
+	NS                 bool
+	CNAME              bool
+	PTR                bool
+	MX                 bool
+	SOA                bool
+	TXT                bool
+	SRV                bool
+	AXFR               bool
+	JSON               bool
+	Trace              bool
+	TraceMaxRecursion  int
+	WildcardThreshold  int
+	WildcardDomain     string
+	ShowStatistics     bool
+	rcodes             map[int]struct{}
+	RCode              string
+	hasRCodes          bool
+	Resume             bool
+	resumeCfg          *ResumeCfg
+	HostsFile          bool
+	Stream             bool
+	CAA                bool
+	OutputCDN          bool
+	ASN                bool
+	HealthCheck        bool
+	DisableUpdateCheck bool
 }
 
 // ShouldLoadResume resume file
@@ -113,6 +116,11 @@ func ParseOptions() *Options {
 	flagSet.CreateGroup("rate-limit", "Rate-limit",
 		flagSet.IntVarP(&options.Threads, "threads", "t", 100, "number of concurrent threads to use"),
 		flagSet.IntVarP(&options.RateLimit, "rate-limit", "rl", -1, "number of dns request/second to make (disabled as default)"),
+	)
+
+	flagSet.CreateGroup("update", "Update",
+		flagSet.CallbackVarP(pdtmutils.GetUpdaterCallback(ToolName), "update", "up", fmt.Sprintf("update %v to the latest released version", ToolName)),
+		flagSet.BoolVarP(&options.DisableUpdateCheck, "disable-update-check", "duc", false, "disable automatic update check"),
 	)
 
 	flagSet.CreateGroup("output", "Output",
@@ -169,6 +177,11 @@ func ParseOptions() *Options {
 	if options.Version {
 		gologger.Info().Msgf("Current Version: %s\n", Version)
 		os.Exit(0)
+	}
+
+	if !options.DisableUpdateCheck {
+		checkVersion := pdtmutils.GetVersionCheckCallback(ToolName)
+		gologger.Info().Msg(checkVersion())
 	}
 
 	options.validateOptions()

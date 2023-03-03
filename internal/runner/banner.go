@@ -9,6 +9,8 @@ const banner = `
  | (_| || | | |\__ \ /  \ 
   \__,_||_| |_||___//_/\_\ v1.1.2
 `
+// Name
+const ToolName = `dnsx`
 
 // Version is the current version of dnsx
 const Version = `1.1.2`
