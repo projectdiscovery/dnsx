@@ -6,7 +6,7 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.50
 	github.com/pkg/errors v0.9.1
-	github.com/projectdiscovery/asnmap v1.0.0
+	github.com/projectdiscovery/asnmap v1.0.1
 	github.com/projectdiscovery/cdncheck v0.0.3
 	github.com/projectdiscovery/clistats v0.0.12
 	github.com/projectdiscovery/goconfig v0.0.1
