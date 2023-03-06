@@ -2,7 +2,6 @@ package runner
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"os"
 	"strconv"
@@ -119,7 +118,6 @@ func ParseOptions() *Options {
 	)
 
 	flagSet.CreateGroup("update", "Update",
-		flagSet.CallbackVarP(pdtmutils.GetUpdaterCallback(ToolName), "update", "up", fmt.Sprintf("update %v to the latest released version", ToolName)),
 		flagSet.BoolVarP(&options.DisableUpdateCheck, "disable-update-check", "duc", false, "disable automatic update check"),
 	)
 
