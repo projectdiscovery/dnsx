@@ -15,7 +15,7 @@ const banner = `
 // Name
 const ToolName = `dnsx`
 
-// version is the current version of dnsxq
+// version is the current version of dnsx
 const version = `1.1.2`
 
 // showBanner is used to show the banner to the user
