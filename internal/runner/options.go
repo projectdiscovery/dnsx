@@ -11,6 +11,7 @@ import (
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
+	updateutils "github.com/projectdiscovery/utils/update"
 	fileutil "github.com/projectdiscovery/utils/file"
 )
 
@@ -19,48 +20,49 @@ const (
 )
 
 type Options struct {
-	Resolvers         string
-	Hosts             string
-	Domains           string
-	WordList          string
-	Threads           int
-	RateLimit         int
-	Retries           int
-	OutputFormat      string
-	OutputFile        string
-	Raw               bool
-	Silent            bool
-	Verbose           bool
-	Version           bool
-	Response          bool
-	ResponseOnly      bool
-	A                 bool
-	AAAA              bool
-	NS                bool
-	CNAME             bool
-	PTR               bool
-	MX                bool
-	SOA               bool
-	TXT               bool
-	SRV               bool
-	AXFR              bool
-	JSON              bool
-	Trace             bool
-	TraceMaxRecursion int
-	WildcardThreshold int
-	WildcardDomain    string
-	ShowStatistics    bool
-	rcodes            map[int]struct{}
-	RCode             string
-	hasRCodes         bool
-	Resume            bool
-	resumeCfg         *ResumeCfg
-	HostsFile         bool
-	Stream            bool
-	CAA               bool
-	OutputCDN         bool
-	ASN               bool
-	HealthCheck       bool
+	Resolvers          string
+	Hosts              string
+	Domains            string
+	WordList           string
+	Threads            int
+	RateLimit          int
+	Retries            int
+	OutputFormat       string
+	OutputFile         string
+	Raw                bool
+	Silent             bool
+	Verbose            bool
+	Version            bool
+	Response           bool
+	ResponseOnly       bool
+	A                  bool
+	AAAA               bool
+	NS                 bool
+	CNAME              bool
+	PTR                bool
+	MX                 bool
+	SOA                bool
+	TXT                bool
+	SRV                bool
+	AXFR               bool
+	JSON               bool
+	Trace              bool
+	TraceMaxRecursion  int
+	WildcardThreshold  int
+	WildcardDomain     string
+	ShowStatistics     bool
+	rcodes             map[int]struct{}
+	RCode              string
+	hasRCodes          bool
+	Resume             bool
+	resumeCfg          *ResumeCfg
+	HostsFile          bool
+	Stream             bool
+	CAA                bool
+	OutputCDN          bool
+	ASN                bool
+	HealthCheck        bool
+	DisableUpdateCheck bool
 }
 
 // ShouldLoadResume resume file
@@ -115,6 +117,11 @@ func ParseOptions() *Options {
 		flagSet.IntVarP(&options.RateLimit, "rate-limit", "rl", -1, "number of dns request/second to make (disabled as default)"),
 	)
 
+	flagSet.CreateGroup("update", "Update",
+		flagSet.CallbackVarP(GetUpdateCallback(), "update", "up", "update dnsx to latest version"),
+		flagSet.BoolVarP(&options.DisableUpdateCheck, "disable-update-check", "duc", false, "disable automatic dnsx update check"),
+	)
+
 	flagSet.CreateGroup("output", "Output",
 		flagSet.StringVarP(&options.OutputFile, "output", "o", "", "file to write output"),
 		flagSet.BoolVar(&options.JSON, "json", false, "write output in JSONL(ines) format"),
@@ -167,8 +174,19 @@ func ParseOptions() *Options {
 	showBanner()
 
 	if options.Version {
-		gologger.Info().Msgf("Current Version: %s\n", Version)
+		gologger.Info().Msgf("Current Version: %s\n", version)
 		os.Exit(0)
+	}
+
+	if !options.DisableUpdateCheck {
+		latestVersion, err := updateutils.GetVersionCheckCallback("dnsx")()
+		if err != nil {
+			if options.Verbose {
+				gologger.Error().Msgf("dnsx version check failed: %v", err.Error())
+			}
+		} else {
+			gologger.Info().Msgf("Current dnsx version %v %v", version, updateutils.GetVersionDescription(version, latestVersion))
+		}
 	}
 
 	options.validateOptions()
