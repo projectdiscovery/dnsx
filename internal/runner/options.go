@@ -11,7 +11,7 @@ import (
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
-	pdtmutils "github.com/projectdiscovery/pdtm/pkg/utils"
+	updateutils "github.com/projectdiscovery/utils/update"
 	fileutil "github.com/projectdiscovery/utils/file"
 )
 
@@ -118,7 +118,8 @@ func ParseOptions() *Options {
 	)
 
 	flagSet.CreateGroup("update", "Update",
-		flagSet.BoolVarP(&options.DisableUpdateCheck, "disable-update-check", "duc", false, "disable automatic update check"),
+		flagSet.CallbackVarP(GetUpdateCallback(), "update", "up", "update dnsx to latest version"),
+		flagSet.BoolVarP(&options.DisableUpdateCheck, "disable-update-check", "duc", false, "disable automatic dnsx update check"),
 	)
 
 	flagSet.CreateGroup("output", "Output",
@@ -173,13 +174,19 @@ func ParseOptions() *Options {
 	showBanner()
 
 	if options.Version {
-		gologger.Info().Msgf("Current Version: %s\n", Version)
+		gologger.Info().Msgf("Current Version: %s\n", version)
 		os.Exit(0)
 	}
 
 	if !options.DisableUpdateCheck {
-		checkVersion := pdtmutils.GetVersionCheckCallback(ToolName)
-		gologger.Info().Msg(checkVersion())
+		latestVersion, err := updateutils.GetVersionCheckCallback("dnsx")()
+		if err != nil {
+			if options.Verbose {
+				gologger.Error().Msgf("dnsx version check failed: %v", err.Error())
+			}
+		} else {
+			gologger.Info().Msgf("Current dnsx version %v %v", version, updateutils.GetVersionDescription(version, latestVersion))
+		}
 	}
 
 	options.validateOptions()
