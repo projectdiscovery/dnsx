@@ -1,8 +1,16 @@
-FROM golang:1.20-alpine3.17 AS build-env
-RUN apk add --no-cache build-base
-RUN go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
+# Base
+FROM golang:1.20.2-alpine AS builder
 
+RUN apk add --no-cache build-base
+WORKDIR /app
+COPY . /app
+RUN go mod download
+RUN go build ./cmd/dnsx
+
+# Release
 FROM alpine:3.17.2
-RUN apk add --no-cache bind-tools ca-certificates
-COPY --from=build-env /go/bin/dnsx /usr/local/bin/dnsx
+RUN apk -U upgrade --no-cache \
+    && apk add --no-cache bind-tools ca-certificates
+COPY --from=builder /app/dnsx /usr/local/bin/
+
 ENTRYPOINT ["dnsx"]
