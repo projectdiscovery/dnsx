@@ -95,6 +95,10 @@ RATE-LIMIT:
    -t, -threads int      number of concurrent threads to use (default 100)
    -rl, -rate-limit int  number of dns request/second to make (disabled as default) (default -1)
 
+UPDATE:
+   -up, -update                 update dnsx to latest version
+   -duc, -disable-update-check  disable automatic dnsx update check
+
 OUTPUT:
    -o, -output string  file to write output
    -json               write output in JSONL(ines) format
