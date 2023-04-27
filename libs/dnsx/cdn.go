@@ -20,5 +20,5 @@ func (d *DNSX) CdnCheck(domain string) (bool, string, error) {
 	if !iputil.IsIP(ipAddr) {
 		return false, "", errors.Errorf("%s is not a valid ip", ipAddr)
 	}
-	return d.cdn.Check(net.ParseIP((ipAddr)))
+	return d.cdn.CheckCDN(net.ParseIP((ipAddr)))
 }
