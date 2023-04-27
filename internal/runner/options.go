@@ -179,7 +179,7 @@ func ParseOptions() *Options {
 	}
 
 	if !options.DisableUpdateCheck {
-		latestVersion, err := updateutils.GetVersionCheckCallback("dnsx")()
+		latestVersion, err := updateutils.GetToolVersionCallback("dnsx", version)()
 		if err != nil {
 			if options.Verbose {
 				gologger.Error().Msgf("dnsx version check failed: %v", err.Error())
