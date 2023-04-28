@@ -6,7 +6,7 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.53
 	github.com/pkg/errors v0.9.1
-	github.com/projectdiscovery/asnmap v1.0.2
+	github.com/projectdiscovery/asnmap v1.0.3
 	github.com/projectdiscovery/cdncheck v0.0.3
 	github.com/projectdiscovery/clistats v0.0.12
 	github.com/projectdiscovery/goconfig v0.0.1
@@ -15,7 +15,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.11
 	github.com/projectdiscovery/mapcidr v1.1.1
 	github.com/projectdiscovery/ratelimit v0.0.6
-	github.com/projectdiscovery/retryabledns v1.0.21
+	github.com/projectdiscovery/retryabledns v1.0.23
 	github.com/projectdiscovery/utils v0.0.25
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.2
@@ -61,9 +61,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/blackrock v0.0.0-20221025011524-9e4efe804fb4 // indirect
 	github.com/projectdiscovery/freeport v0.0.4 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.10 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.0.15 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
-	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/tidwall/btree v1.4.3 // indirect
