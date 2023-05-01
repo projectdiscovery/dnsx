@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/miekg/dns v1.1.53
+	github.com/miekg/dns v1.1.54
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/asnmap v1.0.3
 	github.com/projectdiscovery/cdncheck v1.0.1
