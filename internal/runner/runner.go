@@ -308,6 +308,9 @@ func (r *Runner) prepareInput() error {
 		r.stats.AddDynamic("summary", makePrintCallback())
 		// nolint:errcheck
 		r.stats.Start()
+		go func() {
+			for range r.stats.GetStatResponse(time.Second * 5) {}
+		}()
 	}
 	return nil
 }
