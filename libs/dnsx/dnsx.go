@@ -85,11 +85,7 @@ func New(options Options) (*DNSX, error) {
 	dnsClient.TCPFallback = true
 	dnsx := &DNSX{dnsClient: dnsClient, Options: &options}
 	if options.OutputCDN {
-		var err error
-		dnsx.cdn, err = cdncheck.NewWithCache()
-		if err != nil {
-			return nil, err
-		}
+		dnsx.cdn = cdncheck.New()
 	}
 	return dnsx, nil
 }
