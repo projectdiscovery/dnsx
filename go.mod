@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/miekg/dns v1.1.53
+	github.com/miekg/dns v1.1.54
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/asnmap v1.0.3
 	github.com/projectdiscovery/cdncheck v1.0.1
@@ -15,8 +15,8 @@ require (
 	github.com/projectdiscovery/hmap v0.0.11
 	github.com/projectdiscovery/mapcidr v1.1.1
 	github.com/projectdiscovery/ratelimit v0.0.6
-	github.com/projectdiscovery/retryabledns v1.0.23
-	github.com/projectdiscovery/utils v0.0.25
+	github.com/projectdiscovery/retryabledns v1.0.24
+	github.com/projectdiscovery/utils v0.0.26
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.2
 )
