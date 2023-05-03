@@ -81,6 +81,7 @@ QUERY:
    -soa    query SOA record
    -axfr   query AXFR
    -caa    query CAA record
+   -any    query ANY record
 
 FILTER:
    -re, -resp          display dns response
