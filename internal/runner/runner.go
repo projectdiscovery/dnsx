@@ -308,9 +308,11 @@ func (r *Runner) prepareInput() error {
 		r.stats.AddDynamic("summary", makePrintCallback())
 		// nolint:errcheck
 		r.stats.Start()
-		go func() {
-			for range r.stats.GetStatResponse(time.Second * 5) {}
-		}()
+		r.stats.GetStatResponse(time.Second*5, func(s string, err error) {
+			if err != nil && r.options.Verbose {
+				gologger.Error().Msgf("Could not read statistics: %s\n", err)
+			}
+		})
 	}
 	return nil
 }

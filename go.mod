@@ -8,7 +8,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/asnmap v1.0.3
 	github.com/projectdiscovery/cdncheck v1.0.1
-	github.com/projectdiscovery/clistats v0.0.17-0.20230508052625-f199e25a8f9d
+	github.com/projectdiscovery/clistats v0.0.17-0.20230515152725-082cf1c4e872
 	github.com/projectdiscovery/goconfig v0.0.1
 	github.com/projectdiscovery/goflags v0.1.8
 	github.com/projectdiscovery/gologger v1.1.9
@@ -16,7 +16,7 @@ require (
 	github.com/projectdiscovery/mapcidr v1.1.1
 	github.com/projectdiscovery/ratelimit v0.0.6
 	github.com/projectdiscovery/retryabledns v1.0.24
-	github.com/projectdiscovery/utils v0.0.28
+	github.com/projectdiscovery/utils v0.0.30
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.2
 )

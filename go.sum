@@ -136,6 +136,8 @@ github.com/projectdiscovery/clistats v0.0.16-0.20230502165324-a1f03dfe9f33 h1:CL
 github.com/projectdiscovery/clistats v0.0.16-0.20230502165324-a1f03dfe9f33/go.mod h1:gsIvPpHSkA5psqtQZ36w0gKPU60o8f6PSNiMeBqaQCY=
 github.com/projectdiscovery/clistats v0.0.17-0.20230508052625-f199e25a8f9d h1:i3D0THz1zUXFXlwzP5ZADQKfSeLLthCcKOi15eQVcB8=
 github.com/projectdiscovery/clistats v0.0.17-0.20230508052625-f199e25a8f9d/go.mod h1:4jIXyrnT3jibcaWWiHHjLbj3G6RcArQq5OocA+gGhbI=
+github.com/projectdiscovery/clistats v0.0.17-0.20230515152725-082cf1c4e872 h1:sPehj+wtksHu3NbixG5r2QR2AUNXu8THbPSxt3YUkcg=
+github.com/projectdiscovery/clistats v0.0.17-0.20230515152725-082cf1c4e872/go.mod h1:4ogkpnCyujFBs+kpLvv9Z8CCrNg9549IBj24zuYOCKk=
 github.com/projectdiscovery/freeport v0.0.5 h1:jnd3Oqsl4S8n0KuFkE5Hm8WGDP24ITBvmyw5pFTHS8Q=
 github.com/projectdiscovery/freeport v0.0.5/go.mod h1:PY0bxSJ34HVy67LHIeF3uIutiCSDwOqKD8ruBkdiCwE=
 github.com/projectdiscovery/goconfig v0.0.1 h1:36m3QjohZvemqh9bkJAakaHsm9iEZ2AcQSS18+0QX/s=
@@ -160,6 +162,8 @@ github.com/projectdiscovery/utils v0.0.26 h1:89t05av9r5gtHBZLCiEkid1rrUjHlwKppz5
 github.com/projectdiscovery/utils v0.0.26/go.mod h1:lCiVsbo79iqy4ihUQWUY4ywz0J13Mqudirgk+IV767o=
 github.com/projectdiscovery/utils v0.0.28 h1:lFTXbW/SZX3vjmCjReCdvbi5Fj46gCU3egdp098tHzo=
 github.com/projectdiscovery/utils v0.0.28/go.mod h1:RpMyTA/KACEBK+Bo9mk9MgLH0Hfc+BZtSlZ4T9bjLBE=
+github.com/projectdiscovery/utils v0.0.30 h1:G8RAGOxi5uOdlPpfAjKqYadMTSuVuRa+6raJm3TE788=
+github.com/projectdiscovery/utils v0.0.30/go.mod h1:UbZLkuIUQpik6eYCdX84ji31JcXv17KYJepIEM0Wk/Q=
 github.com/rivo/uniseg v0.1.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
 github.com/rivo/uniseg v0.4.4 h1:8TfxU8dW6PdqD27gjM8MVNuicgxIjxpm4K7x4jp8sis=
