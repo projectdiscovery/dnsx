@@ -665,7 +665,9 @@ func (r *Runner) worker() {
 		}
 		// add flags for cdn
 		if r.options.OutputCDN {
-			dnsData.IsCDNIP, dnsData.CDNName, _ = r.dnsx.CdnCheck(domain)
+			// dnsData.IsCDNIP, dnsData.CDNName, _, _ = r.dnsx.CdnCheck(domain)
+			// prevent new dns requests
+			dnsData.IsCDNIP, dnsData.CDNName, _, _ = r.dnsx.CdnCheckRespData(dnsData.DNSData)
 		}
 		if r.options.ASN {
 			results := []*asnmap.Response{}
