@@ -22,7 +22,7 @@ func (d *DNSX) CdnCheck(input string) (matched bool, value string, itemType stri
 	return d.cdn.CheckDomainWithFallback(input)
 }
 
-// CdnCheck verifies if the given domain/ip is part of Cdn/Waf/Cloud ranges
+// CdnCheck verifies if the given dnsResponse is part of Cdn/Waf/Cloud ranges
 func (d *DNSX) CdnCheckRespData(dnsdata *retryabledns.DNSData) (matched bool, value string, itemType string, err error) {
 	if d.cdn == nil {
 		return false, "", "", errorutil.New("cdn client not initialized")
