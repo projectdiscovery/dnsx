@@ -305,8 +305,15 @@ func (r *Runner) prepareInput() error {
 		r.stats.AddStatic("startedAt", time.Now())
 		r.stats.AddCounter("requests", 0)
 		r.stats.AddCounter("total", uint64(numHosts*len(r.dnsx.Options.QuestionTypes)))
+		r.stats.AddDynamic("summary", makePrintCallback())
 		// nolint:errcheck
-		r.stats.Start(makePrintCallback(), time.Duration(5)*time.Second)
+		r.stats.Start()
+		r.stats.GetStatResponse(time.Second*5, func(s string, err error) error {
+			if err != nil && r.options.Verbose {
+				gologger.Error().Msgf("Could not read statistics: %s\n", err)
+			}
+			return nil
+		})
 	}
 	return nil
 }
@@ -360,9 +367,9 @@ func normalize(data string) string {
 }
 
 // nolint:deadcode
-func makePrintCallback() func(stats clistats.StatisticsClient) {
+func makePrintCallback() func(stats clistats.StatisticsClient) interface{} {
 	builder := &strings.Builder{}
-	return func(stats clistats.StatisticsClient) {
+	return func(stats clistats.StatisticsClient) interface{} {
 		builder.WriteRune('[')
 		startedAt, _ := stats.GetStatic("startedAt")
 		duration := time.Since(startedAt.(time.Time))
@@ -392,7 +399,9 @@ func makePrintCallback() func(stats clistats.StatisticsClient) {
 		builder.WriteRune('\n')
 
 		fmt.Fprintf(os.Stderr, "%s", builder.String())
+		statString := builder.String()
 		builder.Reset()
+		return statString
 	}
 }
 
