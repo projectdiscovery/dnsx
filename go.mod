@@ -18,7 +18,7 @@ require (
 	github.com/projectdiscovery/retryabledns v1.0.24
 	github.com/projectdiscovery/utils v0.0.35
 	github.com/rs/xid v1.5.0
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 )
 
 require (
