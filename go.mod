@@ -15,7 +15,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.11
 	github.com/projectdiscovery/mapcidr v1.1.1
 	github.com/projectdiscovery/ratelimit v0.0.6
-	github.com/projectdiscovery/retryabledns v1.0.24
+	github.com/projectdiscovery/retryabledns v1.0.27
 	github.com/projectdiscovery/utils v0.0.35
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.3
@@ -61,7 +61,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
 	github.com/projectdiscovery/freeport v0.0.5 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.15 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.0.17 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
