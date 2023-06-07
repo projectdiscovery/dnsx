@@ -757,7 +757,7 @@ func (r *Runner) worker() {
 	}
 }
 
-func (r *Runner) outputRecordType(domain string, items []string, cdnName string, asn *dnsx.AsnResponse) {
+func (r *Runner) outputRecordType(domain string, items interface{}, cdnName string, asn *dnsx.AsnResponse) {
 	var details string
 	if cdnName != "" {
 		details = fmt.Sprintf(" [%s]", cdnName)
@@ -765,7 +765,18 @@ func (r *Runner) outputRecordType(domain string, items []string, cdnName string,
 	if asn != nil {
 		details = fmt.Sprintf("%s %s", details, asn.String())
 	}
-	for _, item := range items {
+	var records []string
+
+	switch items := items.(type) {
+	case []string:
+		records = items
+	case []retryabledns.SOA:
+		for _, item := range items {
+			records = append(records, item.NS, item.Mbox)
+		}
+	}
+
+	for _, item := range records {
 		item := strings.ToLower(item)
 		if r.options.ResponseOnly {
 			r.outputchan <- fmt.Sprintf("%s%s", item, details)
