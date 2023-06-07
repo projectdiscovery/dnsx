@@ -138,12 +138,12 @@ github.com/projectdiscovery/mapcidr v1.1.1 h1:68Xvw9cKugNeAVxHE3Nl1Ej26nm1taWq6e
 github.com/projectdiscovery/mapcidr v1.1.1/go.mod h1:yyp9ghqmmC0+r5DySgDBXE4cf2QW8SBloVESCteWiAg=
 github.com/projectdiscovery/ratelimit v0.0.6 h1:SAD2ArdT9F8NmbkAIZpl7DjNnbiXdUQLnMZt5dbVmZ0=
 github.com/projectdiscovery/ratelimit v0.0.6/go.mod h1:WFL6gIggPLTwYwDbxqQODuWrz/lcMP2E5ofKSAz3YwI=
-github.com/projectdiscovery/retryabledns v1.0.27 h1:EUcnu2LxRZEAPMXzYDXiPeSQmyC0xCUeU5TAkeuFroA=
-github.com/projectdiscovery/retryabledns v1.0.27/go.mod h1:2YlxbjBnx+15G0nZvXih2imVwKwauvTTXpT1nO6I8Ps=
+github.com/projectdiscovery/retryabledns v1.0.28 h1:+Ln7Qduktqpdkw4G2IVWUKAcT36JjY7vk7XbRO3xt7c=
+github.com/projectdiscovery/retryabledns v1.0.28/go.mod h1:NtbDTfcsW9hIUf0HuVQNZSTTG063Phy0uaBBjZlif0Q=
 github.com/projectdiscovery/retryablehttp-go v1.0.17 h1:oppnrypatWsHxcMU5RuAcUsUu3nxBhId2CF3OBj9XJA=
 github.com/projectdiscovery/retryablehttp-go v1.0.17/go.mod h1:zJh8bQdxhIsaEGnxsacvMbgiCKT4UAOr4T1kZBnSa68=
-github.com/projectdiscovery/utils v0.0.35 h1:+ex4fbJlcbf/5/RXFZcI9SG0Fo27vxlwV5DP+fMLY+4=
-github.com/projectdiscovery/utils v0.0.35/go.mod h1:gyDuJpCGPHN6Lyo3O8PAkTxf88iiAxRZyaMFMrXV0z4=
+github.com/projectdiscovery/utils v0.0.36 h1:HCEzA+eLkB5Gfhf7a2DxI7ziVgYkd9pWETuvm1RZJ7g=
+github.com/projectdiscovery/utils v0.0.36/go.mod h1:gyDuJpCGPHN6Lyo3O8PAkTxf88iiAxRZyaMFMrXV0z4=
 github.com/rivo/uniseg v0.1.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
 github.com/rivo/uniseg v0.4.4 h1:8TfxU8dW6PdqD27gjM8MVNuicgxIjxpm4K7x4jp8sis=
@@ -157,8 +157,8 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/stretchr/testify v1.8.3 h1:RP3t2pwF7cMEbC1dqtB6poj3niw/9gnV4Cjg5oW5gtY=
-github.com/stretchr/testify v1.8.3/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
+github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
+github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/syndtr/goleveldb v1.0.0 h1:fBdIW9lB4Iz0n9khmH8w27SJ3QEJ7+IgjPEwGSZiFdE=
 github.com/syndtr/goleveldb v1.0.0/go.mod h1:ZVVdQEZoIme9iO1Ch2Jdy24qqXrMMOU6lpPAyBWyWuQ=
 github.com/tidwall/assert v0.1.0 h1:aWcKyRBUAdLoVebxo95N7+YZVTFF/ASTr7BN4sLP6XI=
