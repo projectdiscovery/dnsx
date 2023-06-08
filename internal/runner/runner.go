@@ -737,7 +737,7 @@ func (r *Runner) worker() {
 			r.outputRecordType(domain, dnsData.NS, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.SOA {
-			r.outputRecordType(domain, dnsData.SOA, dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.GetSOARecords(), dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.ANY {
 			r.outputRecordType(domain, dnsData.ANY, dnsData.CDNName, dnsData.ASN)
