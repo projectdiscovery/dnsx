@@ -7,7 +7,7 @@ require (
 	github.com/miekg/dns v1.1.54
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/asnmap v1.0.4
-	github.com/projectdiscovery/cdncheck v1.0.8
+	github.com/projectdiscovery/cdncheck v1.0.9
 	github.com/projectdiscovery/clistats v0.0.18
 	github.com/projectdiscovery/goconfig v0.0.1
 	github.com/projectdiscovery/goflags v0.1.8
@@ -15,7 +15,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.13
 	github.com/projectdiscovery/mapcidr v1.1.2
 	github.com/projectdiscovery/ratelimit v0.0.8
-	github.com/projectdiscovery/retryabledns v1.0.28
+	github.com/projectdiscovery/retryabledns v1.0.29
 	github.com/projectdiscovery/utils v0.0.37
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.4
