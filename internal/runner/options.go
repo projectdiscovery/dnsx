@@ -11,8 +11,8 @@ import (
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
-	updateutils "github.com/projectdiscovery/utils/update"
 	fileutil "github.com/projectdiscovery/utils/file"
+	updateutils "github.com/projectdiscovery/utils/update"
 )
 
 const (
@@ -42,7 +42,7 @@ type Options struct {
 	PTR                bool
 	MX                 bool
 	SOA                bool
-	ANY				   bool
+	ANY                bool
 	TXT                bool
 	SRV                bool
 	AXFR               bool

@@ -24,6 +24,7 @@ import (
 	"github.com/projectdiscovery/retryabledns"
 	fileutil "github.com/projectdiscovery/utils/file"
 	iputil "github.com/projectdiscovery/utils/ip"
+	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
 // Runner is a client for running the enumeration process.
@@ -709,8 +710,7 @@ func (r *Runner) worker() {
 		}
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
-			// nolint:errcheck
-			r.storeDNSData(dnsData.DNSData)
+			_ = r.storeDNSData(dnsData.DNSData)
 			continue
 		}
 		if r.options.JSON {
@@ -733,7 +733,6 @@ func (r *Runner) worker() {
 			r.outputRecordType(domain, dnsData.AAAA, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.CNAME {
-			// fmt.Println("inside cname", dnsData.ASN)
 			r.outputRecordType(domain, dnsData.CNAME, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.PTR {
@@ -749,7 +748,19 @@ func (r *Runner) worker() {
 			r.outputRecordType(domain, dnsData.GetSOARecords(), dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.ANY {
-			r.outputRecordType(domain, dnsData.ANY, dnsData.CDNName, dnsData.ASN)
+			allParsedRecords := sliceutil.Merge(
+				dnsData.A,
+				dnsData.AAAA,
+				dnsData.CNAME,
+				dnsData.MX,
+				dnsData.PTR,
+				dnsData.GetSOARecords(),
+				dnsData.NS,
+				dnsData.TXT,
+				dnsData.SRV,
+				dnsData.CAA,
+			)
+			r.outputRecordType(domain, allParsedRecords, dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.TXT {
 			r.outputRecordType(domain, dnsData.TXT, dnsData.CDNName, dnsData.ASN)
