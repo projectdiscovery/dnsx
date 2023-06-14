@@ -11,8 +11,8 @@ import (
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
-	updateutils "github.com/projectdiscovery/utils/update"
 	fileutil "github.com/projectdiscovery/utils/file"
+	updateutils "github.com/projectdiscovery/utils/update"
 )
 
 const (
@@ -42,6 +42,7 @@ type Options struct {
 	PTR                bool
 	MX                 bool
 	SOA                bool
+	ANY                bool
 	TXT                bool
 	SRV                bool
 	AXFR               bool
@@ -97,6 +98,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.PTR, "ptr", false, "query PTR record"),
 		flagSet.BoolVar(&options.MX, "mx", false, "query MX record"),
 		flagSet.BoolVar(&options.SOA, "soa", false, "query SOA record"),
+		flagSet.BoolVar(&options.ANY, "any", false, "query ANY record"),
 		flagSet.BoolVar(&options.AXFR, "axfr", false, "query AXFR"),
 		flagSet.BoolVar(&options.CAA, "caa", false, "query CAA record"),
 	)

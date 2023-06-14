@@ -18,6 +18,8 @@ example.com {{binary}} -silent -txt -resp
 example.com {{binary}} -silent -srv
 example.com {{binary}} -silent -srv -resp
 example.com {{binary}} -silent -rcode 0,1,2
+example.com {{binary}} -silent -any
+example.com {{binary}} -silent -any -resp
 1.1.1.1 {{binary}} -silent -ptr
 1.1.1.1 {{binary}} -silent -ptr -resp
 www.projectdiscovery.io {{binary}} -silent -cname
