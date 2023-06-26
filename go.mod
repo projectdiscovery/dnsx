@@ -8,7 +8,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/asnmap v1.0.4
 	github.com/projectdiscovery/cdncheck v1.0.9
-	github.com/projectdiscovery/clistats v0.0.18
+	github.com/projectdiscovery/clistats v0.0.19
 	github.com/projectdiscovery/goconfig v0.0.1
 	github.com/projectdiscovery/goflags v0.1.10
 	github.com/projectdiscovery/gologger v1.1.10
