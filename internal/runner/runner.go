@@ -3,6 +3,7 @@ package runner
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -703,6 +704,14 @@ func (r *Runner) worker() {
 		}
 		if r.options.JSON {
 			jsons, _ := dnsData.JSON()
+			if r.options.OmitRaw {
+				var data map[string]interface{}
+				json.Unmarshal([]byte(jsons), &data)
+				delete(data, "all")
+				dataByte, _ := json.Marshal(data)
+				jsons = string(dataByte)
+			}
+
 			r.outputchan <- jsons
 			continue
 		}
