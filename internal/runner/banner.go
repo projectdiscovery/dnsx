@@ -12,11 +12,12 @@ const banner = `
  | (_| || | | |\__ \ /  \ 
   \__,_||_| |_||___//_/\_\
 `
+
 // Name
 const ToolName = `dnsx`
 
 // version is the current version of dnsx
-const version = `1.1.4`
+const version = `1.1.5`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
