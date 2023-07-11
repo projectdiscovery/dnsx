@@ -47,6 +47,7 @@ type Options struct {
 	SRV                bool
 	AXFR               bool
 	JSON               bool
+	OmitRaw            bool
 	Trace              bool
 	TraceMaxRecursion  int
 	WildcardThreshold  int
@@ -127,6 +128,7 @@ func ParseOptions() *Options {
 	flagSet.CreateGroup("output", "Output",
 		flagSet.StringVarP(&options.OutputFile, "output", "o", "", "file to write output"),
 		flagSet.BoolVar(&options.JSON, "json", false, "write output in JSONL(ines) format"),
+		flagSet.BoolVarP(&options.OmitRaw, "or", "omit-raw", false, "omit raw dns response from jsonl output"),
 	)
 
 	flagSet.CreateGroup("debug", "Debug",

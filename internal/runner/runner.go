@@ -714,7 +714,11 @@ func (r *Runner) worker() {
 			continue
 		}
 		if r.options.JSON {
-			jsons, _ := dnsData.JSON()
+			var marshalOptions []dnsx.MarshalOption
+			if r.options.OmitRaw {
+				marshalOptions = append(marshalOptions, dnsx.WithoutAllRecords())
+			}
+			jsons, _ := dnsData.JSON(marshalOptions...)
 			r.outputchan <- jsons
 			continue
 		}

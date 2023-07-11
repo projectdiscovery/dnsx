@@ -12,6 +12,7 @@ const banner = `
  | (_| || | | |\__ \ /  \ 
   \__,_||_| |_||___//_/\_\
 `
+
 // Name
 const ToolName = `dnsx`
 
