@@ -22,3 +22,4 @@ example.com {{binary}} -silent -rcode 0,1,2
 1.1.1.1 {{binary}} -silent -ptr -resp
 www.projectdiscovery.io {{binary}} -silent -cname
 www.projectdiscovery.io {{binary}} -silent -cname -resp
+www.projectdiscovery.io {{binary}} -silent -or
