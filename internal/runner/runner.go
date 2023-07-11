@@ -3,7 +3,6 @@ package runner
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -703,18 +702,11 @@ func (r *Runner) worker() {
 			continue
 		}
 		if r.options.JSON {
-			jsons, _ := dnsData.JSON()
+			var marshalOptions []dnsx.MarshalOption
 			if r.options.OmitRaw {
-				var data map[string]interface{}
-				err := json.Unmarshal([]byte(jsons), &data)
-				if err != nil {
-					panic(err)
-				}
-				delete(data, "all")
-				dataByte, _ := json.Marshal(data)
-				jsons = string(dataByte)
+				marshalOptions = append(marshalOptions, dnsx.WithoutAllRecords())
 			}
-
+			jsons, _ := dnsData.JSON(marshalOptions...)
 			r.outputchan <- jsons
 			continue
 		}
