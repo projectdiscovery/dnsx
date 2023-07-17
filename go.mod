@@ -15,7 +15,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.13
 	github.com/projectdiscovery/mapcidr v1.1.2
 	github.com/projectdiscovery/ratelimit v0.0.9
-	github.com/projectdiscovery/retryabledns v1.0.30
+	github.com/projectdiscovery/retryabledns v1.0.31
 	github.com/projectdiscovery/utils v0.0.41
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.4
@@ -24,7 +24,6 @@ require (
 require (
 	aead.dev/minisign v0.2.0 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
-	github.com/Mzack9999/go-http-digest-auth-client v0.6.1-0.20220414142836-eb8883508809 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/akrylysov/pogreb v0.10.1 // indirect
 	github.com/alecthomas/chroma v0.10.0 // indirect
@@ -61,7 +60,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
 	github.com/projectdiscovery/freeport v0.0.5 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.17 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
