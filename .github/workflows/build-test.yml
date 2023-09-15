@@ -30,6 +30,10 @@ jobs:
       - name: Test
         run: go test ./...
         working-directory: .
+        
+      - name: Running example
+        run: go run .
+        working-directory: examples/
 
       - name: Integration Tests
         env:

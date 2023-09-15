@@ -193,12 +193,12 @@ func ParseOptions() *Options {
 		}
 	}
 
-	options.validateOptions()
+	options.ValidateOptions()
 
 	return options
 }
 
-func (options *Options) validateOptions() {
+func (options *Options) ValidateOptions() {
 	if options.Response && options.ResponseOnly {
 		gologger.Fatal().Msgf("resp and resp-only can't be used at the same time")
 	}

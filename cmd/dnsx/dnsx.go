@@ -4,7 +4,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/projectdiscovery/dnsx/internal/runner"
+	"github.com/projectdiscovery/dnsx/runner"
 	"github.com/projectdiscovery/gologger"
 )
 
