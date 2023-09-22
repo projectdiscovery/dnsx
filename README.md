@@ -102,8 +102,8 @@ UPDATE:
 
 OUTPUT:
    -o, -output string  file to write output
-   -json               write output in JSONL(ines) format
-   -or, -omit-raw      omit raw dns response from jsonl output
+   -j, -json           write output in JSONL(ines) format
+   -omit-raw, -or      omit raw dns response from jsonl output
 
 DEBUG:
    -hc, -health-check  run diagnostic check up

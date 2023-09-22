@@ -127,7 +127,7 @@ func ParseOptions() *Options {
 
 	flagSet.CreateGroup("output", "Output",
 		flagSet.StringVarP(&options.OutputFile, "output", "o", "", "file to write output"),
-		flagSet.BoolVar(&options.JSON, "json", false, "write output in JSONL(ines) format"),
+		flagSet.BoolVarP(&options.JSON, "json", "j", false, "write output in JSONL(ines) format"),
 		flagSet.BoolVarP(&options.OmitRaw, "or", "omit-raw", false, "omit raw dns response from jsonl output"),
 	)
 
