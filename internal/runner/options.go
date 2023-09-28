@@ -61,6 +61,8 @@ type Options struct {
 	HostsFile          bool
 	Stream             bool
 	CAA                bool
+	QueryType          []string
+	ExcludeType        []string
 	OutputCDN          bool
 	ASN                bool
 	HealthCheck        bool
@@ -89,6 +91,23 @@ func ParseOptions() *Options {
 		flagSet.StringVarP(&options.WordList, "wordlist", "w", "", "list of words to bruteforce (file or comma separated or stdin)"),
 	)
 
+	queries := goflags.AllowdTypes{
+		"none":  goflags.EnumVariable(0),
+		"a":     goflags.EnumVariable(1),
+		"aaaa":  goflags.EnumVariable(2),
+		"cname": goflags.EnumVariable(3),
+		"ns":    goflags.EnumVariable(4),
+		"txt":   goflags.EnumVariable(5),
+		"srv":   goflags.EnumVariable(6),
+		"ptr":   goflags.EnumVariable(7),
+		"mx":    goflags.EnumVariable(8),
+		"soa":   goflags.EnumVariable(9),
+		"axfr":  goflags.EnumVariable(10),
+		"caa":   goflags.EnumVariable(11),
+		"any":   goflags.EnumVariable(12),
+		"all":   goflags.EnumVariable(13),
+	}
+
 	flagSet.CreateGroup("query", "Query",
 		flagSet.BoolVar(&options.A, "a", false, "query A record (default)"),
 		flagSet.BoolVar(&options.AAAA, "aaaa", false, "query AAAA record"),
@@ -102,6 +121,8 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.ANY, "any", false, "query ANY record"),
 		flagSet.BoolVar(&options.AXFR, "axfr", false, "query AXFR"),
 		flagSet.BoolVar(&options.CAA, "caa", false, "query CAA record"),
+		flagSet.EnumSliceVarP(&options.QueryType, "query-type", "q", []goflags.EnumVariable{0}, "dns query type to check (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa,any,all)", queries),
+		flagSet.EnumSliceVarP(&options.ExcludeType, "exclude-type", "eq", []goflags.EnumVariable{0}, "dns query type to exclude (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa,any,all)", queries),
 	)
 
 	flagSet.CreateGroup("filter", "Filter",
@@ -161,6 +182,8 @@ func ParseOptions() *Options {
 		gologger.Print().Msgf("%s\n", DoHealthCheck(options, flagSet))
 		os.Exit(0)
 	}
+
+	options.configureQueryOptions()
 
 	// Read the inputs and configure the logging
 	options.configureOutput()
@@ -338,4 +361,45 @@ func (options *Options) configureResume() error {
 
 	}
 	return nil
+}
+
+func (options *Options) configureQueryOptions() {
+	queryMap := map[string]*bool{
+		"a":     &options.A,
+		"aaaa":  &options.AAAA,
+		"cname": &options.CNAME,
+		"ns":    &options.NS,
+		"txt":   &options.TXT,
+		"srv":   &options.SRV,
+		"ptr":   &options.PTR,
+		"mx":    &options.MX,
+		"soa":   &options.SOA,
+		"axfr":  &options.AXFR,
+		"caa":   &options.CAA,
+		"any":   &options.ANY,
+	}
+
+	for _, qt := range options.QueryType {
+		if qt == "all" {
+			for _, val := range queryMap {
+				*val = true
+			}
+		} else {
+			if val, ok := queryMap[qt]; ok {
+				*val = true
+			}
+		}
+	}
+
+	for _, et := range options.ExcludeType {
+		if et == "all" {
+			for _, val := range queryMap {
+				*val = false
+			}
+		} else {
+			if val, ok := queryMap[et]; ok {
+				*val = false
+			}
+		}
+	}
 }
