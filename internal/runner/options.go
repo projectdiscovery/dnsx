@@ -61,7 +61,7 @@ type Options struct {
 	HostsFile          bool
 	Stream             bool
 	CAA                bool
-	QueryType          []string
+	QueryAll           bool
 	ExcludeType        []string
 	OutputCDN          bool
 	ASN                bool
@@ -105,7 +105,6 @@ func ParseOptions() *Options {
 		"axfr":  goflags.EnumVariable(10),
 		"caa":   goflags.EnumVariable(11),
 		"any":   goflags.EnumVariable(12),
-		"all":   goflags.EnumVariable(13),
 	}
 
 	flagSet.CreateGroup("query", "Query",
@@ -121,8 +120,8 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.ANY, "any", false, "query ANY record"),
 		flagSet.BoolVar(&options.AXFR, "axfr", false, "query AXFR"),
 		flagSet.BoolVar(&options.CAA, "caa", false, "query CAA record"),
-		flagSet.EnumSliceVarP(&options.QueryType, "query-type", "q", []goflags.EnumVariable{0}, "dns query type to check (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa,any,all)", queries),
-		flagSet.EnumSliceVarP(&options.ExcludeType, "exclude-type", "eq", []goflags.EnumVariable{0}, "dns query type to exclude (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa,any,all)", queries),
+		flagSet.BoolVar(&options.QueryAll, "all", false, "query all records"),
+		flagSet.EnumSliceVarP(&options.ExcludeType, "exclude-type", "eq", []goflags.EnumVariable{0}, "dns query type to exclude (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa,any)", queries),
 	)
 
 	flagSet.CreateGroup("filter", "Filter",
@@ -379,27 +378,15 @@ func (options *Options) configureQueryOptions() {
 		"any":   &options.ANY,
 	}
 
-	for _, qt := range options.QueryType {
-		if qt == "all" {
-			for _, val := range queryMap {
-				*val = true
-			}
-		} else {
-			if val, ok := queryMap[qt]; ok {
-				*val = true
-			}
+	if options.QueryAll {
+		for _, val := range queryMap {
+			*val = true
 		}
 	}
 
 	for _, et := range options.ExcludeType {
-		if et == "all" {
-			for _, val := range queryMap {
-				*val = false
-			}
-		} else {
-			if val, ok := queryMap[et]; ok {
-				*val = false
-			}
+		if val, ok := queryMap[et]; ok {
+			*val = false
 		}
 	}
 }
