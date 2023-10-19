@@ -76,10 +76,14 @@ var DefaultOptions = Options{
 
 // DefaultResolvers contains the list of resolvers known to be trusted.
 var DefaultResolvers = []string{
-	"udp:1.1.1.1:53", // Cloudflare
-	"udp:1.0.0.1:53", // Cloudflare
-	"udp:8.8.8.8:53", // Google
-	"udp:8.8.4.4:53", // Google
+	"udp:1.1.1.1:53",         // Cloudflare
+	"udp:1.0.0.1:53",         // Cloudflare
+	"udp:8.8.8.8:53",         // Google
+	"udp:8.8.4.4:53",         // Google
+	"udp:9.9.9.9:53",         // Quad9
+	"udp:149.112.112.112:53", // Quad9
+	"udp:76.76.19.19:53",     // Alternate DNS
+	"udp:76.223.122.150:53",  // Alternate DNS
 }
 
 // New creates a dns resolver
