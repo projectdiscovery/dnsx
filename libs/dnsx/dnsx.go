@@ -82,8 +82,8 @@ var DefaultResolvers = []string{
 	"udp:8.8.4.4:53",         // Google
 	"udp:9.9.9.9:53",         // Quad9
 	"udp:149.112.112.112:53", // Quad9
-	"udp:76.76.19.19:53",     // Alternate DNS
-	"udp:76.223.122.150:53",  // Alternate DNS
+	"udp:208.67.222.222:53",  // Open DNS
+	"udp:208.67.220.220:53",  // Open DNS
 }
 
 // New creates a dns resolver
