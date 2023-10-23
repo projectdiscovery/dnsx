@@ -138,8 +138,8 @@ github.com/projectdiscovery/mapcidr v1.1.13 h1:SF3avVGwpzBh7fy4/a/Tz+/nULX77Ex1C
 github.com/projectdiscovery/mapcidr v1.1.13/go.mod h1:q/aK7RR4niZeFCoHhOcUPi+L4KvV0VSIYruRHER70W8=
 github.com/projectdiscovery/ratelimit v0.0.12 h1:Hwn9D1PHDz4O4ndzFZCttvTqdtxjBJrifi7n4oa4/Og=
 github.com/projectdiscovery/ratelimit v0.0.12/go.mod h1:mA4775qZGakULYWDI0yswMntTWKQmEbFbb199uuGdzs=
-github.com/projectdiscovery/retryabledns v1.0.39 h1:hvh/fNfKAB+JdOtLtJLo1/MO2nihTE/OWanGnIQp8Ds=
-github.com/projectdiscovery/retryabledns v1.0.39/go.mod h1:HaHABQBdiL1KoOQ99XqMRDC0RhkzkGfiV3QnUhYUeRg=
+github.com/projectdiscovery/retryabledns v1.0.40 h1:BasP4PSL9oRGghJNiRNQGd5EYM/gySoZQH0i7WKFEsg=
+github.com/projectdiscovery/retryabledns v1.0.40/go.mod h1:BI0AsUmaWF8k/AjEhDGRekMwqda6IDLI43misQuTdYQ=
 github.com/projectdiscovery/utils v0.0.58 h1:kk2AkSO84QZc9rDRI8jWA2Iia4uzb4sUcfh4h0xA20I=
 github.com/projectdiscovery/utils v0.0.58/go.mod h1:rsR5Kzjrb+/Yp7JSnEblLk4LfU4zH5Z7wQn8RzaGSdY=
 github.com/rivo/uniseg v0.1.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
