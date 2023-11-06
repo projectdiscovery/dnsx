@@ -16,7 +16,7 @@ require (
 	github.com/projectdiscovery/mapcidr v1.1.13
 	github.com/projectdiscovery/ratelimit v0.0.13
 	github.com/projectdiscovery/retryabledns v1.0.41
-	github.com/projectdiscovery/utils v0.0.60
+	github.com/projectdiscovery/utils v0.0.62
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.4
 )
@@ -50,7 +50,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/mholt/archiver v3.1.1+incompatible // indirect
 	github.com/microcosm-cc/bluemonday v1.0.25 // indirect
-	github.com/minio/selfupdate v0.6.0 // indirect
+	github.com/minio/selfupdate v0.6.1-0.20230907112617-f11e74f84ca7 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
