@@ -1,19 +1,19 @@
 module github.com/projectdiscovery/dnsx
 
-go 1.19
+go 1.21
 
 require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.56
 	github.com/pkg/errors v0.9.1
-	github.com/projectdiscovery/asnmap v1.0.5
+	github.com/projectdiscovery/asnmap v1.0.6
 	github.com/projectdiscovery/cdncheck v1.0.9
 	github.com/projectdiscovery/clistats v0.0.19
 	github.com/projectdiscovery/goconfig v0.0.1
 	github.com/projectdiscovery/goflags v0.1.26
 	github.com/projectdiscovery/gologger v1.1.11
 	github.com/projectdiscovery/hmap v0.0.24
-	github.com/projectdiscovery/mapcidr v1.1.13
+	github.com/projectdiscovery/mapcidr v1.1.15
 	github.com/projectdiscovery/ratelimit v0.0.14
 	github.com/projectdiscovery/retryabledns v1.0.41
 	github.com/projectdiscovery/utils v0.0.62
