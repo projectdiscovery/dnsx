@@ -12,7 +12,7 @@ require (
 	github.com/projectdiscovery/goconfig v0.0.1
 	github.com/projectdiscovery/goflags v0.1.27
 	github.com/projectdiscovery/gologger v1.1.11
-	github.com/projectdiscovery/hmap v0.0.24
+	github.com/projectdiscovery/hmap v0.0.25
 	github.com/projectdiscovery/mapcidr v1.1.15
 	github.com/projectdiscovery/ratelimit v0.0.14
 	github.com/projectdiscovery/retryabledns v1.0.42
