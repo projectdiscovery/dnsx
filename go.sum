@@ -145,8 +145,8 @@ github.com/projectdiscovery/gologger v1.1.11 h1:8vsz9oJlDT9euw6xlj7F7dZ6RWItVIqV
 github.com/projectdiscovery/gologger v1.1.11/go.mod h1:UR2bgXl7zraOxYGnUwuO917hifWrwMJ0feKnVqMQkzY=
 github.com/projectdiscovery/hmap v0.0.26 h1:tjGViKL175CABIa5XaYvyeI0ByYaNxebZZSk8yNJw1k=
 github.com/projectdiscovery/hmap v0.0.26/go.mod h1:fCDaE8LWdoWDq9VjW7eW8CFCh14oLtviL6OgxI7T6r4=
-github.com/projectdiscovery/mapcidr v1.1.15 h1:rYAgxLvMyxPU0JunE/Y3uSK1n/TcNJHK839d6YM0ms4=
-github.com/projectdiscovery/mapcidr v1.1.15/go.mod h1:s9erRsoZqWcLGhJW+WT1SnbscqzhHRRnSX916xBw5ZM=
+github.com/projectdiscovery/mapcidr v1.1.16 h1:rjj1w5D6hbTsUQXYClLcGdfBEy9bryclgi70t0vBggo=
+github.com/projectdiscovery/mapcidr v1.1.16/go.mod h1:rGqpBhStdwOQ2uS62QM9qPsybwMwIhT7CTd2bxoHs8Q=
 github.com/projectdiscovery/ratelimit v0.0.16 h1:sAg9dQvNZWpt/TH04Mkp6L6PoFBLYDRlzApVtIRuMJY=
 github.com/projectdiscovery/ratelimit v0.0.16/go.mod h1:kkYJbg+5I0JliGlN106LtfQdauVXMHdOKDtQp3XfVxo=
 github.com/projectdiscovery/retryabledns v1.0.43 h1:QQPwb1J7NvjAjyXueKS/ZmoAqofDWF3qS9zIRhFMgmg=
