@@ -15,7 +15,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.27
 	github.com/projectdiscovery/mapcidr v1.1.16
 	github.com/projectdiscovery/ratelimit v0.0.16
-	github.com/projectdiscovery/retryabledns v1.0.43
+	github.com/projectdiscovery/retryabledns v1.0.45
 	github.com/projectdiscovery/utils v0.0.66
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.8.4
