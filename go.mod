@@ -14,7 +14,7 @@ require (
 	github.com/projectdiscovery/gologger v1.1.12
 	github.com/projectdiscovery/hmap v0.0.38
 	github.com/projectdiscovery/mapcidr v1.1.16
-	github.com/projectdiscovery/ratelimit v0.0.28
+	github.com/projectdiscovery/ratelimit v0.0.29
 	github.com/projectdiscovery/retryabledns v1.0.55
 	github.com/projectdiscovery/utils v0.0.78
 	github.com/rs/xid v1.5.0
