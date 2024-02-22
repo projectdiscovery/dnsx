@@ -30,10 +30,14 @@ jobs:
       - name: Test
         run: go test ./...
         working-directory: .
+        env:
+          GH_ACTION: true
+          PDCP_API_KEY: "${{ secrets.PDCP_API_KEY }}"
 
       - name: Integration Tests
         env:
           GH_ACTION: true
+          PDCP_API_KEY: "${{ secrets.PDCP_API_KEY }}"
         run: bash run.sh
         working-directory: integration_tests/
         
