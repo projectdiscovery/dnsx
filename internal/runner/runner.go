@@ -27,10 +27,6 @@ import (
 	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
-func init() {
-	asnmap.UsingAsLibrary = true
-}
-
 // Runner is a client for running the enumeration process.
 type Runner struct {
 	options             *Options
