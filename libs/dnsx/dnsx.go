@@ -131,7 +131,17 @@ func (d *DNSX) QueryOne(hostname string) (*retryabledns.DNSData, error) {
 
 // QueryMultiple performs a DNS question of the specified types and returns raw responses
 func (d *DNSX) QueryMultiple(hostname string) (*retryabledns.DNSData, error) {
-	return d.dnsClient.QueryMultiple(hostname, d.Options.QuestionTypes)
+	// Omit PTR queries unless the input is an IP address to decrease execution time, as PTR queries can lead to timeouts.
+	filteredQuestionTypes := []uint16{}
+	if !iputil.IsIP(hostname) {
+		for _, qType := range d.Options.QuestionTypes {
+			if qType == miekgdns.TypePTR {
+				continue
+			}
+			filteredQuestionTypes = append(filteredQuestionTypes, qType)
+		}
+	}
+	return d.dnsClient.QueryMultiple(hostname, filteredQuestionTypes)
 }
 
 // Trace performs a DNS trace of the specified types and returns raw responses
