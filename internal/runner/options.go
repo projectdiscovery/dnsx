@@ -37,6 +37,7 @@ type Options struct {
 	Silent             bool
 	Verbose            bool
 	Version            bool
+	NoColor            bool
 	Response           bool
 	ResponseOnly       bool
 	A                  bool
@@ -163,6 +164,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.Raw, "debug", "raw", false, "display raw dns response"),
 		flagSet.BoolVar(&options.ShowStatistics, "stats", false, "display stats of the running scan"),
 		flagSet.BoolVar(&options.Version, "version", false, "display version of dnsx"),
+		flagSet.BoolVarP(&options.NoColor, "no-color", "nc", false, "disable color in output"),
 	)
 
 	flagSet.CreateGroup("optimization", "Optimization",
@@ -402,6 +404,7 @@ func (options *Options) configureQueryOptions() {
 		for _, val := range queryMap {
 			*val = true
 		}
+		options.Response = true
 	}
 
 	for _, et := range options.ExcludeType {
