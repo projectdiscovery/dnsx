@@ -1,4 +1,5 @@
 name: 🧪 Functional Test
+
 on:
   pull_request:
   workflow_dispatch:
@@ -10,12 +11,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest-16-cores, windows-latest-8-cores, macOS-latest]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
     steps:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: 1.20.x
+          go-version: 1.21.x
 
       - name: Check out code
         uses: actions/checkout@v3
@@ -24,4 +25,6 @@ jobs:
         run: |
           chmod +x run.sh
           bash run.sh ${{ matrix.os }}
+        env:
+          PDCP_API_KEY: "${{ secrets.PDCP_API_KEY }}"
         working-directory: cmd/functional-test

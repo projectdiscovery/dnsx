@@ -2,6 +2,7 @@ package runner
 
 import (
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/utils/auth/pdcp"
 	updateutils "github.com/projectdiscovery/utils/update"
 )
 
@@ -17,7 +18,7 @@ const banner = `
 const ToolName = `dnsx`
 
 // version is the current version of dnsx
-const version = `1.1.5`
+const version = `1.1.6`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
@@ -31,4 +32,10 @@ func GetUpdateCallback() func() {
 		showBanner()
 		updateutils.GetUpdateToolCallback("dnsx", version)()
 	}
+}
+
+// AuthWithPDCP is used to authenticate with PDCP
+func AuthWithPDCP() {
+	showBanner()
+	pdcp.CheckNValidateCredentials("dnsx")
 }
