@@ -405,6 +405,9 @@ func (options *Options) configureQueryOptions() {
 			*val = true
 		}
 		options.Response = true
+		// the ANY query type is not supported by the retryabledns library,
+		// thus it's hard to filter the results when it's used in combination with other query types
+		options.ExcludeType = append(options.ExcludeType, "any")
 	}
 
 	for _, et := range options.ExcludeType {
