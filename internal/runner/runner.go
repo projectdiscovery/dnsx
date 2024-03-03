@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/logrusorgru/aurora"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 	asnmap "github.com/projectdiscovery/asnmap/libs"
@@ -45,6 +46,7 @@ type Runner struct {
 	hm                  *hybrid.HybridMap
 	stats               clistats.StatisticsClient
 	tmpStdinFile        string
+	aurora              aurora.Aurora
 }
 
 func New(options *Options) (*Runner, error) {
@@ -115,6 +117,7 @@ func New(options *Options) (*Runner, error) {
 		questionTypes = append(questionTypes, dns.TypeA)
 	}
 	dnsxOptions.QuestionTypes = questionTypes
+	dnsxOptions.QueryAll = options.QueryAll
 
 	dnsX, err := dnsx.New(dnsxOptions)
 	if err != nil {
@@ -152,6 +155,7 @@ func New(options *Options) (*Runner, error) {
 		limiter:            limiter,
 		hm:                 hm,
 		stats:              stats,
+		aurora:             aurora.NewAurora(!options.NoColor),
 	}
 
 	return &r, nil
@@ -731,25 +735,25 @@ func (r *Runner) worker() {
 			continue
 		}
 		if r.options.A {
-			r.outputRecordType(domain, dnsData.A, dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.A, "A", dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.AAAA {
-			r.outputRecordType(domain, dnsData.AAAA, dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.AAAA, "AAAA", dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.CNAME {
-			r.outputRecordType(domain, dnsData.CNAME, dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.CNAME, "CNAME", dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.PTR {
-			r.outputRecordType(domain, dnsData.PTR, dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.PTR, "PTR", dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.MX {
-			r.outputRecordType(domain, dnsData.MX, dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.MX, "MX", dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.NS {
-			r.outputRecordType(domain, dnsData.NS, dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.NS, "NS", dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.SOA {
-			r.outputRecordType(domain, dnsData.GetSOARecords(), dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, sliceutil.Dedupe(dnsData.GetSOARecords()), "SOA", dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.ANY {
 			allParsedRecords := sliceutil.Merge(
@@ -758,27 +762,27 @@ func (r *Runner) worker() {
 				dnsData.CNAME,
 				dnsData.MX,
 				dnsData.PTR,
-				dnsData.GetSOARecords(),
+				sliceutil.Dedupe(dnsData.GetSOARecords()),
 				dnsData.NS,
 				dnsData.TXT,
 				dnsData.SRV,
 				dnsData.CAA,
 			)
-			r.outputRecordType(domain, allParsedRecords, dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, allParsedRecords, "ANY", dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.TXT {
-			r.outputRecordType(domain, dnsData.TXT, dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.TXT, "TXT", dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.SRV {
-			r.outputRecordType(domain, dnsData.SRV, dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.SRV, "SRV", dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.CAA {
-			r.outputRecordType(domain, dnsData.CAA, dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.CAA, "CAA", dnsData.CDNName, dnsData.ASN)
 		}
 	}
 }
 
-func (r *Runner) outputRecordType(domain string, items interface{}, cdnName string, asn *dnsx.AsnResponse) {
+func (r *Runner) outputRecordType(domain string, items interface{}, queryType, cdnName string, asn *dnsx.AsnResponse) {
 	var details string
 	if cdnName != "" {
 		details = fmt.Sprintf(" [%s]", cdnName)
@@ -802,7 +806,7 @@ func (r *Runner) outputRecordType(domain string, items interface{}, cdnName stri
 		if r.options.ResponseOnly {
 			r.outputchan <- fmt.Sprintf("%s%s", item, details)
 		} else if r.options.Response {
-			r.outputchan <- fmt.Sprintf("%s [%s] %s", domain, item, details)
+			r.outputchan <- fmt.Sprintf("%s [%s] [%s] %s", domain, r.aurora.Magenta(queryType), r.aurora.Green(item).String(), details)
 		} else {
 			// just prints out the domain if it has a record type and exit
 			r.outputchan <- fmt.Sprintf("%s%s", domain, details)

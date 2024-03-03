@@ -70,18 +70,20 @@ INPUT:
    -w, -wordlist string  list of words to bruteforce (file or comma separated or stdin)
 
 QUERY:
-   -a      query A record (default)
-   -aaaa   query AAAA record
-   -cname  query CNAME record
-   -ns     query NS record
-   -txt    query TXT record
-   -srv    query SRV record
-   -ptr    query PTR record
-   -mx     query MX record
-   -soa    query SOA record
-   -axfr   query AXFR
-   -caa    query CAA record
-   -any    query ANY record
+   -a                        query A record (default)
+   -aaaa                     query AAAA record
+   -cname                    query CNAME record
+   -ns                       query NS record
+   -txt                      query TXT record
+   -srv                      query SRV record
+   -ptr                      query PTR record
+   -mx                       query MX record
+   -soa                      query SOA record
+   -any                      query ANY record
+   -axfr                     query AXFR
+   -caa                      query CAA record
+   -all                      query all records
+   -eq, -exclude-type value  dns query type to exclude (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa,any) (default none)
 
 FILTER:
    -re, -resp          display dns response
