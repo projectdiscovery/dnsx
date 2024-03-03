@@ -26,14 +26,13 @@
 
 ---
 
-
 `dnsx` is a fast and multi-purpose DNS toolkit designed for running various probes through the [retryabledns](https://github.com/projectdiscovery/retryabledns) library. It supports multiple DNS queries, user supplied resolvers, DNS wildcard filtering like [shuffledns](https://github.com/projectdiscovery/shuffledns) etc.
 
 
 # Features
 
 <h1 align="left">
-  <img src="static/dnsx-run.png" alt="dnsx" width="700px"></a>
+  <img src="https://github.com/projectdiscovery/dnsx/assets/8293321/73fe69a0-15b8-4b54-bacc-e201edd90103" alt="dnsx" width="700px"></a>
   <br>
 </h1>
 
