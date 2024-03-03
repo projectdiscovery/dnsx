@@ -10,6 +10,7 @@ import (
 	"github.com/projectdiscovery/cdncheck"
 	retryabledns "github.com/projectdiscovery/retryabledns"
 	iputil "github.com/projectdiscovery/utils/ip"
+	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
 // DNSX is structure to perform dns lookups
@@ -28,6 +29,7 @@ type Options struct {
 	TraceMaxRecursion int
 	Hostsfile         bool
 	OutputCDN         bool
+	QueryAll          bool
 }
 
 // ResponseData to show output result
@@ -132,13 +134,10 @@ func (d *DNSX) QueryOne(hostname string) (*retryabledns.DNSData, error) {
 // QueryMultiple performs a DNS question of the specified types and returns raw responses
 func (d *DNSX) QueryMultiple(hostname string) (*retryabledns.DNSData, error) {
 	// Omit PTR queries unless the input is an IP address to decrease execution time, as PTR queries can lead to timeouts.
-	filteredQuestionTypes := []uint16{}
-	if !iputil.IsIP(hostname) {
-		for _, qType := range d.Options.QuestionTypes {
-			if qType == miekgdns.TypePTR {
-				continue
-			}
-			filteredQuestionTypes = append(filteredQuestionTypes, qType)
+	filteredQuestionTypes := d.Options.QuestionTypes
+	if d.Options.QueryAll {
+		if !iputil.IsIP(hostname) {
+			filteredQuestionTypes = sliceutil.PruneEqual(filteredQuestionTypes, miekgdns.TypePTR)
 		}
 	}
 	return d.dnsClient.QueryMultiple(hostname, filteredQuestionTypes)

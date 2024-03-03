@@ -117,6 +117,7 @@ func New(options *Options) (*Runner, error) {
 		questionTypes = append(questionTypes, dns.TypeA)
 	}
 	dnsxOptions.QuestionTypes = questionTypes
+	dnsxOptions.QueryAll = options.QueryAll
 
 	dnsX, err := dnsx.New(dnsxOptions)
 	if err != nil {
