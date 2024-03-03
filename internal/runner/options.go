@@ -126,8 +126,8 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.ANY, "any", false, "query ANY record"),
 		flagSet.BoolVar(&options.AXFR, "axfr", false, "query AXFR"),
 		flagSet.BoolVar(&options.CAA, "caa", false, "query CAA record"),
-		flagSet.BoolVar(&options.QueryAll, "all", false, "query all records"),
-		flagSet.EnumSliceVarP(&options.ExcludeType, "exclude-type", "eq", []goflags.EnumVariable{0}, "dns query type to exclude (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa,any)", queries),
+		flagSet.BoolVar(&options.QueryAll, "recon", false, "query all the dns records (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa)"),
+		flagSet.EnumSliceVarP(&options.ExcludeType, "exclude-type", "eq", []goflags.EnumVariable{0}, "dns query type to exclude (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa)", queries),
 	)
 
 	flagSet.CreateGroup("filter", "Filter",

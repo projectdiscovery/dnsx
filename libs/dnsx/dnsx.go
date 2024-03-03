@@ -136,8 +136,11 @@ func (d *DNSX) QueryMultiple(hostname string) (*retryabledns.DNSData, error) {
 	// Omit PTR queries unless the input is an IP address to decrease execution time, as PTR queries can lead to timeouts.
 	filteredQuestionTypes := d.Options.QuestionTypes
 	if d.Options.QueryAll {
-		if !iputil.IsIP(hostname) {
+		isIP := iputil.IsIP(hostname)
+		if !isIP {
 			filteredQuestionTypes = sliceutil.PruneEqual(filteredQuestionTypes, miekgdns.TypePTR)
+		} else {
+			filteredQuestionTypes = []uint16{miekgdns.TypePTR}
 		}
 	}
 	return d.dnsClient.QueryMultiple(hostname, filteredQuestionTypes)
