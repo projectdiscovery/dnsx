@@ -753,7 +753,7 @@ func (r *Runner) worker() {
 			r.outputRecordType(domain, dnsData.NS, "NS", dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.SOA {
-			r.outputRecordType(domain, dnsData.GetSOARecords(), "SOA", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, sliceutil.Dedupe(dnsData.GetSOARecords()), "SOA", dnsData.CDNName, dnsData.ASN)
 		}
 		if r.options.ANY {
 			allParsedRecords := sliceutil.Merge(
@@ -762,7 +762,7 @@ func (r *Runner) worker() {
 				dnsData.CNAME,
 				dnsData.MX,
 				dnsData.PTR,
-				dnsData.GetSOARecords(),
+				sliceutil.Dedupe(dnsData.GetSOARecords()),
 				dnsData.NS,
 				dnsData.TXT,
 				dnsData.SRV,
