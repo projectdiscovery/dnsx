@@ -12,7 +12,7 @@ require (
 	github.com/projectdiscovery/cdncheck v1.0.9
 	github.com/projectdiscovery/clistats v0.0.20
 	github.com/projectdiscovery/goconfig v0.0.1
-	github.com/projectdiscovery/goflags v0.1.41
+	github.com/projectdiscovery/goflags v0.1.42
 	github.com/projectdiscovery/gologger v1.1.12
 	github.com/projectdiscovery/hmap v0.0.40
 	github.com/projectdiscovery/mapcidr v1.1.16
