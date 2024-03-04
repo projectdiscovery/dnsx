@@ -142,6 +142,10 @@ func New(options *Options) (*Runner, error) {
 		}
 	}
 
+	if os.Getenv("NO_COLOR") == "true" {
+		options.NoColor = true
+	}
+
 	r := Runner{
 		options:            options,
 		dnsx:               dnsX,

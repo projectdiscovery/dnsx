@@ -2,8 +2,6 @@ module github.com/projectdiscovery/dnsx
 
 go 1.21
 
-replace github.com/projectdiscovery/asnmap v1.0.6 => github.com/projectdiscovery/asnmap v1.0.2-0.20240226223956-a41995ab9075
-
 require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/miekg/dns v1.1.56

@@ -18,7 +18,7 @@ const banner = `
 const ToolName = `dnsx`
 
 // version is the current version of dnsx
-const version = `1.2.0`
+const version = `1.2.1`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
