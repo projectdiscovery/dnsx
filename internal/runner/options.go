@@ -366,12 +366,6 @@ func (options *Options) configureRcodes() error {
 	}
 
 	options.hasRCodes = options.RCode != ""
-
-	// Set rcode to 0 if none was specified
-	if len(options.rcodes) == 0 {
-		options.rcodes[0] = struct{}{}
-	}
-
 	return nil
 }
 
