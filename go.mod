@@ -4,18 +4,19 @@ go 1.21
 
 require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
+	github.com/mattn/go-isatty v0.0.19
 	github.com/miekg/dns v1.1.56
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/asnmap v1.1.0
 	github.com/projectdiscovery/cdncheck v1.0.9
 	github.com/projectdiscovery/clistats v0.0.20
 	github.com/projectdiscovery/goconfig v0.0.1
-	github.com/projectdiscovery/goflags v0.1.50
+	github.com/projectdiscovery/goflags v0.1.51
 	github.com/projectdiscovery/gologger v1.1.12
 	github.com/projectdiscovery/hmap v0.0.41
 	github.com/projectdiscovery/mapcidr v1.1.34
-	github.com/projectdiscovery/ratelimit v0.0.39
-	github.com/projectdiscovery/retryabledns v1.0.58
+	github.com/projectdiscovery/ratelimit v0.0.40
+	github.com/projectdiscovery/retryabledns v1.0.59
 	github.com/projectdiscovery/utils v0.0.93-0.20240502132437-43e24e19551d
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.9.0
@@ -57,7 +58,6 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/mholt/archiver/v3 v3.5.1 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.25 // indirect
@@ -72,11 +72,11 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
-	github.com/projectdiscovery/fastdialer v0.0.69 // indirect
+	github.com/projectdiscovery/fastdialer v0.0.70 // indirect
 	github.com/projectdiscovery/freeport v0.0.5 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.8 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.58 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.0.59 // indirect
 	github.com/quic-go/quic-go v0.42.0 // indirect
 	github.com/refraction-networking/utls v1.5.4 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
