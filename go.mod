@@ -16,7 +16,7 @@ require (
 	github.com/projectdiscovery/mapcidr v1.1.34
 	github.com/projectdiscovery/ratelimit v0.0.45
 	github.com/projectdiscovery/retryabledns v1.0.64
-	github.com/projectdiscovery/utils v0.1.4-0.20240611113448-0e2f2d33fe1c
+	github.com/projectdiscovery/utils v0.1.4
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.9.0
 )
