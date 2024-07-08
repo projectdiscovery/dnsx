@@ -11,12 +11,12 @@ require (
 	github.com/projectdiscovery/clistats v0.0.20
 	github.com/projectdiscovery/goconfig v0.0.1
 	github.com/projectdiscovery/goflags v0.1.57
-	github.com/projectdiscovery/gologger v1.1.12
+	github.com/projectdiscovery/gologger v1.1.13
 	github.com/projectdiscovery/hmap v0.0.48
 	github.com/projectdiscovery/mapcidr v1.1.34
 	github.com/projectdiscovery/ratelimit v0.0.45
 	github.com/projectdiscovery/retryabledns v1.0.65
-	github.com/projectdiscovery/utils v0.1.5
+	github.com/projectdiscovery/utils v0.1.6
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.9.0
 )
@@ -75,7 +75,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
-	github.com/projectdiscovery/fastdialer v0.1.5 // indirect
+	github.com/projectdiscovery/fastdialer v0.1.6 // indirect
 	github.com/projectdiscovery/freeport v0.0.5 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.9 // indirect
