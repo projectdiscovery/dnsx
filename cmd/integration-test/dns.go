@@ -45,7 +45,7 @@ func (h *dnsARequest) Execute() error {
 	}
 
 	if h.expectedOutput != "" && !strings.EqualFold(results[0], h.expectedOutput) {
-		return errIncorrectResult(results[0], h.expectedOutput)
+		return errIncorrectResult(h.expectedOutput, results[0])
 	}
 
 	return nil
@@ -83,7 +83,7 @@ func (h *dnsAAAARequest) Execute() error {
 	}
 
 	if h.expectedOutput != "" && !strings.EqualFold(results[0], h.expectedOutput) {
-		return errIncorrectResult(results[0], h.expectedOutput)
+		return errIncorrectResult(h.expectedOutput, results[0])
 	}
 
 	return nil
