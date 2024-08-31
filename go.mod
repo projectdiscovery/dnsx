@@ -16,7 +16,7 @@ require (
 	github.com/projectdiscovery/mapcidr v1.1.34
 	github.com/projectdiscovery/ratelimit v0.0.45
 	github.com/projectdiscovery/retryabledns v1.0.72
-	github.com/projectdiscovery/utils v0.2.6
+	github.com/projectdiscovery/utils v0.2.7
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.9.0
 )
@@ -78,7 +78,7 @@ require (
 	github.com/projectdiscovery/freeport v0.0.5 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.9 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.73 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.0.74 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
