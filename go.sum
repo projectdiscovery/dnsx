@@ -182,8 +182,8 @@ github.com/projectdiscovery/clistats v0.0.20 h1:5jO5SLiRJ7f0nDV0ndBNmBeesbROouPo
 github.com/projectdiscovery/clistats v0.0.20/go.mod h1:GJ2av0KnOvK0AISQnP8hyDclYIji1LVkx2l0pwnzAu4=
 github.com/projectdiscovery/fastdialer v0.2.6 h1:b5NYhkmmu4XieE1mfRyjZQQAPVTHRTAEZX4SebA3bEw=
 github.com/projectdiscovery/fastdialer v0.2.6/go.mod h1:o5jaKpvoCnnGsFDUaJ6byCLZG68igmFNe2SAnhhFlf8=
-github.com/projectdiscovery/freeport v0.0.5 h1:jnd3Oqsl4S8n0KuFkE5Hm8WGDP24ITBvmyw5pFTHS8Q=
-github.com/projectdiscovery/freeport v0.0.5/go.mod h1:PY0bxSJ34HVy67LHIeF3uIutiCSDwOqKD8ruBkdiCwE=
+github.com/projectdiscovery/freeport v0.0.6 h1:ROqzuXN8JPqkGdBueb3ah691nS2g2p7r3/3x2E33GbI=
+github.com/projectdiscovery/freeport v0.0.6/go.mod h1:T2kIy+WrbyxBIhI8V3Y9aeNGnuhnM8tEUSK/cm9GjAg=
 github.com/projectdiscovery/goconfig v0.0.1 h1:36m3QjohZvemqh9bkJAakaHsm9iEZ2AcQSS18+0QX/s=
 github.com/projectdiscovery/goconfig v0.0.1/go.mod h1:CPO25zR+mzTtyBrsygqsHse0sp/4vB/PjaHi9upXlDw=
 github.com/projectdiscovery/goflags v0.1.64 h1:FDfwdt9N97Hi8OuhbkDlKtVttpc/CRMIWQVa08VsHsI=
