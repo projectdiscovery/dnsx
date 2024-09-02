@@ -2,7 +2,6 @@ package runner
 
 import (
 	"errors"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -171,7 +170,7 @@ func ParseOptions() *Options {
 		flagSet.IntVar(&options.Retries, "retry", 2, "number of dns attempts to make (must be at least 1)"),
 		flagSet.BoolVarP(&options.HostsFile, "hostsfile", "hf", false, "use system host file"),
 		flagSet.BoolVar(&options.Trace, "trace", false, "perform dns tracing"),
-		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace"),
+		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", 255, "Max recursion for dns trace"),
 		flagSet.BoolVar(&options.Resume, "resume", false, "resume existing scan"),
 		flagSet.BoolVar(&options.Stream, "stream", false, "stream mode (wordlist, wildcard, stats and stop/resume will be disabled)"),
 	)
