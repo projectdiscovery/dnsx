@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 
 	miekgdns "github.com/miekg/dns"
 	"github.com/projectdiscovery/cdncheck"
@@ -30,6 +29,7 @@ type Options struct {
 	Hostsfile         bool
 	OutputCDN         bool
 	QueryAll          bool
+	Proxy             string
 }
 
 // ResponseData to show output result
@@ -72,7 +72,7 @@ var DefaultOptions = Options{
 	BaseResolvers:     DefaultResolvers,
 	MaxRetries:        5,
 	QuestionTypes:     []uint16{miekgdns.TypeA},
-	TraceMaxRecursion: math.MaxUint16,
+	TraceMaxRecursion: 255,
 	Hostsfile:         true,
 }
 
@@ -94,6 +94,7 @@ func New(options Options) (*DNSX, error) {
 		BaseResolvers: options.BaseResolvers,
 		MaxRetries:    options.MaxRetries,
 		Hostsfile:     options.Hostsfile,
+		Proxy:         options.Proxy,
 	}
 
 	dnsClient, err := retryabledns.NewWithOptions(retryablednsOptions)
