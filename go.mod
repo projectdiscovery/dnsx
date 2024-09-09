@@ -11,12 +11,12 @@ require (
 	github.com/projectdiscovery/clistats v0.0.20
 	github.com/projectdiscovery/goconfig v0.0.1
 	github.com/projectdiscovery/goflags v0.1.64
-	github.com/projectdiscovery/gologger v1.1.21
+	github.com/projectdiscovery/gologger v1.1.22
 	github.com/projectdiscovery/hmap v0.0.57
 	github.com/projectdiscovery/mapcidr v1.1.34
 	github.com/projectdiscovery/ratelimit v0.0.45
 	github.com/projectdiscovery/retryabledns v1.0.74
-	github.com/projectdiscovery/utils v0.2.8
+	github.com/projectdiscovery/utils v0.2.9
 	github.com/rs/xid v1.5.0
 	github.com/stretchr/testify v1.9.0
 )
