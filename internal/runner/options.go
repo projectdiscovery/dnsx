@@ -2,7 +2,6 @@ package runner
 
 import (
 	"errors"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -73,6 +72,7 @@ type Options struct {
 	HealthCheck        bool
 	DisableUpdateCheck bool
 	PdcpAuth           string
+	Proxy              string
 }
 
 // ShouldLoadResume resume file
@@ -126,7 +126,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.ANY, "any", false, "query ANY record"),
 		flagSet.BoolVar(&options.AXFR, "axfr", false, "query AXFR"),
 		flagSet.BoolVar(&options.CAA, "caa", false, "query CAA record"),
-		flagSet.BoolVar(&options.QueryAll, "recon", false, "query all the dns records (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa)"),
+		flagSet.BoolVarP(&options.QueryAll, "recon", "all", false, "query all the dns records (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa)"),
 		flagSet.EnumSliceVarP(&options.ExcludeType, "exclude-type", "e", []goflags.EnumVariable{0}, "dns query type to exclude (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa)", queries),
 	)
 
@@ -171,16 +171,17 @@ func ParseOptions() *Options {
 		flagSet.IntVar(&options.Retries, "retry", 2, "number of dns attempts to make (must be at least 1)"),
 		flagSet.BoolVarP(&options.HostsFile, "hostsfile", "hf", false, "use system host file"),
 		flagSet.BoolVar(&options.Trace, "trace", false, "perform dns tracing"),
-		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", math.MaxInt16, "Max recursion for dns trace"),
+		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", 255, "Max recursion for dns trace"),
 		flagSet.BoolVar(&options.Resume, "resume", false, "resume existing scan"),
 		flagSet.BoolVar(&options.Stream, "stream", false, "stream mode (wordlist, wildcard, stats and stop/resume will be disabled)"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",
-		flagSet.DynamicVar(&options.PdcpAuth, "auth", "true", "configure projectdiscovery cloud (pdcp) api key"),
+		flagSet.DynamicVar(&options.PdcpAuth, "auth", "true", "configure ProjectDiscovery Cloud Platform (PDCP) api key"),
 		flagSet.StringVarP(&options.Resolvers, "resolver", "r", "", "list of resolvers to use (file or comma separated)"),
 		flagSet.IntVarP(&options.WildcardThreshold, "wildcard-threshold", "wt", 5, "wildcard filter threshold"),
 		flagSet.StringVarP(&options.WildcardDomain, "wildcard-domain", "wd", "", "domain name for wildcard filtering (other flags will be ignored - only json output is supported)"),
+		flagSet.StringVar(&options.Proxy, "proxy", "", "proxy to use (eg socks5://127.0.0.1:8080)"),
 	)
 
 	_ = flagSet.Parse()
@@ -366,12 +367,6 @@ func (options *Options) configureRcodes() error {
 	}
 
 	options.hasRCodes = options.RCode != ""
-
-	// Set rcode to 0 if none was specified
-	if len(options.rcodes) == 0 {
-		options.rcodes[0] = struct{}{}
-	}
-
 	return nil
 }
 
