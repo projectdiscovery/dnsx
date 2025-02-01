@@ -5,8 +5,6 @@
 
 version: 2
 updates:
-
-  # Maintain dependencies for go modules
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
@@ -15,10 +13,13 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    labels:
-      - "Type: Maintenance"
     allow:
       - dependency-name: "github.com/projectdiscovery/*"
+    groups:
+      modules:
+        patterns: ["github.com/projectdiscovery/*"]
+    labels:
+      - "Type: Maintenance"
 
 #  # Maintain dependencies for docker
 #  - package-ecosystem: "docker"
