@@ -853,7 +853,7 @@ func (r *Runner) outputResponseCode(domain string, responsecode int) {
 
 func (r *Runner) shouldSkipRecord(dnsData *dnsx.ResponseData) bool {
 	for _, et := range r.options.responseTypeFilterMap {
-		switch et {
+		switch strings.ToLower(strings.TrimSpace(et)) {
 		case "a":
 			if len(dnsData.A) > 0 {
 				return true
@@ -890,10 +890,12 @@ func (r *Runner) shouldSkipRecord(dnsData *dnsx.ResponseData) bool {
 			if len(dnsData.PTR) > 0 {
 				return true
 			}
-		case "any":
-			if len(dnsData.A) > 0 && len(dnsData.AAAA) > 0 && len(dnsData.CNAME) > 0 && len(dnsData.NS) > 0 && len(dnsData.MX) > 0 && len(dnsData.SOA) > 0 && len(dnsData.SRV) > 0 && len(dnsData.PTR) > 0 {
+		case "caa":
+			if len(dnsData.CAA) > 0 {
 				return true
 			}
+		default:
+			return false
 		}
 	}
 	return false

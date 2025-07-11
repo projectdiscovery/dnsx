@@ -194,15 +194,17 @@ func ParseOptions() *Options {
 		os.Exit(0)
 	}
 
-	filterNoRecordMap := make(map[string]bool)
-	// split the filter no record by comma
-	filterNoRecord := strings.Split(options.ResponseTypeFilter, ",")
-	for _, et := range filterNoRecord {
-		filterNoRecordMap[et] = true
-	}
-
-	if len(filterNoRecordMap) > 0 {
-		options.responseTypeFilterMap = filterNoRecord
+	if options.ResponseTypeFilter != "" {
+		filterTypes := strings.Split(options.ResponseTypeFilter, ",")
+		// Clean and validate filter types
+		validTypes := make([]string, 0, len(filterTypes))
+		for _, et := range filterTypes {
+			et = strings.TrimSpace(strings.ToLower(et))
+			if et != "" {
+				validTypes = append(validTypes, et)
+			}
+		}
+		options.responseTypeFilterMap = validTypes
 	}
 
 	options.configureQueryOptions()
