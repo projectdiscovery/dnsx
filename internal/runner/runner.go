@@ -722,6 +722,12 @@ func (r *Runner) worker() {
 			_ = r.storeDNSData(dnsData.DNSData)
 			continue
 		}
+
+		// if response type filter is set, we don't want to ignore them
+		if len(r.options.responseTypeFilterMap) > 0 && r.shouldSkipRecord(&dnsData) {
+			continue
+		}
+
 		if r.options.JSON {
 			var marshalOptions []dnsx.MarshalOption
 			if r.options.OmitRaw {
@@ -735,10 +741,28 @@ func (r *Runner) worker() {
 			r.outputchan <- dnsData.Raw
 			continue
 		}
+
+		// if response type filter is set, then print filtered records, moved to below from above block
+		// coz json and raw flag support
+		if len(r.options.responseTypeFilterMap) > 0 {
+			r.outputRecordType(domain, dnsData.A, "A", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.AAAA, "AAAA", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.CNAME, "CNAME", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.MX, "MX", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.NS, "NS", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, sliceutil.Dedupe(dnsData.GetSOARecords()), "SOA", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.TXT, "TXT", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.SRV, "SRV", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.CAA, "CAA", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.PTR, "PTR", dnsData.CDNName, dnsData.ASN)
+			continue
+		}
+
 		if r.options.hasRCodes {
 			r.outputResponseCode(domain, dnsData.StatusCodeRaw)
 			continue
 		}
+
 		if r.options.A {
 			r.outputRecordType(domain, dnsData.A, "A", dnsData.CDNName, dnsData.ASN)
 		}
@@ -825,6 +849,54 @@ func (r *Runner) outputResponseCode(domain string, responsecode int) {
 	if ok {
 		r.outputchan <- domain + " [" + responseCodeExt + "]"
 	}
+}
+
+func (r *Runner) shouldSkipRecord(dnsData *dnsx.ResponseData) bool {
+	for _, et := range r.options.responseTypeFilterMap {
+		switch et {
+		case "a":
+			if len(dnsData.A) > 0 {
+				return true
+			}
+		case "aaaa":
+			if len(dnsData.AAAA) > 0 {
+				return true
+			}
+		case "cname":
+			if len(dnsData.CNAME) > 0 {
+				return true
+			}
+		case "ns":
+			if len(dnsData.NS) > 0 {
+				return true
+			}
+		case "txt":
+			if len(dnsData.TXT) > 0 {
+				return true
+			}
+		case "mx":
+			if len(dnsData.MX) > 0 {
+				return true
+			}
+		case "soa":
+			if len(dnsData.SOA) > 0 {
+				return true
+			}
+		case "srv":
+			if len(dnsData.SRV) > 0 {
+				return true
+			}
+		case "ptr":
+			if len(dnsData.PTR) > 0 {
+				return true
+			}
+		case "any":
+			if len(dnsData.A) > 0 && len(dnsData.AAAA) > 0 && len(dnsData.CNAME) > 0 && len(dnsData.NS) > 0 && len(dnsData.MX) > 0 && len(dnsData.SOA) > 0 && len(dnsData.SRV) > 0 && len(dnsData.PTR) > 0 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (r *Runner) storeDNSData(dnsdata *retryabledns.DNSData) error {

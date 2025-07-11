@@ -23,56 +23,58 @@ const (
 var PDCPApiKey string
 
 type Options struct {
-	Resolvers          string
-	Hosts              string
-	Domains            string
-	WordList           string
-	Threads            int
-	RateLimit          int
-	Retries            int
-	OutputFormat       string
-	OutputFile         string
-	Raw                bool
-	Silent             bool
-	Verbose            bool
-	Version            bool
-	NoColor            bool
-	Response           bool
-	ResponseOnly       bool
-	A                  bool
-	AAAA               bool
-	NS                 bool
-	CNAME              bool
-	PTR                bool
-	MX                 bool
-	SOA                bool
-	ANY                bool
-	TXT                bool
-	SRV                bool
-	AXFR               bool
-	JSON               bool
-	OmitRaw            bool
-	Trace              bool
-	TraceMaxRecursion  int
-	WildcardThreshold  int
-	WildcardDomain     string
-	ShowStatistics     bool
-	rcodes             map[int]struct{}
-	RCode              string
-	hasRCodes          bool
-	Resume             bool
-	resumeCfg          *ResumeCfg
-	HostsFile          bool
-	Stream             bool
-	CAA                bool
-	QueryAll           bool
-	ExcludeType        []string
-	OutputCDN          bool
-	ASN                bool
-	HealthCheck        bool
-	DisableUpdateCheck bool
-	PdcpAuth           string
-	Proxy              string
+	Resolvers             string
+	Hosts                 string
+	Domains               string
+	WordList              string
+	Threads               int
+	RateLimit             int
+	Retries               int
+	OutputFormat          string
+	OutputFile            string
+	Raw                   bool
+	Silent                bool
+	Verbose               bool
+	Version               bool
+	NoColor               bool
+	Response              bool
+	ResponseOnly          bool
+	A                     bool
+	AAAA                  bool
+	NS                    bool
+	CNAME                 bool
+	PTR                   bool
+	MX                    bool
+	SOA                   bool
+	ANY                   bool
+	TXT                   bool
+	SRV                   bool
+	AXFR                  bool
+	JSON                  bool
+	OmitRaw               bool
+	Trace                 bool
+	TraceMaxRecursion     int
+	WildcardThreshold     int
+	WildcardDomain        string
+	ShowStatistics        bool
+	rcodes                map[int]struct{}
+	RCode                 string
+	ResponseTypeFilter    string
+	responseTypeFilterMap []string
+	hasRCodes             bool
+	Resume                bool
+	resumeCfg             *ResumeCfg
+	HostsFile             bool
+	Stream                bool
+	CAA                   bool
+	QueryAll              bool
+	ExcludeType           []string
+	OutputCDN             bool
+	ASN                   bool
+	HealthCheck           bool
+	DisableUpdateCheck    bool
+	PdcpAuth              string
+	Proxy                 string
 }
 
 // ShouldLoadResume resume file
@@ -134,6 +136,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.Response, "resp", "re", false, "display dns response"),
 		flagSet.BoolVarP(&options.ResponseOnly, "resp-only", "ro", false, "display dns response only"),
 		flagSet.StringVarP(&options.RCode, "rcode", "rc", "", "filter result by dns status code (eg. -rcode noerror,servfail,refused)"),
+		flagSet.StringVarP(&options.ResponseTypeFilter, "response-type-filter", "rtf", "", "return entries with no records for the specified query types (e.g., a, cname)"),
 	)
 
 	flagSet.CreateGroup("probe", "Probe",
@@ -189,6 +192,17 @@ func ParseOptions() *Options {
 	if options.HealthCheck {
 		gologger.Print().Msgf("%s\n", DoHealthCheck(options, flagSet))
 		os.Exit(0)
+	}
+
+	filterNoRecordMap := make(map[string]bool)
+	// split the filter no record by comma
+	filterNoRecord := strings.Split(options.ResponseTypeFilter, ",")
+	for _, et := range filterNoRecord {
+		filterNoRecordMap[et] = true
+	}
+
+	if len(filterNoRecordMap) > 0 {
+		options.responseTypeFilterMap = filterNoRecord
 	}
 
 	options.configureQueryOptions()
