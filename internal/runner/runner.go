@@ -831,10 +831,7 @@ func (r *Runner) outputResponseCode(domain string, responsecode int) {
 
 func (r *Runner) storeDNSData(dnsdata *retryabledns.DNSData) error {
 	dnsDataClone := *dnsdata
-	dnsDataClone.AllRecords = nil
-	dnsDataClone.RawResp = nil 
-	dnsDataClone.TraceData = nil 
-	dnsDataClone.AXFRData = nil 
+	dnsDataClone.RawResp = nil
 
 	data, err := dnsDataClone.Marshal()
 	if err != nil {
