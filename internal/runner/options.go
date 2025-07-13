@@ -23,56 +23,57 @@ const (
 var PDCPApiKey string
 
 type Options struct {
-	Resolvers          string
-	Hosts              string
-	Domains            string
-	WordList           string
-	Threads            int
-	RateLimit          int
-	Retries            int
-	OutputFormat       string
-	OutputFile         string
-	Raw                bool
-	Silent             bool
-	Verbose            bool
-	Version            bool
-	NoColor            bool
-	Response           bool
-	ResponseOnly       bool
-	A                  bool
-	AAAA               bool
-	NS                 bool
-	CNAME              bool
-	PTR                bool
-	MX                 bool
-	SOA                bool
-	ANY                bool
-	TXT                bool
-	SRV                bool
-	AXFR               bool
-	JSON               bool
-	OmitRaw            bool
-	Trace              bool
-	TraceMaxRecursion  int
-	WildcardThreshold  int
-	WildcardDomain     string
-	ShowStatistics     bool
-	rcodes             map[int]struct{}
-	RCode              string
-	hasRCodes          bool
-	Resume             bool
-	resumeCfg          *ResumeCfg
-	HostsFile          bool
-	Stream             bool
-	CAA                bool
-	QueryAll           bool
-	ExcludeType        []string
-	OutputCDN          bool
-	ASN                bool
-	HealthCheck        bool
-	DisableUpdateCheck bool
-	PdcpAuth           string
-	Proxy              string
+	Resolvers            string
+	Hosts                string
+	Domains              string
+	WordList             string
+	Threads              int
+	RateLimit            int
+	Retries              int
+	OutputFormat         string
+	OutputFile           string
+	Raw                  bool
+	Silent               bool
+	Verbose              bool
+	Version              bool
+	NoColor              bool
+	Response             bool
+	ResponseOnly         bool
+	A                    bool
+	AAAA                 bool
+	NS                   bool
+	CNAME                bool
+	PTR                  bool
+	MX                   bool
+	SOA                  bool
+	ANY                  bool
+	TXT                  bool
+	SRV                  bool
+	AXFR                 bool
+	JSON                 bool
+	OmitRaw              bool
+	Trace                bool
+	TraceMaxRecursion    int
+	WildcardThreshold    int
+	WildcardMaxThreshold int
+	WildcardDomain       string
+	ShowStatistics       bool
+	rcodes               map[int]struct{}
+	RCode                string
+	hasRCodes            bool
+	Resume               bool
+	resumeCfg            *ResumeCfg
+	HostsFile            bool
+	Stream               bool
+	CAA                  bool
+	QueryAll             bool
+	ExcludeType          []string
+	OutputCDN            bool
+	ASN                  bool
+	HealthCheck          bool
+	DisableUpdateCheck   bool
+	PdcpAuth             string
+	Proxy                string
 }
 
 // ShouldLoadResume resume file
@@ -180,6 +181,7 @@ func ParseOptions() *Options {
 		flagSet.DynamicVar(&options.PdcpAuth, "auth", "true", "configure ProjectDiscovery Cloud Platform (PDCP) api key"),
 		flagSet.StringVarP(&options.Resolvers, "resolver", "r", "", "list of resolvers to use (file or comma separated)"),
 		flagSet.IntVarP(&options.WildcardThreshold, "wildcard-threshold", "wt", 5, "wildcard filter threshold"),
+		flagSet.IntVarP(&options.WildcardMaxThreshold, "wildcard-max-threshold", "wmt", 100, "maximum number of hosts to consider for wildcard filtering (default 1000)"),
 		flagSet.StringVarP(&options.WildcardDomain, "wildcard-domain", "wd", "", "domain name for wildcard filtering (other flags will be ignored - only json output is supported)"),
 		flagSet.StringVar(&options.Proxy, "proxy", "", "proxy to use (eg socks5://127.0.0.1:8080)"),
 	)

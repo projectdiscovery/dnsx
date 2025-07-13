@@ -483,11 +483,9 @@ func (r *Runner) run() error {
 			return nil
 		})
 
+		gologger.Debug().Msgf("Found %d unique IPs:%s\n", len(listIPs), strings.Join(listIPs, ", "))
 		// wildcard workers
 		numThreads := r.options.Threads
-		if numThreads > len(listIPs) {
-			numThreads = len(listIPs)
-		}
 		for i := 0; i < numThreads; i++ {
 			r.wgwildcardworker.Add(1)
 			go r.wildcardWorker()
@@ -496,6 +494,16 @@ func (r *Runner) run() error {
 		seen := make(map[string]struct{})
 		for _, a := range listIPs {
 			hosts := ipDomain[a]
+			// If the hosts data is huge, just ignore it.
+			gologger.Debug().Msgf("Processing %s with %d hosts\n", a, len(hosts))
+			if len(hosts) > r.options.WildcardMaxThreshold {
+				for host := range hosts {
+					r.wildcardsmutex.Lock()
+					r.wildcards[host] = struct{}{}
+					r.wildcardsmutex.Unlock()
+				}
+				continue
+			}
 			if len(hosts) >= r.options.WildcardThreshold {
 				for host := range hosts {
 					if _, ok := seen[host]; !ok {
