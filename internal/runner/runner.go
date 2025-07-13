@@ -719,7 +719,9 @@ func (r *Runner) worker() {
 		}
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
-			_ = r.storeDNSData(dnsData.DNSData)
+			if err := r.storeDNSData(dnsData.DNSData); err != nil {
+				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
+			}
 			continue
 		}
 		if r.options.JSON {
@@ -828,7 +830,13 @@ func (r *Runner) outputResponseCode(domain string, responsecode int) {
 }
 
 func (r *Runner) storeDNSData(dnsdata *retryabledns.DNSData) error {
-	data, err := dnsdata.Marshal()
+	dnsDataClone := *dnsdata
+	dnsDataClone.AllRecords = nil
+	dnsDataClone.RawResp = nil 
+	dnsDataClone.TraceData = nil 
+	dnsDataClone.AXFRData = nil 
+
+	data, err := dnsDataClone.Marshal()
 	if err != nil {
 		return err
 	}
