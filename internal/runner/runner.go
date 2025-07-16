@@ -498,7 +498,7 @@ func (r *Runner) run() error {
 			gologger.Debug().Msgf("Processing %s with %d hosts\n", a, len(hosts))
 			if len(hosts) > r.options.WildcardMaxThreshold {
 				for host := range hosts {
-					r.wildcards.Set(host, struct{}{})
+					_ = r.wildcards.Set(host, struct{}{})
 				}
 				continue
 			}
@@ -862,7 +862,7 @@ func (r *Runner) wildcardWorker() {
 
 		if r.IsWildcard(host) {
 			// mark this host as a wildcard subdomain
-			r.wildcards.Set(host, struct{}{})
+			_ = r.wildcards.Set(host, struct{}{})
 		}
 	}
 }
