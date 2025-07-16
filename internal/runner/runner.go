@@ -25,6 +25,7 @@ import (
 	"github.com/projectdiscovery/retryabledns"
 	fileutil "github.com/projectdiscovery/utils/file"
 	iputil "github.com/projectdiscovery/utils/ip"
+	mapsutil "github.com/projectdiscovery/utils/maps"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
@@ -38,8 +39,7 @@ type Runner struct {
 	workerchan          chan string
 	outputchan          chan string
 	wildcardworkerchan  chan string
-	wildcards           map[string]struct{}
-	wildcardsmutex      sync.RWMutex
+	wildcards           *mapsutil.SyncLockMap[string, struct{}]
 	wildcardscache      map[string][]string
 	wildcardscachemutex sync.Mutex
 	limiter             *ratelimit.Limiter
@@ -155,7 +155,7 @@ func New(options *Options) (*Runner, error) {
 		wgwildcardworker:   &sync.WaitGroup{},
 		workerchan:         make(chan string),
 		wildcardworkerchan: make(chan string),
-		wildcards:          make(map[string]struct{}),
+		wildcards:          mapsutil.NewSyncLockMap[string, struct{}](),
 		wildcardscache:     make(map[string][]string),
 		limiter:            limiter,
 		hm:                 hm,
@@ -498,9 +498,7 @@ func (r *Runner) run() error {
 			gologger.Debug().Msgf("Processing %s with %d hosts\n", a, len(hosts))
 			if len(hosts) > r.options.WildcardMaxThreshold {
 				for host := range hosts {
-					r.wildcardsmutex.Lock()
-					r.wildcards[host] = struct{}{}
-					r.wildcardsmutex.Unlock()
+					r.wildcards.Set(host, struct{}{})
 				}
 				continue
 			}
@@ -528,7 +526,7 @@ func (r *Runner) run() error {
 						seen[host] = struct{}{}
 						_ = r.lookupAndOutput(host)
 					}
-				} else if _, ok := r.wildcards[host]; !ok {
+				} else if !r.wildcards.Has(host) {
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
 						_ = r.lookupAndOutput(host)
@@ -864,9 +862,7 @@ func (r *Runner) wildcardWorker() {
 
 		if r.IsWildcard(host) {
 			// mark this host as a wildcard subdomain
-			r.wildcardsmutex.Lock()
-			r.wildcards[host] = struct{}{}
-			r.wildcardsmutex.Unlock()
+			r.wildcards.Set(host, struct{}{})
 		}
 	}
 }
