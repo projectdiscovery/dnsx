@@ -3,6 +3,7 @@ package runner
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -465,8 +466,7 @@ func (r *Runner) run() error {
 		// prepare in memory structure similarly to shuffledns
 		r.hm.Scan(func(k, v []byte) error {
 			var dnsdata retryabledns.DNSData
-			err := dnsdata.Unmarshal(v)
-			if err != nil {
+			if err := json.Unmarshal(v, &dnsdata); err != nil {
 				// the item has no record - ignore
 				return nil
 			}
@@ -486,6 +486,9 @@ func (r *Runner) run() error {
 		gologger.Debug().Msgf("Found %d unique IPs:%s\n", len(listIPs), strings.Join(listIPs, ", "))
 		// wildcard workers
 		numThreads := r.options.Threads
+		if numThreads > len(listIPs) {
+			numThreads = len(listIPs)
+		}
 		for i := 0; i < numThreads; i++ {
 			r.wgwildcardworker.Add(1)
 			go r.wildcardWorker()
@@ -494,14 +497,6 @@ func (r *Runner) run() error {
 		seen := make(map[string]struct{})
 		for _, a := range listIPs {
 			hosts := ipDomain[a]
-			// If the hosts data is huge, just ignore it.
-			gologger.Debug().Msgf("Processing %s with %d hosts\n", a, len(hosts))
-			if len(hosts) > r.options.WildcardMaxThreshold {
-				for host := range hosts {
-					_ = r.wildcards.Set(host, struct{}{})
-				}
-				continue
-			}
 			if len(hosts) >= r.options.WildcardThreshold {
 				for host := range hosts {
 					if _, ok := seen[host]; !ok {
@@ -836,14 +831,11 @@ func (r *Runner) outputResponseCode(domain string, responsecode int) {
 }
 
 func (r *Runner) storeDNSData(dnsdata *retryabledns.DNSData) error {
-	dnsDataClone := *dnsdata
-	dnsDataClone.RawResp = nil
-
-	data, err := dnsDataClone.Marshal()
+	data, err := dnsdata.JSON()
 	if err != nil {
 		return err
 	}
-	return r.hm.Set(dnsdata.Host, data)
+	return r.hm.Set(dnsdata.Host, []byte(data))
 }
 
 // Close running instance
