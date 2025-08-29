@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/projectdiscovery/goconfig"
@@ -68,6 +69,7 @@ type Options struct {
 	resumeCfg             *ResumeCfg
 	HostsFile             bool
 	Stream                bool
+	Timeout               time.Duration
 	CAA                   bool
 	QueryAll              bool
 	ExcludeType           []string
@@ -179,6 +181,7 @@ func ParseOptions() *Options {
 		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", 255, "Max recursion for dns trace"),
 		flagSet.BoolVar(&options.Resume, "resume", false, "resume existing scan"),
 		flagSet.BoolVar(&options.Stream, "stream", false, "stream mode (wordlist, wildcard, stats and stop/resume will be disabled)"),
+		flagSet.DurationVar(&options.Timeout, "timeout", 3*time.Second, "maximum time to wait for a DNS query to complete"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",
