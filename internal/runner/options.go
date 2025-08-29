@@ -6,9 +6,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/logrusorgru/aurora"
 	"github.com/projectdiscovery/goconfig"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/gologger/formatter"
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/utils/auth/pdcp"
 	"github.com/projectdiscovery/utils/env"
@@ -209,9 +211,6 @@ func ParseOptions() *Options {
 
 	options.configureQueryOptions()
 
-	// Read the inputs and configure the logging
-	options.configureOutput()
-
 	err := options.configureRcodes()
 	if err != nil {
 		gologger.Fatal().Msgf("%s\n", err)
@@ -236,6 +235,7 @@ func ParseOptions() *Options {
 		}
 	}
 
+	options.configureOutput()
 	showBanner()
 
 	if options.Version {
@@ -319,6 +319,10 @@ func (options *Options) configureOutput() {
 	// If the user desires verbose output, show verbose output
 	if options.Verbose {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelVerbose)
+	}
+	if options.NoColor {
+		updateutils.Aurora = aurora.NewAurora(false)
+		gologger.DefaultLogger.SetFormatter(formatter.NewCLI(true))
 	}
 	if options.Silent {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelSilent)
