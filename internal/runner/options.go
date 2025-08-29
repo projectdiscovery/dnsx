@@ -94,7 +94,7 @@ func ParseOptions() *Options {
 	flagSet.SetDescription(`dnsx is a fast and multi-purpose DNS toolkit allow to run multiple probes using retryabledns library.`)
 
 	flagSet.CreateGroup("input", "Input",
-		flagSet.StringVarP(&options.Hosts, "list", "l", "", "list of sub(domains)/hosts to resolve (file or stdin)"),
+		flagSet.StringVarP(&options.Hosts, "list", "l", "", "list of sub(domains)/hosts to resolve (file or comma separated or stdin)"),
 		flagSet.StringVarP(&options.Domains, "domain", "d", "", "list of domain to bruteforce (file or comma separated or stdin)"),
 		flagSet.StringVarP(&options.WordList, "wordlist", "w", "", "list of words to bruteforce (file or comma separated or stdin)"),
 	)
@@ -284,7 +284,9 @@ func (options *Options) validateOptions() {
 	}
 
 	// stdin can be set only on one flag
-	if argumentHasStdin(options.Domains) && argumentHasStdin(options.WordList) {
+	if (argumentHasStdin(options.Domains) && argumentHasStdin(options.WordList)) ||
+		(argumentHasStdin(options.Domains) && argumentHasStdin(options.Hosts)) ||
+		(argumentHasStdin(options.WordList) && argumentHasStdin(options.Hosts)) {
 		if options.Stream {
 			gologger.Fatal().Msgf("argument stdin not supported in stream mode")
 		}
@@ -297,6 +299,9 @@ func (options *Options) validateOptions() {
 		}
 		if domainsPresent {
 			gologger.Fatal().Msgf("domains not supported in stream mode")
+		}
+		if hostsPresent {
+			gologger.Fatal().Msgf("hosts not supported in stream mode")
 		}
 		if options.Resume {
 			gologger.Fatal().Msgf("resume not supported in stream mode")
