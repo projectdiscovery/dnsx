@@ -257,22 +257,6 @@ func (r *Runner) prepareInput() error {
 		if err != nil {
 			return err
 		}
-
-		// // attempt to load list from file
-		// if fileutil.FileExists(r.options.Hosts) {
-		// 	f, err := fileutil.ReadFile(r.options.Hosts)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	sc = f
-		// } else if argumentHasStdin(r.options.Hosts) || hasStdin {
-		// 	sc, err = r.preProcessArgument(r.options.Hosts)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// } else {
-		// 	return errors.New("hosts file or stdin not provided")
-		// }
 	}
 
 	numHosts := 0
