@@ -59,6 +59,7 @@ func New(options *Options) (*Runner, error) {
 	dnsxOptions.Hostsfile = options.HostsFile
 	dnsxOptions.OutputCDN = options.OutputCDN
 	dnsxOptions.Proxy = options.Proxy
+	dnsxOptions.Timeout = options.Timeout
 	if options.Resolvers != "" {
 		dnsxOptions.BaseResolvers = []string{}
 		// If it's a file load resolvers from it
