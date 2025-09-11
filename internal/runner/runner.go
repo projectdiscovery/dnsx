@@ -912,6 +912,8 @@ func (r *Runner) shouldSkipRecord(dnsData *dnsx.ResponseData) bool {
 }
 
 func (r *Runner) storeDNSData(dnsdata *retryabledns.DNSData) error {
+	dnsdata.RawResp = nil
+
 	data, err := dnsdata.JSON()
 	if err != nil {
 		return err
@@ -932,7 +934,6 @@ func (r *Runner) wildcardWorker() {
 		if !more {
 			break
 		}
-
 		if r.IsWildcard(host) {
 			// mark this host as a wildcard subdomain
 			_ = r.wildcards.Set(host, struct{}{})
