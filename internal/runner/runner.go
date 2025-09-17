@@ -847,8 +847,13 @@ func (r *Runner) outputRecordType(domain string, items interface{}, queryType, c
 		} else if r.options.Response {
 			r.outputchan <- fmt.Sprintf("%s [%s] [%s] %s", domain, r.aurora.Magenta(queryType), r.aurora.Green(item).String(), details)
 		} else {
-			// just prints out the domain if it has a record type and exit
-			r.outputchan <- fmt.Sprintf("%s%s", domain, details)
+			// In silent mode, previously only the domain name was printed.
+			// For CNAME records, we should also print the resolved target instead of just the domain.
+			if queryType == "CNAME" {
+				r.outputchan <- fmt.Sprintf("%s -> %s%s", domain, item, details)
+			} else {
+				r.outputchan <- fmt.Sprintf("%s%s", domain, details)
+			}
 			break
 		}
 	}
