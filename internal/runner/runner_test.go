@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/projectdiscovery/hmap/store/hybrid"
-	sliceutil "github.com/projectdiscovery/utils/slice"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/stretchr/testify/require"
 )
@@ -158,13 +157,7 @@ func TestRunner_InputWorkerStream(t *testing.T) {
 	expected := []string{"173.0.84.0", "173.0.84.1", "173.0.84.2", "173.0.84.3", "one.one.one.one"}
 	// read the expected IPs from the file
 	fileContent, err := os.ReadFile("tests/AS14421.txt")
-	if err != nil {
-		t.Logf("could not read the expectedOutputFile file: %s", err)
-		t.Skip()
-	}
+	require.Nil(t, err, "could not read the expectedOutputFile file")
 	expected = append(expected, strings.Split(strings.ReplaceAll(string(fileContent), "\r\n", "\n"), "\n")...)
-	if !sliceutil.ElementsMatch(expected, got) {
-		t.Logf("could not match expected output: %s", expected)
-		t.Skip()
-	}
+	require.ElementsMatch(t, expected, got, "could not match expected output")
 }
