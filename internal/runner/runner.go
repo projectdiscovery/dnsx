@@ -172,7 +172,12 @@ func (r *Runner) InputWorkerStream() {
 	var sc *bufio.Scanner
 	// attempt to load list from file
 	if fileutil.FileExists(r.options.Hosts) {
-		f, _ := os.Open(r.options.Hosts)
+		f, err := os.Open(r.options.Hosts)
+		if err != nil {
+			gologger.Error().Msgf("Could not open hosts file '%s': %s", r.options.Hosts, err)
+			return
+		}
+		defer f.Close()
 		sc = bufio.NewScanner(f)
 	} else if fileutil.HasStdin() {
 		sc = bufio.NewScanner(os.Stdin)
