@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/projectdiscovery/hmap/store/hybrid"
+	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/stretchr/testify/require"
 )
 
@@ -89,6 +90,9 @@ func TestRunner_asnInput_prepareInput(t *testing.T) {
 	// call the prepareInput
 	err = r.prepareInput()
 	require.Nil(t, err, "failed to prepare input")
+	if err != nil && stringsutil.ContainsAny(err.Error(), "unauthorized") {
+		t.Skip()
+	}
 	expectedOutputFile := "tests/AS14421.txt"
 	// read the expected IPs from the file
 	fileContent, err := os.ReadFile(expectedOutputFile)
