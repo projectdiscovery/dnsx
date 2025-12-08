@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/projectdiscovery/hmap/store/hybrid"
+	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/stretchr/testify/require"
 )
 
@@ -44,6 +45,9 @@ func TestRunner_domainWildCard_prepareInput(t *testing.T) {
 	}
 	// call the prepareInput
 	err = r.prepareInput()
+	if isUnauthorizedError(err) {
+		t.Skip()
+	}
 	require.Nil(t, err, "failed to prepare input")
 	expected := []string{"jenkins.projectdiscovery.io", "beta.projectdiscovery.io"}
 	got := []string{}
@@ -66,6 +70,9 @@ func TestRunner_cidrInput_prepareInput(t *testing.T) {
 	}
 	// call the prepareInput
 	err = r.prepareInput()
+	if isUnauthorizedError(err) {
+		t.Skip()
+	}
 	require.Nil(t, err, "failed to prepare input")
 	expected := []string{"173.0.84.0", "173.0.84.1", "173.0.84.2", "173.0.84.3"}
 	got := []string{}
@@ -88,6 +95,9 @@ func TestRunner_asnInput_prepareInput(t *testing.T) {
 	}
 	// call the prepareInput
 	err = r.prepareInput()
+	if isUnauthorizedError(err) {
+		t.Skip()
+	}
 	require.Nil(t, err, "failed to prepare input")
 	expectedOutputFile := "tests/AS14421.txt"
 	// read the expected IPs from the file
@@ -102,6 +112,10 @@ func TestRunner_asnInput_prepareInput(t *testing.T) {
 	require.ElementsMatch(t, expected, got, "could not match expected output")
 }
 
+func isUnauthorizedError(err error) bool {
+	return err != nil && stringsutil.ContainsAny(err.Error(), "unauthorized")
+}
+
 func TestRunner_fileInput_prepareInput(t *testing.T) {
 	options := &Options{
 		Hosts: "tests/file_input.txt",
@@ -114,6 +128,9 @@ func TestRunner_fileInput_prepareInput(t *testing.T) {
 	}
 	// call the prepareInput
 	err = r.prepareInput()
+	if isUnauthorizedError(err) {
+		t.Skip()
+	}
 	require.Nil(t, err, "failed to prepare input")
 	expected := []string{"one.one.one.one", "example.com"}
 	got := []string{}
