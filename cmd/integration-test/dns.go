@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net"
 	"strings"
 
@@ -163,10 +164,20 @@ func (h *dnsFilterAdditionalSection) Execute() error {
 
 	if len(results) > 0 {
 		for _, result := range results {
-			if strings.Contains(result, "192.112.36.4") ||
-				strings.Contains(result, "198.97.190.53") ||
-				strings.Contains(result, "198.41.0.4") {
-				return errIncorrectResult("(no root server IPs)", result)
+			var jsonData map[string]interface{}
+			if err := json.Unmarshal([]byte(result), &jsonData); err != nil {
+				continue
+			}
+
+			if aField, ok := jsonData["a"].([]interface{}); ok {
+				for _, ip := range aField {
+					ipStr := strings.ToLower(ip.(string))
+					if ipStr == "192.112.36.4" ||
+						ipStr == "198.97.190.53" ||
+						ipStr == "198.41.0.4" {
+						return errIncorrectResult("(no root server IPs in 'a' field)", result)
+					}
+				}
 			}
 		}
 	}
