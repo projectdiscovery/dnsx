@@ -150,8 +150,8 @@ func (h *dnsFilterAdditionalSection) Execute() error {
 		Addr:    "127.0.0.1:15001",
 		Net:     "udp",
 	}
-	go srv.ListenAndServe()
-	defer srv.Shutdown()
+	go srv.ListenAndServe() //nolint
+	defer srv.Shutdown()    //nolint
 
 	var extra []string
 	extra = append(extra, "-r", "127.0.0.1:15001")
@@ -233,5 +233,5 @@ func (t *dnshandlerWithAdditional) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 		},
 	}
 
-	w.WriteMsg(&msg)
+	w.WriteMsg(&msg) //nolint
 }
