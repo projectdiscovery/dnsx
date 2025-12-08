@@ -139,12 +139,6 @@ func TestFilterAnswerSectionOnly(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dnsData := tt.setupDNSData()
 
-			var originalA []string
-			if dnsData != nil {
-				originalA = make([]string, len(dnsData.A))
-				copy(originalA, dnsData.A)
-			}
-
 			FilterAnswerSectionOnly(dnsData)
 
 			if tt.expectedEmpty && dnsData == nil {
