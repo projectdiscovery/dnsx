@@ -62,8 +62,10 @@ func WithoutAllRecords() MarshalOption {
 
 func (d *ResponseData) JSON(options ...MarshalOption) (string, error) {
 	dataToMarshal := *d
+	// Always remove RawResp from JSON output as it's redundant and bloats the output
+	dataToMarshal.RawResp = nil
 	for _, option := range options {
-		option(d)
+		option(&dataToMarshal)
 	}
 	b, err := json.Marshal(dataToMarshal)
 	return string(b), err
