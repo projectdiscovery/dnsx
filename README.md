@@ -122,6 +122,7 @@ OPTIMIZATION:
    -trace-max-recursion int  Max recursion for dns trace (default 32767)
    -resume                   resume existing scan
    -stream                   stream mode (wordlist, wildcard, stats and stop/resume will be disabled)
+   -timeout value            maximum time to wait for a DNS query to complete (default 3s)
 
 CONFIGURATIONS:
    -auth                         configure projectdiscovery cloud (pdcp) api key (default true)

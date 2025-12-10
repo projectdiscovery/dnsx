@@ -3,6 +3,7 @@ package runner
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -25,6 +26,7 @@ import (
 	"github.com/projectdiscovery/retryabledns"
 	fileutil "github.com/projectdiscovery/utils/file"
 	iputil "github.com/projectdiscovery/utils/ip"
+	mapsutil "github.com/projectdiscovery/utils/maps"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
@@ -38,8 +40,7 @@ type Runner struct {
 	workerchan          chan string
 	outputchan          chan string
 	wildcardworkerchan  chan string
-	wildcards           map[string]struct{}
-	wildcardsmutex      sync.RWMutex
+	wildcards           *mapsutil.SyncLockMap[string, struct{}]
 	wildcardscache      map[string][]string
 	wildcardscachemutex sync.Mutex
 	limiter             *ratelimit.Limiter
@@ -58,6 +59,7 @@ func New(options *Options) (*Runner, error) {
 	dnsxOptions.Hostsfile = options.HostsFile
 	dnsxOptions.OutputCDN = options.OutputCDN
 	dnsxOptions.Proxy = options.Proxy
+	dnsxOptions.Timeout = options.Timeout
 	if options.Resolvers != "" {
 		dnsxOptions.BaseResolvers = []string{}
 		// If it's a file load resolvers from it
@@ -155,7 +157,7 @@ func New(options *Options) (*Runner, error) {
 		wgwildcardworker:   &sync.WaitGroup{},
 		workerchan:         make(chan string),
 		wildcardworkerchan: make(chan string),
-		wildcards:          make(map[string]struct{}),
+		wildcards:          mapsutil.NewSyncLockMap[string, struct{}](),
 		wildcardscache:     make(map[string][]string),
 		limiter:            limiter,
 		hm:                 hm,
@@ -170,7 +172,12 @@ func (r *Runner) InputWorkerStream() {
 	var sc *bufio.Scanner
 	// attempt to load list from file
 	if fileutil.FileExists(r.options.Hosts) {
-		f, _ := os.Open(r.options.Hosts)
+		f, err := os.Open(r.options.Hosts)
+		if err != nil {
+			gologger.Error().Msgf("Could not open hosts file '%s': %s", r.options.Hosts, err)
+			return
+		}
+		defer f.Close()
 		sc = bufio.NewScanner(f)
 	} else if fileutil.HasStdin() {
 		sc = bufio.NewScanner(os.Stdin)
@@ -239,8 +246,10 @@ func (r *Runner) prepareInput() error {
 			return err
 		}
 		// closes the file as we will read it multiple times to build the iterations
-		stdinFile.Close()
-		defer os.RemoveAll(r.tmpStdinFile)
+		_ = stdinFile.Close()
+		defer func() {
+			_ = os.RemoveAll(r.tmpStdinFile)
+		}()
 	}
 
 	if r.options.Domains != "" {
@@ -465,8 +474,7 @@ func (r *Runner) run() error {
 		// prepare in memory structure similarly to shuffledns
 		r.hm.Scan(func(k, v []byte) error {
 			var dnsdata retryabledns.DNSData
-			err := dnsdata.Unmarshal(v)
-			if err != nil {
+			if err := json.Unmarshal(v, &dnsdata); err != nil {
 				// the item has no record - ignore
 				return nil
 			}
@@ -483,6 +491,7 @@ func (r *Runner) run() error {
 			return nil
 		})
 
+		gologger.Debug().Msgf("Found %d unique IPs:%s\n", len(listIPs), strings.Join(listIPs, ", "))
 		// wildcard workers
 		numThreads := r.options.Threads
 		if numThreads > len(listIPs) {
@@ -520,7 +529,7 @@ func (r *Runner) run() error {
 						seen[host] = struct{}{}
 						_ = r.lookupAndOutput(host)
 					}
-				} else if _, ok := r.wildcards[host]; !ok {
+				} else if !r.wildcards.Has(host) {
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
 						_ = r.lookupAndOutput(host)
@@ -588,9 +597,13 @@ func (r *Runner) HandleOutput() {
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}
-		defer foutput.Close()
+		defer func() {
+			_ = foutput.Close()
+		}()
 		w = bufio.NewWriter(foutput)
-		defer w.Flush()
+		defer func() {
+			_ = w.Flush()
+		}()
 	}
 	for item := range r.outputchan {
 		if foutput != nil {
@@ -719,9 +732,17 @@ func (r *Runner) worker() {
 		}
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
-			_ = r.storeDNSData(dnsData.DNSData)
+			if err := r.storeDNSData(dnsData.DNSData); err != nil {
+				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
+			}
 			continue
 		}
+
+		// if response type filter is set, we don't want to ignore them
+		if len(r.options.responseTypeFilterMap) > 0 && r.shouldSkipRecord(&dnsData) {
+			continue
+		}
+
 		if r.options.JSON {
 			var marshalOptions []dnsx.MarshalOption
 			if r.options.OmitRaw {
@@ -735,10 +756,28 @@ func (r *Runner) worker() {
 			r.outputchan <- dnsData.Raw
 			continue
 		}
+
+		// if response type filter is set, then print filtered records, moved to below from above block
+		// coz json and raw flag support
+		if len(r.options.responseTypeFilterMap) > 0 {
+			r.outputRecordType(domain, dnsData.A, "A", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.AAAA, "AAAA", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.CNAME, "CNAME", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.MX, "MX", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.NS, "NS", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, sliceutil.Dedupe(dnsData.GetSOARecords()), "SOA", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.TXT, "TXT", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.SRV, "SRV", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.CAA, "CAA", dnsData.CDNName, dnsData.ASN)
+			r.outputRecordType(domain, dnsData.PTR, "PTR", dnsData.CDNName, dnsData.ASN)
+			continue
+		}
+
 		if r.options.hasRCodes {
 			r.outputResponseCode(domain, dnsData.StatusCodeRaw)
 			continue
 		}
+
 		if r.options.A {
 			r.outputRecordType(domain, dnsData.A, "A", dnsData.CDNName, dnsData.ASN)
 		}
@@ -827,17 +866,69 @@ func (r *Runner) outputResponseCode(domain string, responsecode int) {
 	}
 }
 
+func (r *Runner) shouldSkipRecord(dnsData *dnsx.ResponseData) bool {
+	for _, et := range r.options.responseTypeFilterMap {
+		switch strings.ToLower(strings.TrimSpace(et)) {
+		case "a":
+			if len(dnsData.A) > 0 {
+				return true
+			}
+		case "aaaa":
+			if len(dnsData.AAAA) > 0 {
+				return true
+			}
+		case "cname":
+			if len(dnsData.CNAME) > 0 {
+				return true
+			}
+		case "ns":
+			if len(dnsData.NS) > 0 {
+				return true
+			}
+		case "txt":
+			if len(dnsData.TXT) > 0 {
+				return true
+			}
+		case "mx":
+			if len(dnsData.MX) > 0 {
+				return true
+			}
+		case "soa":
+			if len(dnsData.SOA) > 0 {
+				return true
+			}
+		case "srv":
+			if len(dnsData.SRV) > 0 {
+				return true
+			}
+		case "ptr":
+			if len(dnsData.PTR) > 0 {
+				return true
+			}
+		case "caa":
+			if len(dnsData.CAA) > 0 {
+				return true
+			}
+		default:
+			return false
+		}
+	}
+	return false
+}
+
 func (r *Runner) storeDNSData(dnsdata *retryabledns.DNSData) error {
-	data, err := dnsdata.Marshal()
+	dnsdata.RawResp = nil
+
+	data, err := dnsdata.JSON()
 	if err != nil {
 		return err
 	}
-	return r.hm.Set(dnsdata.Host, data)
+	return r.hm.Set(dnsdata.Host, []byte(data))
 }
 
 // Close running instance
 func (r *Runner) Close() {
-	r.hm.Close()
+	_ = r.hm.Close()
 }
 
 func (r *Runner) wildcardWorker() {
@@ -848,12 +939,9 @@ func (r *Runner) wildcardWorker() {
 		if !more {
 			break
 		}
-
 		if r.IsWildcard(host) {
 			// mark this host as a wildcard subdomain
-			r.wildcardsmutex.Lock()
-			r.wildcards[host] = struct{}{}
-			r.wildcardsmutex.Unlock()
+			_ = r.wildcards.Set(host, struct{}{})
 		}
 	}
 }

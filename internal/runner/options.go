@@ -5,10 +5,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/logrusorgru/aurora"
 	"github.com/projectdiscovery/goconfig"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/gologger/formatter"
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/utils/auth/pdcp"
 	"github.com/projectdiscovery/utils/env"
@@ -23,56 +26,59 @@ const (
 var PDCPApiKey string
 
 type Options struct {
-	Resolvers          string
-	Hosts              string
-	Domains            string
-	WordList           string
-	Threads            int
-	RateLimit          int
-	Retries            int
-	OutputFormat       string
-	OutputFile         string
-	Raw                bool
-	Silent             bool
-	Verbose            bool
-	Version            bool
-	NoColor            bool
-	Response           bool
-	ResponseOnly       bool
-	A                  bool
-	AAAA               bool
-	NS                 bool
-	CNAME              bool
-	PTR                bool
-	MX                 bool
-	SOA                bool
-	ANY                bool
-	TXT                bool
-	SRV                bool
-	AXFR               bool
-	JSON               bool
-	OmitRaw            bool
-	Trace              bool
-	TraceMaxRecursion  int
-	WildcardThreshold  int
-	WildcardDomain     string
-	ShowStatistics     bool
-	rcodes             map[int]struct{}
-	RCode              string
-	hasRCodes          bool
-	Resume             bool
-	resumeCfg          *ResumeCfg
-	HostsFile          bool
-	Stream             bool
-	CAA                bool
-	QueryAll           bool
-	ExcludeType        []string
-	OutputCDN          bool
-	ASN                bool
-	HealthCheck        bool
-	DisableUpdateCheck bool
-	PdcpAuth           string
-	Proxy              string
+	Resolvers             string
+	Hosts                 string
+	Domains               string
+	WordList              string
+	Threads               int
+	RateLimit             int
+	Retries               int
+	OutputFormat          string
+	OutputFile            string
+	Raw                   bool
+	Silent                bool
+	Verbose               bool
+	Version               bool
+	NoColor               bool
+	Response              bool
+	ResponseOnly          bool
+	A                     bool
+	AAAA                  bool
+	NS                    bool
+	CNAME                 bool
+	PTR                   bool
+	MX                    bool
+	SOA                   bool
+	ANY                   bool
+	TXT                   bool
+	SRV                   bool
+	AXFR                  bool
+	JSON                  bool
+	OmitRaw               bool
+	Trace                 bool
+	TraceMaxRecursion     int
+	WildcardThreshold     int
+	WildcardDomain        string
+	ShowStatistics        bool
+	rcodes                map[int]struct{}
+	RCode                 string
+	ResponseTypeFilter    string
+	responseTypeFilterMap []string
+	hasRCodes             bool
+	Resume                bool
+	resumeCfg             *ResumeCfg
+	HostsFile             bool
+	Stream                bool
+	Timeout               time.Duration
+	CAA                   bool
+	QueryAll              bool
+	ExcludeType           []string
+	OutputCDN             bool
+	ASN                   bool
+	HealthCheck           bool
+	DisableUpdateCheck    bool
+	PdcpAuth              string
+	Proxy                 string
 }
 
 // ShouldLoadResume resume file
@@ -134,6 +140,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.Response, "resp", "re", false, "display dns response"),
 		flagSet.BoolVarP(&options.ResponseOnly, "resp-only", "ro", false, "display dns response only"),
 		flagSet.StringVarP(&options.RCode, "rcode", "rc", "", "filter result by dns status code (eg. -rcode noerror,servfail,refused)"),
+		flagSet.StringVarP(&options.ResponseTypeFilter, "response-type-filter", "rtf", "", "return entries with no records for the specified query types (e.g., a, cname)"),
 	)
 
 	flagSet.CreateGroup("probe", "Probe",
@@ -174,6 +181,7 @@ func ParseOptions() *Options {
 		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", 255, "Max recursion for dns trace"),
 		flagSet.BoolVar(&options.Resume, "resume", false, "resume existing scan"),
 		flagSet.BoolVar(&options.Stream, "stream", false, "stream mode (wordlist, wildcard, stats and stop/resume will be disabled)"),
+		flagSet.DurationVar(&options.Timeout, "timeout", 3*time.Second, "maximum time to wait for a DNS query to complete"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",
@@ -191,10 +199,20 @@ func ParseOptions() *Options {
 		os.Exit(0)
 	}
 
-	options.configureQueryOptions()
+	if options.ResponseTypeFilter != "" {
+		filterTypes := strings.Split(options.ResponseTypeFilter, ",")
+		// Clean and validate filter types
+		validTypes := make([]string, 0, len(filterTypes))
+		for _, et := range filterTypes {
+			et = strings.TrimSpace(strings.ToLower(et))
+			if et != "" {
+				validTypes = append(validTypes, et)
+			}
+		}
+		options.responseTypeFilterMap = validTypes
+	}
 
-	// Read the inputs and configure the logging
-	options.configureOutput()
+	options.configureQueryOptions()
 
 	err := options.configureRcodes()
 	if err != nil {
@@ -220,6 +238,7 @@ func ParseOptions() *Options {
 		}
 	}
 
+	options.configureOutput()
 	showBanner()
 
 	if options.Version {
@@ -303,6 +322,10 @@ func (options *Options) configureOutput() {
 	// If the user desires verbose output, show verbose output
 	if options.Verbose {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelVerbose)
+	}
+	if options.NoColor {
+		updateutils.Aurora = aurora.NewAurora(false)
+		gologger.DefaultLogger.SetFormatter(formatter.NewCLI(true))
 	}
 	if options.Silent {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelSilent)
