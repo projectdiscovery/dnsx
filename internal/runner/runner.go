@@ -652,6 +652,8 @@ func (r *Runner) worker() {
 			continue
 		}
 
+		dnsx.FilterAnswerSectionOnly(dnsData.DNSData)
+
 		if dnsData.Host == "" || dnsData.Timestamp.IsZero() {
 			continue
 		}

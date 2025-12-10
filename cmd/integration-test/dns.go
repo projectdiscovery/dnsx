@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net"
 	"strings"
 
@@ -9,8 +10,9 @@ import (
 )
 
 var dnsTestcases = map[string]testutils.TestCase{
-	"DNS A Request":    &dnsARequest{question: "projectdiscovery.io", expectedOutput: "projectdiscovery.io"},
-	"DNS AAAA Request": &dnsAAAARequest{question: "projectdiscovery.io", expectedOutput: "projectdiscovery.io"},
+	"DNS A Request":                 &dnsARequest{question: "projectdiscovery.io", expectedOutput: "projectdiscovery.io"},
+	"DNS AAAA Request":              &dnsAAAARequest{question: "projectdiscovery.io", expectedOutput: "projectdiscovery.io"},
+	"DNS Filter Additional Section": &dnsFilterAdditionalSection{question: "anyinvaliddomain.projectdiscovery.io", expectedOutput: ""},
 }
 
 type dnsARequest struct {
@@ -132,4 +134,104 @@ func buildAnswer(r *dns.Msg, ans answer) *dns.Msg {
 		}
 	}
 	return &msg
+}
+
+type dnsFilterAdditionalSection struct {
+	question       string
+	expectedOutput string
+}
+
+func (h *dnsFilterAdditionalSection) Execute() error {
+	handler := &dnshandlerWithAdditional{
+		question: h.question,
+	}
+	srv := &dns.Server{
+		Handler: handler,
+		Addr:    "127.0.0.1:15001",
+		Net:     "udp",
+	}
+	go srv.ListenAndServe() //nolint
+	defer srv.Shutdown()    //nolint
+
+	var extra []string
+	extra = append(extra, "-r", "127.0.0.1:15001")
+	extra = append(extra, "-a", "-resp", "-json")
+
+	results, err := testutils.RunDnsxAndGetResults(h.question, debug, extra...)
+	if err != nil {
+		return err
+	}
+
+	if len(results) > 0 {
+		for _, result := range results {
+			var jsonData map[string]interface{}
+			if err := json.Unmarshal([]byte(result), &jsonData); err != nil {
+				continue
+			}
+
+			if aField, ok := jsonData["a"].([]interface{}); ok {
+				for _, ip := range aField {
+					ipStr := strings.ToLower(ip.(string))
+					if ipStr == "192.112.36.4" ||
+						ipStr == "198.97.190.53" ||
+						ipStr == "198.41.0.4" {
+						return errIncorrectResult("(no root server IPs in 'a' field)", result)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+type dnshandlerWithAdditional struct {
+	question string
+}
+
+func (t *dnshandlerWithAdditional) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
+	question := r.Question[0].Name
+	question = strings.TrimSuffix(question, ".")
+
+	if !strings.EqualFold(question, t.question) {
+		return
+	}
+
+	msg := dns.Msg{}
+	msg.SetReply(r)
+	msg.Authoritative = true
+
+	msg.Answer = []dns.RR{}
+
+	msg.Ns = []dns.RR{
+		&dns.NS{
+			Hdr: dns.RR_Header{Name: ".", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 79449},
+			Ns:  "g.root-servers.net.",
+		},
+		&dns.NS{
+			Hdr: dns.RR_Header{Name: ".", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 79449},
+			Ns:  "h.root-servers.net.",
+		},
+		&dns.NS{
+			Hdr: dns.RR_Header{Name: ".", Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: 79449},
+			Ns:  "a.root-servers.net.",
+		},
+	}
+
+	msg.Extra = []dns.RR{
+		&dns.A{
+			Hdr: dns.RR_Header{Name: "g.root-servers.net.", Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 77741},
+			A:   net.ParseIP("192.112.36.4"),
+		},
+		&dns.A{
+			Hdr: dns.RR_Header{Name: "h.root-servers.net.", Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 77741},
+			A:   net.ParseIP("198.97.190.53"),
+		},
+		&dns.A{
+			Hdr: dns.RR_Header{Name: "a.root-servers.net.", Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: 81186},
+			A:   net.ParseIP("198.41.0.4"),
+		},
+	}
+
+	w.WriteMsg(&msg) //nolint
 }
