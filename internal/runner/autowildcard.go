@@ -16,6 +16,7 @@ type AutoWildcardDetector struct {
 	mutex          sync.RWMutex
 	wildcardRoots  map[string]map[string]struct{} // root domain -> set of wildcard IPs
 	testedDomains  map[string]struct{}            // domains we've already tested for wildcards
+	inFlight       map[string]chan struct{}       // domains currently being tested (for concurrent waiters)
 	filteredCount  int                            // count of filtered wildcard subdomains
 }
 
@@ -29,6 +30,7 @@ func NewAutoWildcardDetector(dnsxClient *dnsx.DNSX, testCount int) *AutoWildcard
 		testCount:     testCount,
 		wildcardRoots: make(map[string]map[string]struct{}),
 		testedDomains: make(map[string]struct{}),
+		inFlight:      make(map[string]chan struct{}),
 	}
 }
 
@@ -56,37 +58,47 @@ func (d *AutoWildcardDetector) DetectAndFilter(host string, hostIPs []string) bo
 
 // ensureWildcardTested tests a domain for wildcards if not already tested
 func (d *AutoWildcardDetector) ensureWildcardTested(parent string) {
-	d.mutex.RLock()
-	_, tested := d.testedDomains[parent]
-	d.mutex.RUnlock()
-
-	if tested {
-		return
-	}
-
-	// Mark as tested before actual test to prevent concurrent duplicate tests
 	d.mutex.Lock()
-	// Double-check after acquiring write lock
+
+	// Check if already tested (complete)
 	if _, tested := d.testedDomains[parent]; tested {
 		d.mutex.Unlock()
 		return
 	}
-	d.testedDomains[parent] = struct{}{}
+
+	// Check if another goroutine is currently testing this domain
+	if waitCh, inFlight := d.inFlight[parent]; inFlight {
+		d.mutex.Unlock()
+		// Wait for the in-flight test to complete
+		<-waitCh
+		return
+	}
+
+	// We'll be the one to test - create a channel for others to wait on
+	doneCh := make(chan struct{})
+	d.inFlight[parent] = doneCh
 	d.mutex.Unlock()
 
-	// Test for wildcard by querying random subdomains
+	// Test for wildcard by querying random subdomains (outside lock)
 	wildcardIPs := d.testWildcard(parent)
 
+	// Re-acquire lock to update state
+	d.mutex.Lock()
+	d.testedDomains[parent] = struct{}{}
 	if len(wildcardIPs) > 0 {
-		d.mutex.Lock()
 		d.wildcardRoots[parent] = wildcardIPs
-		d.mutex.Unlock()
 	}
+	delete(d.inFlight, parent)
+	d.mutex.Unlock()
+
+	// Signal waiting goroutines that testing is complete
+	close(doneCh)
 }
 
 // testWildcard tests if a domain has wildcard DNS by querying random subdomains
+// Returns IPs only if they are CONSISTENT across multiple probe responses
 func (d *AutoWildcardDetector) testWildcard(parent string) map[string]struct{} {
-	wildcardIPs := make(map[string]struct{})
+	var probeSets []map[string]struct{}
 
 	// Query multiple random subdomains
 	for i := 0; i < d.testCount; i++ {
@@ -96,18 +108,47 @@ func (d *AutoWildcardDetector) testWildcard(parent string) map[string]struct{} {
 			continue
 		}
 
-		// Add A record IPs directly to wildcardIPs
+		// Collect IPs from this probe
+		probeIPs := make(map[string]struct{})
 		for _, ip := range result.A {
-			wildcardIPs[ip] = struct{}{}
+			probeIPs[ip] = struct{}{}
+		}
+		for _, ip := range result.AAAA {
+			probeIPs[ip] = struct{}{}
 		}
 
-		// Also add AAAA record IPs for IPv6 wildcard detection
-		for _, ip := range result.AAAA {
-			wildcardIPs[ip] = struct{}{}
+		// Only track probes that returned IPs
+		if len(probeIPs) > 0 {
+			probeSets = append(probeSets, probeIPs)
+		}
+	}
+
+	// Require at least 2 successful probes to declare wildcard
+	if len(probeSets) < 2 {
+		return nil
+	}
+
+	// Find intersection of all probe results (consistent IPs across all probes)
+	wildcardIPs := probeSets[0]
+	for i := 1; i < len(probeSets); i++ {
+		wildcardIPs = intersectIPSets(wildcardIPs, probeSets[i])
+		if len(wildcardIPs) == 0 {
+			return nil // No consistent IPs across probes
 		}
 	}
 
 	return wildcardIPs
+}
+
+// intersectIPSets returns the intersection of two IP sets
+func intersectIPSets(a, b map[string]struct{}) map[string]struct{} {
+	result := make(map[string]struct{})
+	for ip := range a {
+		if _, ok := b[ip]; ok {
+			result[ip] = struct{}{}
+		}
+	}
+	return result
 }
 
 // isWildcardMatch checks if any of the host's IPs match wildcard patterns
