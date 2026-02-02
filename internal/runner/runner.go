@@ -32,22 +32,23 @@ import (
 
 // Runner is a client for running the enumeration process.
 type Runner struct {
-	options             *Options
-	dnsx                *dnsx.DNSX
-	wgoutputworker      *sync.WaitGroup
-	wgresolveworkers    *sync.WaitGroup
-	wgwildcardworker    *sync.WaitGroup
-	workerchan          chan string
-	outputchan          chan string
-	wildcardworkerchan  chan string
-	wildcards           *mapsutil.SyncLockMap[string, struct{}]
-	wildcardscache      map[string][]string
-	wildcardscachemutex sync.Mutex
-	limiter             *ratelimit.Limiter
-	hm                  *hybrid.HybridMap
-	stats               clistats.StatisticsClient
-	tmpStdinFile        string
-	aurora              aurora.Aurora
+	options              *Options
+	dnsx                 *dnsx.DNSX
+	wgoutputworker       *sync.WaitGroup
+	wgresolveworkers     *sync.WaitGroup
+	wgwildcardworker     *sync.WaitGroup
+	workerchan           chan string
+	outputchan           chan string
+	wildcardworkerchan   chan string
+	wildcards            *mapsutil.SyncLockMap[string, struct{}]
+	wildcardscache       map[string][]string
+	wildcardscachemutex  sync.Mutex
+	limiter              *ratelimit.Limiter
+	hm                   *hybrid.HybridMap
+	stats                clistats.StatisticsClient
+	tmpStdinFile         string
+	aurora               aurora.Aurora
+	autoWildcardDetector *AutoWildcardDetector
 }
 
 func New(options *Options) (*Runner, error) {
@@ -163,6 +164,11 @@ func New(options *Options) (*Runner, error) {
 		hm:                 hm,
 		stats:              stats,
 		aurora:             aurora.NewAurora(!options.NoColor),
+	}
+
+	// Initialize auto wildcard detector if enabled
+	if options.AutoWildcard {
+		r.autoWildcardDetector = NewAutoWildcardDetector(dnsX, options.AutoWildcardTestCount)
 	}
 
 	return &r, nil
@@ -548,6 +554,15 @@ func (r *Runner) run() error {
 		gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
 	}
 
+	// Print auto wildcard summary
+	if r.options.AutoWildcard && r.autoWildcardDetector != nil {
+		filteredCount := r.autoWildcardDetector.GetFilteredCount()
+		rootCount := r.autoWildcardDetector.GetWildcardRootCount()
+		if filteredCount > 0 || rootCount > 0 {
+			gologger.Print().Msgf("Auto wildcard detection: %d wildcard roots found, %d subdomains filtered\n", rootCount, filteredCount)
+		}
+	}
+
 	return nil
 }
 
@@ -736,6 +751,15 @@ func (r *Runner) worker() {
 				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
 			}
 			continue
+		}
+
+		// auto wildcard detection and filtering
+		if r.options.AutoWildcard && r.autoWildcardDetector != nil {
+			if r.autoWildcardDetector.DetectAndFilter(domain, dnsData.A) {
+				r.autoWildcardDetector.IncrementFilteredCount()
+				gologger.Debug().Msgf("Filtered wildcard subdomain: %s\n", domain)
+				continue
+			}
 		}
 
 		// if response type filter is set, we don't want to ignore them
