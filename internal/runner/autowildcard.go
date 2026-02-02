@@ -6,6 +6,7 @@ import (
 
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/rs/xid"
+	"golang.org/x/net/publicsuffix"
 )
 
 // AutoWildcardDetector handles automatic wildcard detection across multiple domains
@@ -86,7 +87,6 @@ func (d *AutoWildcardDetector) ensureWildcardTested(parent string) {
 // testWildcard tests if a domain has wildcard DNS by querying random subdomains
 func (d *AutoWildcardDetector) testWildcard(parent string) map[string]struct{} {
 	wildcardIPs := make(map[string]struct{})
-	ipCounts := make(map[string]int)
 
 	// Query multiple random subdomains
 	for i := 0; i < d.testCount; i++ {
@@ -96,15 +96,13 @@ func (d *AutoWildcardDetector) testWildcard(parent string) map[string]struct{} {
 			continue
 		}
 
+		// Add A record IPs directly to wildcardIPs
 		for _, ip := range result.A {
-			ipCounts[ip]++
+			wildcardIPs[ip] = struct{}{}
 		}
-	}
 
-	// An IP is considered a wildcard if it appears in at least one random subdomain query
-	// (if a random subdomain resolves, it indicates wildcard)
-	for ip, count := range ipCounts {
-		if count >= 1 {
+		// Also add AAAA record IPs for IPv6 wildcard detection
+		for _, ip := range result.AAAA {
 			wildcardIPs[ip] = struct{}{}
 		}
 	}
@@ -166,21 +164,30 @@ func (d *AutoWildcardDetector) GetFilteredCount() int {
 }
 
 // getParentDomains extracts all parent domain levels from a hostname
+// stopping at the registrable domain boundary (eTLD+1)
 // e.g., "sub.example.com" returns ["example.com"]
 // e.g., "a.b.example.com" returns ["b.example.com", "example.com"]
+// e.g., "sub.example.co.uk" returns ["example.co.uk"] (not "co.uk")
 func getParentDomains(host string) []string {
 	parts := strings.Split(host, ".")
 	if len(parts) <= 2 {
 		return nil // Already at apex or TLD
 	}
 
+	// Get the registrable domain (eTLD+1) to know where to stop
+	registrableDomain, err := publicsuffix.EffectiveTLDPlusOne(host)
+	if err != nil {
+		return nil // Cannot determine registrable domain
+	}
+
 	var parents []string
-	// Start from the immediate parent and go up
-	for i := 1; i < len(parts)-1; i++ {
+	// Start from the immediate parent and go up to (and including) the registrable domain
+	for i := 1; i < len(parts); i++ {
 		parent := strings.Join(parts[i:], ".")
-		// Skip if it looks like a TLD (only 2 parts remaining)
-		if strings.Count(parent, ".") >= 1 {
-			parents = append(parents, parent)
+		parents = append(parents, parent)
+		// Stop when we reach the registrable domain
+		if parent == registrableDomain {
+			break
 		}
 	}
 
