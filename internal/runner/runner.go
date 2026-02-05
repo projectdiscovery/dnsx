@@ -32,22 +32,23 @@ import (
 
 // Runner is a client for running the enumeration process.
 type Runner struct {
-	options             *Options
-	dnsx                *dnsx.DNSX
-	wgoutputworker      *sync.WaitGroup
-	wgresolveworkers    *sync.WaitGroup
-	wgwildcardworker    *sync.WaitGroup
-	workerchan          chan string
-	outputchan          chan string
-	wildcardworkerchan  chan string
-	wildcards           *mapsutil.SyncLockMap[string, struct{}]
-	wildcardscache      map[string][]string
-	wildcardscachemutex sync.Mutex
-	limiter             *ratelimit.Limiter
-	hm                  *hybrid.HybridMap
-	stats               clistats.StatisticsClient
-	tmpStdinFile        string
-	aurora              aurora.Aurora
+	options              *Options
+	dnsx                 *dnsx.DNSX
+	wgoutputworker       *sync.WaitGroup
+	wgresolveworkers     *sync.WaitGroup
+	wgwildcardworker     *sync.WaitGroup
+	workerchan           chan string
+	outputchan           chan string
+	wildcardworkerchan   chan string
+	wildcards            *mapsutil.SyncLockMap[string, struct{}]
+	wildcardscache       map[string][]string
+	wildcardscachemutex  sync.Mutex
+	limiter              *ratelimit.Limiter
+	hm                   *hybrid.HybridMap
+	stats                clistats.StatisticsClient
+	tmpStdinFile         string
+	aurora               aurora.Aurora
+	autoWildcardDetector *AutoWildcardDetector
 }
 
 func New(options *Options) (*Runner, error) {
@@ -163,6 +164,11 @@ func New(options *Options) (*Runner, error) {
 		hm:                 hm,
 		stats:              stats,
 		aurora:             aurora.NewAurora(!options.NoColor),
+	}
+
+	// Initialize auto-wildcard detector if enabled
+	if options.AutoWildcard {
+		r.autoWildcardDetector = NewAutoWildcardDetector(&r)
 	}
 
 	return &r, nil
@@ -730,6 +736,14 @@ func (r *Runner) worker() {
 				}
 			}
 		}
+		// auto-wildcard detection: skip if domain is part of a wildcard
+		if r.options.AutoWildcard && r.autoWildcardDetector != nil {
+			if r.autoWildcardDetector.IsAutoWildcard(domain) {
+				gologger.Debug().Msgf("Skipping wildcard domain: %s\n", domain)
+				continue
+			}
+		}
+
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
