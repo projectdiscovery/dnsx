@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"net"
 	"strings"
 	"sync"
 
@@ -23,8 +24,23 @@ func NewAutoWildcardDetector(r *Runner) *AutoWildcardDetector {
 	}
 }
 
-// extractRootDomain extracts the root domain from a hostname
+// extractRootDomain extracts the root domain from a hostname.
+// It normalizes the input by removing trailing dots, handling host:port format,
+// and returning IPs as-is (they cannot be wildcards).
 func (d *AutoWildcardDetector) extractRootDomain(host string) string {
+	// Normalize: remove trailing dot
+	host = strings.TrimSuffix(host, ".")
+	
+	// Handle host:port format
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	
+	// If it's an IP address, return as-is (IPs cannot be wildcards)
+	if net.ParseIP(host) != nil {
+		return host
+	}
+	
 	// Use publicsuffix to get the effective TLD+1
 	rootDomain, err := publicsuffix.EffectiveTLDPlusOne(host)
 	if err != nil {
@@ -41,8 +57,15 @@ func (d *AutoWildcardDetector) extractRootDomain(host string) string {
 // IsAutoWildcard checks if a host is part of a wildcard domain automatically.
 // It caches results per root domain to avoid redundant DNS queries.
 // Thread-safe with double-checked locking to prevent duplicate wildcard tests.
+// Returns false immediately for IP addresses (they cannot be wildcards).
 func (d *AutoWildcardDetector) IsAutoWildcard(host string) bool {
+	// Normalize and extract root domain
 	rootDomain := d.extractRootDomain(host)
+	
+	// IP addresses cannot be wildcards
+	if net.ParseIP(rootDomain) != nil {
+		return false
+	}
 	
 	// Check cache first (read lock)
 	d.wildcardRootsMu.RLock()
