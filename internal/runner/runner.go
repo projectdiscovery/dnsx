@@ -737,7 +737,7 @@ func (r *Runner) worker() {
 			}
 		}
 		// auto-wildcard detection: skip if domain is part of a wildcard
-		if r.options.AutoWildcard && r.autoWildcardDetector != nil {
+		if r.options.AutoWildcard {
 			if r.autoWildcardDetector.IsAutoWildcard(domain) {
 				gologger.Debug().Msgf("Skipping wildcard domain: %s\n", domain)
 				continue

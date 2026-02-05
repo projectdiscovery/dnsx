@@ -38,11 +38,13 @@ func (d *AutoWildcardDetector) extractRootDomain(host string) string {
 	return rootDomain
 }
 
-// IsAutoWildcard checks if a host is part of a wildcard domain automatically
+// IsAutoWildcard checks if a host is part of a wildcard domain automatically.
+// It caches results per root domain to avoid redundant DNS queries.
+// Thread-safe with double-checked locking to prevent duplicate wildcard tests.
 func (d *AutoWildcardDetector) IsAutoWildcard(host string) bool {
 	rootDomain := d.extractRootDomain(host)
 	
-	// Check cache first
+	// Check cache first (read lock)
 	d.wildcardRootsMu.RLock()
 	isWildcard, exists := d.wildcardRoots[rootDomain]
 	d.wildcardRootsMu.RUnlock()
@@ -51,13 +53,20 @@ func (d *AutoWildcardDetector) IsAutoWildcard(host string) bool {
 		return isWildcard
 	}
 	
+	// Acquire write lock for double-checked locking
+	d.wildcardRootsMu.Lock()
+	defer d.wildcardRootsMu.Unlock()
+	
+	// Re-check after acquiring write lock (another goroutine may have populated it)
+	if isWildcard, exists = d.wildcardRoots[rootDomain]; exists {
+		return isWildcard
+	}
+	
 	// Test if root domain has wildcard
 	isWildcard = d.testWildcard(rootDomain)
 	
 	// Cache result
-	d.wildcardRootsMu.Lock()
 	d.wildcardRoots[rootDomain] = isWildcard
-	d.wildcardRootsMu.Unlock()
 	
 	return isWildcard
 }
@@ -77,7 +86,11 @@ func (d *AutoWildcardDetector) testWildcard(domain string) bool {
 	return len(result.A) > 0 || len(result.AAAA) > 0
 }
 
-// FilterWildcards filters out wildcard results from a slice of hosts
+// FilterWildcards filters out wildcard results from a slice of hosts.
+// It returns only hosts that are NOT part of a wildcard domain.
+// This is a convenience method for batch filtering when processing
+// multiple hosts at once, such as post-processing results.
+// Each host is checked via IsAutoWildcard which caches results per root domain.
 func (d *AutoWildcardDetector) FilterWildcards(hosts []string) []string {
 	var filtered []string
 	for _, host := range hosts {
