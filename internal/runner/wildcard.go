@@ -72,8 +72,11 @@ func (wd *WildcardDetector) detectWildcardForDomain(parentDomain string) *wildca
 		if err != nil || result == nil {
 			continue
 		}
-		// Collect both A and AAAA records
-		allIPs := append(result.A, result.AAAA...)
+		// Collect both A and AAAA records without modifying originals
+		allIPs := make([]string, 0, len(result.A)+len(result.AAAA))
+		allIPs = append(allIPs, result.A...)
+		allIPs = append(allIPs, result.AAAA...)
+
 		if len(allIPs) == 0 {
 			continue
 		}
