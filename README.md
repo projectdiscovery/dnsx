@@ -129,6 +129,7 @@ CONFIGURATIONS:
    -r, -resolver string          list of resolvers to use (file or comma separated)
    -wt, -wildcard-threshold int  wildcard filter threshold (default 5)
    -wd, -wildcard-domain string  domain name for wildcard filtering (other flags will be ignored - only json output is supported)
+   -wda, -wildcard-detection      enable automatic wildcard detection and filtering
 ```
 
 ## Running dnsx
@@ -403,6 +404,20 @@ A special feature of `dnsx` is its ability to handle **multi-level DNS based wil
 
 ```console
 dnsx -l subdomain_list.txt -wd airbnb.com -o output.txt
+```
+
+#### Automatic Wildcard Detection
+
+For cases where you don't know the wildcard domain in advance, `dnsx` supports **automatic wildcard detection** using the `-wda` flag. This probes random subdomains of each parent domain to identify wildcard DNS records, similar to how [PureDNS](https://github.com/d3mondev/puredns) eliminates false positives.
+
+```console
+subfinder -silent -d example.com | dnsx -silent -wda
+```
+
+Automatic detection works with all output modes (plain, JSON, response) and is compatible with stream mode. Use `-wt` to tune the detection threshold (default: 5).
+
+```console
+cat subdomains.txt | dnsx -silent -wda -wt 3 -resp
 ```
 
 ---------

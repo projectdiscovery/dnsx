@@ -79,6 +79,7 @@ type Options struct {
 	DisableUpdateCheck    bool
 	PdcpAuth              string
 	Proxy                 string
+	WildcardDetection     bool
 }
 
 // ShouldLoadResume resume file
@@ -141,6 +142,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.ResponseOnly, "resp-only", "ro", false, "display dns response only"),
 		flagSet.StringVarP(&options.RCode, "rcode", "rc", "", "filter result by dns status code (eg. -rcode noerror,servfail,refused)"),
 		flagSet.StringVarP(&options.ResponseTypeFilter, "response-type-filter", "rtf", "", "return entries with no records for the specified query types (e.g., a, cname)"),
+		flagSet.BoolVarP(&options.WildcardDetection, "wildcard-detection", "wda", false, "enable automatic wildcard detection and filtering"),
 	)
 
 	flagSet.CreateGroup("probe", "Probe",

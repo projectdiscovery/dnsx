@@ -48,6 +48,7 @@ type Runner struct {
 	stats               clistats.StatisticsClient
 	tmpStdinFile        string
 	aurora              aurora.Aurora
+	wildcardDetector    *WildcardDetector
 }
 
 func New(options *Options) (*Runner, error) {
@@ -163,6 +164,11 @@ func New(options *Options) (*Runner, error) {
 		hm:                 hm,
 		stats:              stats,
 		aurora:             aurora.NewAurora(!options.NoColor),
+	}
+
+	if options.WildcardDetection {
+		r.wildcardDetector = NewWildcardDetector(dnsX, options.WildcardThreshold)
+		gologger.Info().Msgf("Automatic wildcard detection enabled (threshold: %d)\n", options.WildcardThreshold)
 	}
 
 	return &r, nil
@@ -467,6 +473,14 @@ func (r *Runner) run() error {
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
 
+	// report automatic wildcard detection stats
+	if r.wildcardDetector != nil {
+		filtered := r.wildcardDetector.FilteredCount()
+		if filtered > 0 {
+			gologger.Info().Msgf("%d wildcard subdomains automatically filtered\n", filtered)
+		}
+	}
+
 	if r.options.WildcardDomain != "" {
 		gologger.Print().Msgf("Starting to filter wildcard subdomains\n")
 		ipDomain := make(map[string]map[string]struct{})
@@ -579,6 +593,14 @@ func (r *Runner) runStream() error {
 
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
+
+	// report automatic wildcard detection stats for stream mode
+	if r.wildcardDetector != nil {
+		filtered := r.wildcardDetector.FilteredCount()
+		if filtered > 0 {
+			gologger.Info().Msgf("%d wildcard subdomains automatically filtered\n", filtered)
+		}
+	}
 
 	return nil
 }
@@ -730,6 +752,16 @@ func (r *Runner) worker() {
 				}
 			}
 		}
+
+		// automatic wildcard detection: filter responses matching wildcard IPs
+		if r.wildcardDetector != nil {
+			allIPs := append(dnsData.A, dnsData.AAAA...)
+			if len(allIPs) > 0 && r.wildcardDetector.IsWildcardResponse(domain, allIPs) {
+				gologger.Debug().Msgf("Wildcard filtered: %s\n", domain)
+				continue
+			}
+		}
+
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
