@@ -5,6 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/miekg/dns"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/gologger"
 	"github.com/rs/xid"
@@ -68,7 +69,10 @@ func (wd *WildcardDetector) detectWildcardForDomain(parentDomain string) *wildca
 
 	for i := 0; i < wd.numProbes; i++ {
 		randomHost := xid.New().String() + "." + parentDomain
-		result, err := wd.dnsClient.QueryOne(randomHost)
+
+		// Explicitly query for both A and AAAA to catch all wildcard types
+		// regardless of what the user selected for the main scan.
+		result, err := wd.dnsClient.QueryWithTypes(randomHost, []uint16{dns.TypeA, dns.TypeAAAA})
 		if err != nil || result == nil {
 			continue
 		}

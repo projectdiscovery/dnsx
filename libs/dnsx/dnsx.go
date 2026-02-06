@@ -156,9 +156,14 @@ func (d *DNSX) QueryMultiple(hostname string) (*retryabledns.DNSData, error) {
 // Trace performs a DNS trace of the specified types and returns raw responses
 func (d *DNSX) Trace(hostname string) (*retryabledns.TraceData, error) {
 	if len(d.Options.QuestionTypes) == 0 {
-    	return nil, errors.New("no question types specified for trace")
-    }
+		return nil, errors.New("no question types specified for trace")
+	}
 	return d.dnsClient.Trace(hostname, d.Options.QuestionTypes[0], d.Options.TraceMaxRecursion)
+}
+
+// QueryWithTypes performs a DNS question of the specified types and returns raw responses
+func (d *DNSX) QueryWithTypes(hostname string, types []uint16) (*retryabledns.DNSData, error) {
+	return d.dnsClient.QueryMultiple(hostname, types)
 }
 
 // Trace performs a DNS trace of the specified types and returns raw responses
