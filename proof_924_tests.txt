@@ -1,0 +1,4 @@
+=== RUN   TestAutoWildcardDetectionAndMatch
+--- PASS: TestAutoWildcardDetectionAndMatch (0.00s)
+PASS
+ok  	github.com/projectdiscovery/dnsx/internal/runner	1.503s

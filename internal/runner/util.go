@@ -7,6 +7,8 @@ import (
 	"time"
 
 	fileutil "github.com/projectdiscovery/utils/file"
+	iputil "github.com/projectdiscovery/utils/ip"
+	"github.com/weppos/publicsuffix-go/publicsuffix"
 )
 
 const (
@@ -57,6 +59,18 @@ func prepareResolver(resolver string) string {
 		resolver += ":53"
 	}
 	return resolver
+}
+
+func extractRootDomain(host string) string {
+	host = strings.ToLower(strings.TrimSpace(strings.TrimSuffix(host, ".")))
+	if host == "" || iputil.IsIP(host) {
+		return ""
+	}
+	root, err := publicsuffix.Domain(host)
+	if err != nil {
+		return ""
+	}
+	return root
 }
 
 func fmtDuration(d time.Duration) string {

@@ -59,6 +59,7 @@ type Options struct {
 	TraceMaxRecursion     int
 	WildcardThreshold     int
 	WildcardDomain        string
+	AutoWildcard          bool
 	ShowStatistics        bool
 	rcodes                map[int]struct{}
 	RCode                 string
@@ -141,6 +142,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.ResponseOnly, "resp-only", "ro", false, "display dns response only"),
 		flagSet.StringVarP(&options.RCode, "rcode", "rc", "", "filter result by dns status code (eg. -rcode noerror,servfail,refused)"),
 		flagSet.StringVarP(&options.ResponseTypeFilter, "response-type-filter", "rtf", "", "return entries with no records for the specified query types (e.g., a, cname)"),
+		flagSet.BoolVar(&options.AutoWildcard, "auto-wildcard", false, "automatically detect and filter wildcard dns per root domain"),
 	)
 
 	flagSet.CreateGroup("probe", "Probe",
