@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"strings"
 	"sync"
@@ -122,7 +123,9 @@ func New(options *Options) (*Runner, error) {
 	// If no option is specified or wildcard filter has been requested use query type A
 	if len(questionTypes) == 0 || options.WildcardDomain != "" || options.AutoWildcard {
 		options.A = true
-		questionTypes = append(questionTypes, dns.TypeA)
+		if !hasQuestionType(questionTypes, dns.TypeA) {
+			questionTypes = append(questionTypes, dns.TypeA)
+		}
 	}
 	dnsxOptions.QuestionTypes = questionTypes
 	dnsxOptions.QueryAll = options.QueryAll
@@ -502,6 +505,7 @@ func (r *Runner) filterWildcards() {
 	domainIPHosts := make(map[string]ipHosts)
 	domainIPs := make(map[string][]string)
 	unfilteredHosts := make(map[string]struct{})
+	ambiguousHosts := make(map[string]struct{})
 
 	// prepare in memory structure similarly to shuffledns
 	r.hm.Scan(func(k, v []byte) error {
@@ -514,7 +518,11 @@ func (r *Runner) filterWildcards() {
 		wildcardDomain := r.wildcardDomainForHost(dnsdata.Host)
 		if wildcardDomain == "" {
 			if r.options.AutoWildcard {
-				unfilteredHosts[dnsdata.Host] = struct{}{}
+				if net.ParseIP(dnsdata.Host) != nil || !strings.Contains(dnsdata.Host, ".") {
+					unfilteredHosts[dnsdata.Host] = struct{}{}
+				} else {
+					ambiguousHosts[dnsdata.Host] = struct{}{}
+				}
 			}
 			return nil
 		}
@@ -578,10 +586,24 @@ func (r *Runner) filterWildcards() {
 	numRemovedSubdomains := 0
 
 	for host := range unfilteredHosts {
-		if _, ok := seen[host]; !ok {
-			seen[host] = struct{}{}
-			_ = r.lookupAndOutput(host)
+		if _, ok := seen[host]; ok {
+			continue
 		}
+		seen[host] = struct{}{}
+		if r.options.AutoWildcard {
+			wildcardDomain := wildcardBaseDomain(host)
+			if wildcardDomain == "" {
+				if net.ParseIP(host) != nil || !strings.Contains(host, ".") {
+					_ = r.lookupAndOutput(host)
+				} else {
+					ambiguousHosts[host] = struct{}{}
+				}
+			} else {
+				ambiguousHosts[host] = struct{}{}
+			}
+			continue
+		}
+		_ = r.lookupAndOutput(host)
 	}
 
 	for wildcardDomain, ips := range domainIPs {
@@ -608,7 +630,19 @@ func (r *Runner) filterWildcards() {
 	close(r.outputchan)
 	// waiting output worker
 	r.wgoutputworker.Wait()
+	if r.options.AutoWildcard && len(ambiguousHosts) > 0 {
+		gologger.Debug().Msgf("Skipped %d ambiguous hosts during auto wildcard filtering\n", len(ambiguousHosts))
+	}
 	gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
+}
+
+func hasQuestionType(questionTypes []uint16, value uint16) bool {
+	for _, questionType := range questionTypes {
+		if questionType == value {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *Runner) lookupAndOutput(host string) error {
