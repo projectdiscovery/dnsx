@@ -129,6 +129,7 @@ CONFIGURATIONS:
    -r, -resolver string          list of resolvers to use (file or comma separated)
    -wt, -wildcard-threshold int  wildcard filter threshold (default 5)
    -wd, -wildcard-domain string  domain name for wildcard filtering (other flags will be ignored - only json output is supported)
+   -auto-wildcard                automatically detect and filter wildcard subdomains per base domain
 ```
 
 ## Running dnsx
@@ -405,6 +406,12 @@ A special feature of `dnsx` is its ability to handle **multi-level DNS based wil
 dnsx -l subdomain_list.txt -wd airbnb.com -o output.txt
 ```
 
+Automatically detect and filter wildcard subdomains per base domain in a single run:
+
+```console
+dnsx -l subdomain_list.txt --auto-wildcard -o output.txt
+```
+
 ---------
 
 ### Dnsx as a library
@@ -462,7 +469,7 @@ func main() {
 - As default, `dnsx` checks for **A** record.
 - As default `dnsx` uses Google, Cloudflare, Quad9 [resolver](https://github.com/projectdiscovery/dnsx/blob/43af78839e237ea8cbafe571df1ab0d6cbe7f445/libs/dnsx/dnsx.go#L31).
 - Custom resolver list can be loaded using the `r` flag.
-- Domain name (`wd`) input is mandatory for wildcard elimination.
+- Domain name (`wd`) input is mandatory for wildcard elimination unless `--auto-wildcard` is used.
 - DNS record flag can not be used when using wildcard filtering.
 - DNS resolution (`l`) and DNS brute-forcing (`w`) can't be used together.
 - VPN operators tend to filter high DNS/UDP traffic, therefore the tool might experience packets loss (eg. [Mullvad VPN](https://github.com/projectdiscovery/dnsx/issues/221)). Check [this potential solution](./MULLVAD.md).
