@@ -59,6 +59,7 @@ type Options struct {
 	TraceMaxRecursion     int
 	WildcardThreshold     int
 	WildcardDomain        string
+	AutoWildcard          bool
 	ShowStatistics        bool
 	rcodes                map[int]struct{}
 	RCode                 string
@@ -189,6 +190,7 @@ func ParseOptions() *Options {
 		flagSet.StringVarP(&options.Resolvers, "resolver", "r", "", "list of resolvers to use (file or comma separated)"),
 		flagSet.IntVarP(&options.WildcardThreshold, "wildcard-threshold", "wt", 5, "wildcard filter threshold"),
 		flagSet.StringVarP(&options.WildcardDomain, "wildcard-domain", "wd", "", "domain name for wildcard filtering (other flags will be ignored - only json output is supported)"),
+		flagSet.BoolVar(&options.AutoWildcard, "auto-wildcard", false, "automatically detect and filter wildcard subdomains per base domain"),
 		flagSet.StringVar(&options.Proxy, "proxy", "", "proxy to use (eg socks5://127.0.0.1:8080)"),
 	)
 
@@ -307,9 +309,16 @@ func (options *Options) validateOptions() {
 		if options.WildcardDomain != "" {
 			gologger.Fatal().Msgf("wildcard not supported in stream mode")
 		}
+		if options.AutoWildcard {
+			gologger.Fatal().Msgf("auto wildcard not supported in stream mode")
+		}
 		if options.ShowStatistics {
 			gologger.Fatal().Msgf("stats not supported in stream mode")
 		}
+	}
+
+	if options.WildcardDomain != "" && options.AutoWildcard {
+		gologger.Fatal().Msgf("wildcard-domain and auto-wildcard can't be used together")
 	}
 }
 
