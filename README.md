@@ -412,6 +412,7 @@ dnsx -l subdomain_list.txt -wd airbnb.com -o output.txt
 
 `dnsx` supports automatic wildcard detection and filtering across multiple domains using the `--auto-wildcard` flag. This feature automatically detects wildcard DNS configurations for each domain and filters out wildcard results, similar to tools like PureDNS.
 
+**Basic usage:**
 ```console
 # Automatically detect and filter wildcard subdomains
 cat subdomains.txt | dnsx -a --auto-wildcard
@@ -423,13 +424,36 @@ cat subdomains.txt | dnsx -a -aw -v
 subfinder -d example.com | dnsx -a -aw -resp -o results.txt
 ```
 
+**Example showing filtering in action:**
+
+Without auto-wildcard (includes wildcard responses):
+```console
+$ echo -e "random-xyz123.example.com\nlegit-api.example.com\nrandom-abc456.example.com" | dnsx -a -resp
+
+random-xyz123.example.com [192.0.2.1]
+legit-api.example.com [198.51.100.50]
+random-abc456.example.com [192.0.2.1]
+```
+
+With auto-wildcard (filters out wildcard domains):
+```console
+$ echo -e "random-xyz123.example.com\nlegit-api.example.com\nrandom-abc456.example.com" | dnsx -a -aw -resp
+
+legit-api.example.com [198.51.100.50]
+```
+
+In this example, `random-xyz123.example.com` and `random-abc456.example.com` both resolve to the same wildcard IP (`192.0.2.1`), so they are automatically filtered out, leaving only the legitimate subdomain.
+
 The auto-wildcard feature works by:
 - Testing random subdomains for each parent domain
-- Identifying wildcard IP patterns
+- Identifying wildcard IP patterns (both IPv4 and IPv6)
 - Automatically filtering subdomains that match wildcard IPs
 - Caching results to avoid redundant DNS queries
 
-**Note:** The `--auto-wildcard` flag cannot be used together with `--wildcard-domain` or in stream mode.
+**Important notes:**
+- The `--auto-wildcard` flag cannot be used together with `--wildcard-domain` or in stream mode
+- Detection uses a 2/3 threshold which may produce false positives for CDN/Anycast IPs (warnings will be displayed)
+- Both A (IPv4) and AAAA (IPv6) records are checked for wildcard patterns
 
 ---------
 

@@ -130,9 +130,11 @@ func (awd *AutoWildcardDetector) detectWildcard(domain string) []string {
 	}
 
 	// IPs that appear in multiple random queries are likely wildcard IPs
+	// Note: threshold of 2/3 may produce false positives for Anycast/CDN IPs
+	threshold := 2
 	var confirmedWildcardIPs []string
 	for ip, count := range wildcardIPs {
-		if count >= 2 { // Appear in at least 2 out of 3 random queries
+		if count >= threshold { // Appear in at least 2 out of 3 random queries
 			confirmedWildcardIPs = append(confirmedWildcardIPs, ip)
 		}
 	}
@@ -143,6 +145,11 @@ func (awd *AutoWildcardDetector) detectWildcard(domain string) []string {
 	if len(confirmedWildcardIPs) > 0 {
 		awd.wildcardDomainsCount++
 		gologger.Debug().Msgf("Wildcard detected for %s: %v", domain, confirmedWildcardIPs)
+
+		// Warn about potential CDN/Anycast false positives
+		if testCount == 3 && threshold == 2 {
+			gologger.Warning().Msgf("Wildcard detection for %s uses 2/3 threshold - may produce false positives for CDN/Anycast IPs", domain)
+		}
 	}
 	close(pendingCh)
 	delete(awd.pending, domain)
