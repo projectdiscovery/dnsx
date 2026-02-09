@@ -48,6 +48,7 @@ type Runner struct {
 	stats               clistats.StatisticsClient
 	tmpStdinFile        string
 	aurora              aurora.Aurora
+	autoWildcard        *AutoWildcardDetector
 }
 
 func New(options *Options) (*Runner, error) {
@@ -163,6 +164,11 @@ func New(options *Options) (*Runner, error) {
 		hm:                 hm,
 		stats:              stats,
 		aurora:             aurora.NewAurora(!options.NoColor),
+	}
+
+	// Initialize auto-wildcard detector if enabled
+	if options.AutoWildcard {
+		r.autoWildcard = NewAutoWildcardDetector(&r)
 	}
 
 	return &r, nil
@@ -467,6 +473,14 @@ func (r *Runner) run() error {
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
 
+	// Print auto-wildcard statistics
+	if r.options.AutoWildcard && r.autoWildcard != nil {
+		wildcardDomains, filteredHosts := r.autoWildcard.GetStats()
+		if wildcardDomains > 0 || filteredHosts > 0 {
+			gologger.Info().Msgf("Auto-wildcard detection: found %d wildcard domain(s), filtered %d subdomain(s)", wildcardDomains, filteredHosts)
+		}
+	}
+
 	if r.options.WildcardDomain != "" {
 		gologger.Print().Msgf("Starting to filter wildcard subdomains\n")
 		ipDomain := make(map[string]map[string]struct{})
@@ -736,6 +750,14 @@ func (r *Runner) worker() {
 				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
 			}
 			continue
+		}
+
+		// Auto-wildcard filtering
+		if r.options.AutoWildcard && r.autoWildcard != nil {
+			if r.autoWildcard.IsWildcardMatch(domain, dnsData.A, r) {
+				gologger.Debug().Msgf("Filtered wildcard subdomain: %s", domain)
+				continue
+			}
 		}
 
 		// if response type filter is set, we don't want to ignore them

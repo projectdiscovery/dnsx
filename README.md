@@ -401,9 +401,34 @@ google.dj [142.250.192.3]
 
 A special feature of `dnsx` is its ability to handle **multi-level DNS based wildcards**, and do it so with a very reduced number of DNS requests. Sometimes all the subdomains will resolve, which leads to lots of garbage in the output. The way `dnsx` handles this is by keeping track of how many subdomains point to an IP and if the count of the subdomains increase beyond a certain threshold, it will check for wildcards on all the levels of the hosts for that IP iteratively.
 
+#### Manual wildcard filtering
+
 ```console
 dnsx -l subdomain_list.txt -wd airbnb.com -o output.txt
 ```
+
+#### Automatic wildcard detection
+
+`dnsx` supports automatic wildcard detection and filtering across multiple domains using the `--auto-wildcard` flag. This feature automatically detects wildcard DNS configurations for each domain and filters out wildcard results, similar to tools like PureDNS.
+
+```console
+# Automatically detect and filter wildcard subdomains
+cat subdomains.txt | dnsx -a --auto-wildcard
+
+# With verbose output to see detection details
+cat subdomains.txt | dnsx -a -aw -v
+
+# Combine with other flags
+subfinder -d example.com | dnsx -a -aw -resp -o results.txt
+```
+
+The auto-wildcard feature works by:
+- Testing random subdomains for each parent domain
+- Identifying wildcard IP patterns
+- Automatically filtering subdomains that match wildcard IPs
+- Caching results to avoid redundant DNS queries
+
+**Note:** The `--auto-wildcard` flag cannot be used together with `--wildcard-domain` or in stream mode.
 
 ---------
 
@@ -462,7 +487,9 @@ func main() {
 - As default, `dnsx` checks for **A** record.
 - As default `dnsx` uses Google, Cloudflare, Quad9 [resolver](https://github.com/projectdiscovery/dnsx/blob/43af78839e237ea8cbafe571df1ab0d6cbe7f445/libs/dnsx/dnsx.go#L31).
 - Custom resolver list can be loaded using the `r` flag.
-- Domain name (`wd`) input is mandatory for wildcard elimination.
+- Domain name (`wd`) input is mandatory for manual wildcard elimination.
+- The `--auto-wildcard` flag enables automatic wildcard detection and filtering across multiple domains.
+- The `--auto-wildcard` and `--wildcard-domain` flags cannot be used together.
 - DNS record flag can not be used when using wildcard filtering.
 - DNS resolution (`l`) and DNS brute-forcing (`w`) can't be used together.
 - VPN operators tend to filter high DNS/UDP traffic, therefore the tool might experience packets loss (eg. [Mullvad VPN](https://github.com/projectdiscovery/dnsx/issues/221)). Check [this potential solution](./MULLVAD.md).
