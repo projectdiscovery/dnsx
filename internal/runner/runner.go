@@ -168,7 +168,7 @@ func New(options *Options) (*Runner, error) {
 
 	// Initialize auto-wildcard detector if enabled
 	if options.AutoWildcard {
-		r.autoWildcard = NewAutoWildcardDetector(&r)
+		r.autoWildcard = NewAutoWildcardDetector(r)
 	}
 
 	return &r, nil
@@ -754,7 +754,7 @@ func (r *Runner) worker() {
 
 		// Auto-wildcard filtering
 		if r.options.AutoWildcard && r.autoWildcard != nil {
-			if r.autoWildcard.IsWildcardMatch(domain, dnsData.A, r) {
+			if r.autoWildcard.IsWildcardMatch(domain, dnsData.A, dnsData.AAAA) {
 				gologger.Debug().Msgf("Filtered wildcard subdomain: %s", domain)
 				continue
 			}

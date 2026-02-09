@@ -11,20 +11,22 @@ import (
 
 // AutoWildcardDetector handles automatic wildcard detection for multiple domains
 type AutoWildcardDetector struct {
-	dnsx              interface{}
+	dnsx              *Runner
 	mutex             sync.RWMutex
 	wildcardCache     map[string][]string // domain -> wildcard IPs
 	testedDomains     map[string]bool     // domains we've already tested
+	pending           map[string]chan struct{} // domains currently being tested
 	filteredCount     int
 	wildcardDomainsCount int
 }
 
 // NewAutoWildcardDetector creates a new auto-wildcard detector
-func NewAutoWildcardDetector(dnsxClient interface{}) *AutoWildcardDetector {
+func NewAutoWildcardDetector(dnsxClient *Runner) *AutoWildcardDetector {
 	return &AutoWildcardDetector{
 		dnsx:          dnsxClient,
 		wildcardCache: make(map[string][]string),
 		testedDomains: make(map[string]bool),
+		pending:       make(map[string]chan struct{}),
 	}
 }
 
@@ -48,7 +50,7 @@ func (awd *AutoWildcardDetector) extractRootDomain(host string) string {
 }
 
 // getParentDomains returns all parent domains for wildcard testing
-// Example: a.b.c.example.com -> [c.example.com, b.c.example.com, a.b.c.example.com]
+// Example: a.b.c.example.com -> [example.com, c.example.com, b.c.example.com, a.b.c.example.com]
 func (awd *AutoWildcardDetector) getParentDomains(host string) []string {
 	host = strings.ToLower(strings.TrimSpace(host))
 	rootDomain := awd.extractRootDomain(host)
@@ -71,18 +73,31 @@ func (awd *AutoWildcardDetector) getParentDomains(host string) []string {
 }
 
 // detectWildcard tests a domain for wildcard DNS by querying random subdomains
-func (awd *AutoWildcardDetector) detectWildcard(domain string, dnsxClient interface{}) []string {
+func (awd *AutoWildcardDetector) detectWildcard(domain string) []string {
 	awd.mutex.Lock()
 
-	// Check if already tested
+	// Check if already tested and cached
 	if tested, exists := awd.testedDomains[domain]; exists && tested {
-		cached := awd.wildcardCache[domain]
-		awd.mutex.Unlock()
-		return cached
+		if cached, hasCached := awd.wildcardCache[domain]; hasCached {
+			awd.mutex.Unlock()
+			return cached
+		}
+		// If tested but not in cache, it means detection is in progress
+		// Wait for the pending channel
+		if pendingCh, isPending := awd.pending[domain]; isPending {
+			awd.mutex.Unlock()
+			<-pendingCh // Wait for detection to complete
+			awd.mutex.Lock()
+			cached := awd.wildcardCache[domain]
+			awd.mutex.Unlock()
+			return cached
+		}
 	}
 
-	// Mark as being tested
+	// Mark as being tested and create pending channel
 	awd.testedDomains[domain] = true
+	pendingCh := make(chan struct{})
+	awd.pending[domain] = pendingCh
 	awd.mutex.Unlock()
 
 	// Test with 3 random subdomains
@@ -92,17 +107,25 @@ func (awd *AutoWildcardDetector) detectWildcard(domain string, dnsxClient interf
 	for i := 0; i < testCount; i++ {
 		randomSubdomain := xid.New().String() + "." + domain
 
-		// Query the random subdomain
-		if r, ok := dnsxClient.(*Runner); ok {
-			dnsData, err := r.dnsx.QueryOne(randomSubdomain)
-			if err != nil || dnsData == nil {
-				continue
-			}
+		// Apply rate limiting before querying
+		if awd.dnsx.limiter != nil {
+			awd.dnsx.limiter.Take()
+		}
 
-			// Collect A records
-			for _, ip := range dnsData.A {
-				wildcardIPs[ip]++
-			}
+		// Query the random subdomain
+		dnsData, err := awd.dnsx.dnsx.QueryOne(randomSubdomain)
+		if err != nil || dnsData == nil {
+			continue
+		}
+
+		// Collect A records (IPv4)
+		for _, ip := range dnsData.A {
+			wildcardIPs[ip]++
+		}
+
+		// Collect AAAA records (IPv6)
+		for _, ip := range dnsData.AAAA {
+			wildcardIPs[ip]++
 		}
 	}
 
@@ -114,20 +137,26 @@ func (awd *AutoWildcardDetector) detectWildcard(domain string, dnsxClient interf
 		}
 	}
 
-	// Cache the result
+	// Cache the result and close pending channel
 	awd.mutex.Lock()
 	awd.wildcardCache[domain] = confirmedWildcardIPs
 	if len(confirmedWildcardIPs) > 0 {
 		awd.wildcardDomainsCount++
 		gologger.Debug().Msgf("Wildcard detected for %s: %v", domain, confirmedWildcardIPs)
 	}
+	close(pendingCh)
+	delete(awd.pending, domain)
 	awd.mutex.Unlock()
 
 	return confirmedWildcardIPs
 }
 
 // IsWildcardMatch checks if the given host and its IPs match wildcard patterns
-func (awd *AutoWildcardDetector) IsWildcardMatch(host string, hostIPs []string, runner *Runner) bool {
+func (awd *AutoWildcardDetector) IsWildcardMatch(host string, hostIPv4 []string, hostIPv6 []string) bool {
+	// Combine IPv4 and IPv6 addresses
+	hostIPs := append([]string{}, hostIPv4...)
+	hostIPs = append(hostIPs, hostIPv6...)
+
 	if len(hostIPs) == 0 {
 		return false
 	}
@@ -143,7 +172,7 @@ func (awd *AutoWildcardDetector) IsWildcardMatch(host string, hostIPs []string, 
 			continue
 		}
 
-		wildcardIPs := awd.detectWildcard(parent, runner)
+		wildcardIPs := awd.detectWildcard(parent)
 		for _, ip := range wildcardIPs {
 			wildcardIPSet[ip] = struct{}{}
 		}

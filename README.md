@@ -129,6 +129,7 @@ CONFIGURATIONS:
    -r, -resolver string          list of resolvers to use (file or comma separated)
    -wt, -wildcard-threshold int  wildcard filter threshold (default 5)
    -wd, -wildcard-domain string  domain name for wildcard filtering (other flags will be ignored - only json output is supported)
+   -aw, -auto-wildcard           automatically detect and filter wildcard subdomains
 ```
 
 ## Running dnsx
