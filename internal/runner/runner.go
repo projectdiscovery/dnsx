@@ -28,6 +28,7 @@ import (
 	iputil "github.com/projectdiscovery/utils/ip"
 	mapsutil "github.com/projectdiscovery/utils/maps"
 	sliceutil "github.com/projectdiscovery/utils/slice"
+	"github.com/weppos/publicsuffix-go/publicsuffix"
 )
 
 // Runner is a client for running the enumeration process.
@@ -187,15 +188,47 @@ func (r *Runner) InputWorkerStream() {
 		item := strings.TrimSpace(sc.Text())
 		switch {
 		case iputil.IsCIDR(item):
-			hostsC, _ := mapcidr.IPAddressesAsStream(item)
+			hostsC, err := mapcidr.IPAddressesAsStream(item)
+			if err != nil || hostsC == nil {
+				gologger.Debug().Msgf("Could not expand CIDR %q: %v\n", item, err)
+				continue
+			}
 			for host := range hostsC {
 				r.workerchan <- host
 			}
 		case asn.IsASN(item):
-			hostsC, _ := asn.GetIPAddressesAsStream(item)
-			for host := range hostsC {
-				r.workerchan <- host
+			hostsC, err := asn.GetIPAddressesAsStream(item)
+			if err != nil || hostsC == nil {
+				// Avoid blocking forever when the upstream ASN provider is unavailable/unauthorized.
+				gologger.Debug().Msgf("Could not expand ASN %q: %v\n", item, err)
+				continue
 			}
+			// Consume the stream with a safety timeout to avoid deadlocking the whole scan.
+			deadline := time.NewTimer(30 * time.Second)
+			for {
+				select {
+				case host, ok := <-hostsC:
+					if !ok {
+						deadline.Stop()
+						goto nextItem
+					}
+					r.workerchan <- host
+					// reset inactivity timer
+					if !deadline.Stop() {
+						select {
+						case <-deadline.C:
+						default:
+						}
+					}
+					deadline.Reset(30 * time.Second)
+				case <-deadline.C:
+					gologger.Debug().Msgf("ASN expansion timed out for %q\n", item)
+					goto nextItem
+				}
+			}
+		nextItem:
+			deadline.Stop()
+			continue
 		default:
 			r.workerchan <- item
 		}
@@ -730,12 +763,21 @@ func (r *Runner) worker() {
 				}
 			}
 		}
-		// if wildcard filtering just store the data
+		// if wildcard filtering is enabled, either store data for later filtering (-wd)
+		// or auto-detect and filter results per domain (--auto-wildcard).
 		if r.options.WildcardDomain != "" {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
 				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
 			}
 			continue
+		}
+		if r.options.AutoWildcard {
+			base, err := publicsuffix.Domain(domain)
+			if err == nil && base != "" {
+				if r.IsWildcardWithDomain(domain, base) {
+					continue
+				}
+			}
 		}
 
 		// if response type filter is set, we don't want to ignore them
