@@ -32,22 +32,23 @@ import (
 
 // Runner is a client for running the enumeration process.
 type Runner struct {
-	options             *Options
-	dnsx                *dnsx.DNSX
-	wgoutputworker      *sync.WaitGroup
-	wgresolveworkers    *sync.WaitGroup
-	wgwildcardworker    *sync.WaitGroup
-	workerchan          chan string
-	outputchan          chan string
-	wildcardworkerchan  chan string
-	wildcards           *mapsutil.SyncLockMap[string, struct{}]
-	wildcardscache      map[string][]string
-	wildcardscachemutex sync.Mutex
-	limiter             *ratelimit.Limiter
-	hm                  *hybrid.HybridMap
-	stats               clistats.StatisticsClient
-	tmpStdinFile        string
-	aurora              aurora.Aurora
+	options              *Options
+	dnsx                 *dnsx.DNSX
+	wgoutputworker       *sync.WaitGroup
+	wgresolveworkers     *sync.WaitGroup
+	wgwildcardworker     *sync.WaitGroup
+	workerchan           chan string
+	outputchan           chan string
+	wildcardworkerchan   chan string
+	wildcards            *mapsutil.SyncLockMap[string, struct{}]
+	wildcardscache       map[string][]string
+	wildcardscachemutex  sync.Mutex
+	limiter              *ratelimit.Limiter
+	hm                   *hybrid.HybridMap
+	stats                clistats.StatisticsClient
+	tmpStdinFile         string
+	aurora               aurora.Aurora
+	autoWildcardDetector *autoWildcardDetector
 }
 
 func New(options *Options) (*Runner, error) {
@@ -163,6 +164,10 @@ func New(options *Options) (*Runner, error) {
 		hm:                 hm,
 		stats:              stats,
 		aurora:             aurora.NewAurora(!options.NoColor),
+	}
+
+	if options.AutoWildcard {
+		r.autoWildcardDetector = newAutoWildcardDetector(&r, options.WildcardProbes)
 	}
 
 	return &r, nil
@@ -467,6 +472,13 @@ func (r *Runner) run() error {
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
 
+	if r.autoWildcardDetector != nil {
+		filtered := r.autoWildcardDetector.filteredCount.Load()
+		if filtered > 0 {
+			gologger.Info().Msgf("Auto-wildcard: %d results filtered\n", filtered)
+		}
+	}
+
 	if r.options.WildcardDomain != "" {
 		gologger.Print().Msgf("Starting to filter wildcard subdomains\n")
 		ipDomain := make(map[string]map[string]struct{})
@@ -730,6 +742,12 @@ func (r *Runner) worker() {
 				}
 			}
 		}
+		// auto wildcard detection: filter results matching wildcard IPs
+		if r.autoWildcardDetector != nil && r.autoWildcardDetector.isWildcard(domain, dnsData.A) {
+			gologger.Debug().Msgf("Filtered wildcard result: %s\n", domain)
+			continue
+		}
+
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
