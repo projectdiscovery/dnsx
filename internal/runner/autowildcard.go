@@ -7,6 +7,7 @@ import (
 
 	"github.com/projectdiscovery/gologger"
 	"github.com/rs/xid"
+	"golang.org/x/sync/singleflight"
 )
 
 // autoWildcardDetector detects and tracks wildcard DNS domains automatically.
@@ -21,6 +22,11 @@ type autoWildcardDetector struct {
 	// nonWildcardDomains tracks parent domains confirmed as not wildcard
 	nonWildcardDomains map[string]struct{}
 	mu                 sync.RWMutex
+
+	// sfGroup deduplicates concurrent probes for the same parent domain
+	// so that only goroutines probing the SAME parent block each other,
+	// while lookups for already-cached parents proceed unimpeded.
+	sfGroup singleflight.Group
 
 	numProbes int
 	runner    *Runner
@@ -72,6 +78,8 @@ func (d *autoWildcardDetector) isWildcard(host string, aRecords []string) bool {
 		return false
 	}
 
+	// Fast path: check the cache under a read lock so that lookups for
+	// already-cached parents proceed without blocking.
 	d.mu.RLock()
 	_, isNonWildcard := d.nonWildcardDomains[parent]
 	wildcardSet, isKnownWildcard := d.wildcardIPs[parent]
@@ -82,7 +90,9 @@ func (d *autoWildcardDetector) isWildcard(host string, aRecords []string) bool {
 	}
 
 	if !isKnownWildcard {
-		// First time seeing this parent: probe it
+		// First time seeing this parent: use singleflight so only
+		// goroutines probing the SAME parent block each other while
+		// DNS queries are in progress.
 		wildcardSet = d.probeParent(parent)
 	}
 
@@ -100,76 +110,98 @@ func (d *autoWildcardDetector) isWildcard(host string, aRecords []string) bool {
 	return true
 }
 
+// probeResult bundles the outcome of probing a parent domain so that it can
+// be returned through singleflight.Do as an interface{}.
+type probeResult struct {
+	wildcardIPs map[string]struct{}
+}
+
 // probeParent sends random subdomain queries to the parent domain and determines
-// if it has wildcard DNS configured. Thread-safe with double-checked locking.
+// if it has wildcard DNS configured. Concurrent callers for the same parent are
+// deduplicated via singleflight; callers for different parents proceed in parallel.
 func (d *autoWildcardDetector) probeParent(parent string) map[string]struct{} {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	v, _, _ := d.sfGroup.Do(parent, func() (interface{}, error) {
+		// Re-check the cache: another goroutine in a previous singleflight
+		// call may have already populated the result.
+		d.mu.RLock()
+		if _, ok := d.nonWildcardDomains[parent]; ok {
+			d.mu.RUnlock()
+			return &probeResult{nil}, nil
+		}
+		if ips, ok := d.wildcardIPs[parent]; ok {
+			d.mu.RUnlock()
+			return &probeResult{ips}, nil
+		}
+		d.mu.RUnlock()
 
-	// Double-check under write lock
-	if _, ok := d.nonWildcardDomains[parent]; ok {
-		return nil
-	}
-	if ips, ok := d.wildcardIPs[parent]; ok {
-		return ips
-	}
+		// Send random subdomain queries (no lock held during DNS I/O).
+		var allProbeIPs []map[string]struct{}
+		for i := 0; i < d.numProbes; i++ {
+			randomSub := xid.New().String() + "." + parent
+			result, err := d.runner.dnsx.QueryOne(randomSub)
+			if err != nil || result == nil || len(result.A) == 0 {
+				// If any probe fails to resolve, the domain is not wildcard
+				d.mu.Lock()
+				d.nonWildcardDomains[parent] = struct{}{}
+				d.mu.Unlock()
+				gologger.Debug().Msgf("Auto-wildcard: %s is not wildcard (probe %d got no response)\n", parent, i+1)
+				return &probeResult{nil}, nil
+			}
+			ipSet := make(map[string]struct{})
+			for _, a := range result.A {
+				ipSet[a] = struct{}{}
+			}
+			allProbeIPs = append(allProbeIPs, ipSet)
+		}
 
-	// Send random subdomain queries
-	var allProbeIPs []map[string]struct{}
-	for i := 0; i < d.numProbes; i++ {
-		randomSub := xid.New().String() + "." + parent
-		result, err := d.runner.dnsx.QueryOne(randomSub)
-		if err != nil || result == nil || len(result.A) == 0 {
-			// If any probe fails to resolve, the domain is not wildcard
+		// Verify all probes returned the same set of IPs
+		// Build the intersection of all probe results
+		intersection := allProbeIPs[0]
+		for i := 1; i < len(allProbeIPs); i++ {
+			next := make(map[string]struct{})
+			for ip := range intersection {
+				if _, ok := allProbeIPs[i][ip]; ok {
+					next[ip] = struct{}{}
+				}
+			}
+			intersection = next
+		}
+
+		if len(intersection) == 0 {
+			d.mu.Lock()
 			d.nonWildcardDomains[parent] = struct{}{}
-			gologger.Debug().Msgf("Auto-wildcard: %s is not wildcard (probe %d got no response)\n", parent, i+1)
-			return nil
+			d.mu.Unlock()
+			gologger.Debug().Msgf("Auto-wildcard: %s is not wildcard (no common IPs across probes)\n", parent)
+			return &probeResult{nil}, nil
 		}
-		ipSet := make(map[string]struct{})
-		for _, a := range result.A {
-			ipSet[a] = struct{}{}
-		}
-		allProbeIPs = append(allProbeIPs, ipSet)
-	}
 
-	// Verify all probes returned the same set of IPs
-	// Build the intersection of all probe results
-	intersection := allProbeIPs[0]
-	for i := 1; i < len(allProbeIPs); i++ {
-		next := make(map[string]struct{})
-		for ip := range intersection {
-			if _, ok := allProbeIPs[i][ip]; ok {
-				next[ip] = struct{}{}
+		// Also verify the union is equal to the intersection (all probes returned the same set)
+		union := make(map[string]struct{})
+		for _, probeSet := range allProbeIPs {
+			for ip := range probeSet {
+				union[ip] = struct{}{}
 			}
 		}
-		intersection = next
-	}
-
-	if len(intersection) == 0 {
-		d.nonWildcardDomains[parent] = struct{}{}
-		gologger.Debug().Msgf("Auto-wildcard: %s is not wildcard (no common IPs across probes)\n", parent)
-		return nil
-	}
-
-	// Also verify the union is equal to the intersection (all probes returned the same set)
-	union := make(map[string]struct{})
-	for _, probeSet := range allProbeIPs {
-		for ip := range probeSet {
-			union[ip] = struct{}{}
+		if len(union) != len(intersection) {
+			d.mu.Lock()
+			d.nonWildcardDomains[parent] = struct{}{}
+			d.mu.Unlock()
+			gologger.Debug().Msgf("Auto-wildcard: %s is not wildcard (inconsistent IPs across probes)\n", parent)
+			return &probeResult{nil}, nil
 		}
-	}
-	if len(union) != len(intersection) {
-		d.nonWildcardDomains[parent] = struct{}{}
-		gologger.Debug().Msgf("Auto-wildcard: %s is not wildcard (inconsistent IPs across probes)\n", parent)
-		return nil
-	}
 
-	// This parent domain is a wildcard
-	d.wildcardIPs[parent] = intersection
-	ips := make([]string, 0, len(intersection))
-	for ip := range intersection {
-		ips = append(ips, ip)
-	}
-	gologger.Verbose().Msgf("Auto-wildcard: detected %s as wildcard domain (IPs: %v)\n", parent, ips)
-	return intersection
+		// This parent domain is a wildcard — store under write lock.
+		d.mu.Lock()
+		d.wildcardIPs[parent] = intersection
+		d.mu.Unlock()
+
+		ips := make([]string, 0, len(intersection))
+		for ip := range intersection {
+			ips = append(ips, ip)
+		}
+		gologger.Verbose().Msgf("Auto-wildcard: detected %s as wildcard domain (IPs: %v)\n", parent, ips)
+		return &probeResult{intersection}, nil
+	})
+
+	return v.(*probeResult).wildcardIPs
 }

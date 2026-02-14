@@ -678,6 +678,13 @@ func (r *Runner) worker() {
 			}
 		}
 
+		// auto wildcard detection: filter results matching wildcard IPs
+		// early, before expensive trace/AXFR/CDN/ASN lookups
+		if r.autoWildcardDetector != nil && r.autoWildcardDetector.isWildcard(domain, dnsData.A) {
+			gologger.Debug().Msgf("Filtered wildcard result: %s\n", domain)
+			continue
+		}
+
 		if !r.options.Raw {
 			dnsData.Raw = ""
 		}
@@ -742,12 +749,6 @@ func (r *Runner) worker() {
 				}
 			}
 		}
-		// auto wildcard detection: filter results matching wildcard IPs
-		if r.autoWildcardDetector != nil && r.autoWildcardDetector.isWildcard(domain, dnsData.A) {
-			gologger.Debug().Msgf("Filtered wildcard result: %s\n", domain)
-			continue
-		}
-
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
