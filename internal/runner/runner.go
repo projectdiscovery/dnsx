@@ -680,7 +680,8 @@ func (r *Runner) worker() {
 
 		// auto wildcard detection: filter results matching wildcard IPs
 		// early, before expensive trace/AXFR/CDN/ASN lookups
-		if r.autoWildcardDetector != nil && r.autoWildcardDetector.isWildcard(domain, dnsData.A) {
+		// hosts-file results bypass the wildcard filter (they are not DNS queries)
+		if !dnsData.HostsFile && r.autoWildcardDetector != nil && r.autoWildcardDetector.isWildcard(domain, dnsData.A) {
 			gologger.Debug().Msgf("Filtered wildcard result: %s\n", domain)
 			continue
 		}
