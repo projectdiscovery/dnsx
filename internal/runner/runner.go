@@ -34,6 +34,7 @@ import (
 type Runner struct {
 	options             *Options
 	dnsx                *dnsx.DNSX
+	wildcardDnsx        *dnsx.DNSX
 	wgoutputworker      *sync.WaitGroup
 	wgresolveworkers    *sync.WaitGroup
 	wgwildcardworker    *sync.WaitGroup
@@ -115,9 +116,11 @@ func New(options *Options) (*Runner, error) {
 	}
 
 	// If no option is specified or wildcard filter has been requested use query type A
-	if len(questionTypes) == 0 || options.WildcardDomain != "" {
-		options.A = true
-		questionTypes = append(questionTypes, dns.TypeA)
+	if len(questionTypes) == 0 || options.WildcardDomain != "" || options.StrictWildcard {
+		if !options.A {
+			options.A = true
+			questionTypes = append(questionTypes, dns.TypeA)
+		}
 	}
 	dnsxOptions.QuestionTypes = questionTypes
 	dnsxOptions.QueryAll = options.QueryAll
@@ -149,9 +152,21 @@ func New(options *Options) (*Runner, error) {
 		options.NoColor = true
 	}
 
+	// create a DNS client for wildcard testing with dedicated retry count
+	var wildcardDnsX *dnsx.DNSX
+	if options.StrictWildcard {
+		wOpts := dnsxOptions
+		wOpts.MaxRetries = options.WildcardRetry
+		wildcardDnsX, err = dnsx.New(wOpts)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	r := Runner{
 		options:            options,
 		dnsx:               dnsX,
+		wildcardDnsx:       wildcardDnsX,
 		wgoutputworker:     &sync.WaitGroup{},
 		wgresolveworkers:   &sync.WaitGroup{},
 		wgwildcardworker:   &sync.WaitGroup{},
@@ -548,7 +563,61 @@ func (r *Runner) run() error {
 		gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
 	}
 
+	if r.options.StrictWildcard {
+		gologger.Info().Msgf("Detecting wildcard root subdomains")
+
+		// collect all resolved hostnames from the HybridMap (only those with A records)
+		var allHosts []string
+		r.hm.Scan(func(k, v []byte) error {
+			if v == nil {
+				return nil
+			}
+			var dnsData retryabledns.DNSData
+			if err := json.Unmarshal(v, &dnsData); err != nil {
+				return nil
+			}
+			if len(dnsData.A) == 0 {
+				return nil
+			}
+			allHosts = append(allHosts, string(k))
+			return nil
+		})
+
+		// detect wildcard roots
+		wildcardRoots := r.detectWildcardRoots(allHosts)
+
+		if len(wildcardRoots) > 0 {
+			gologger.Info().Msgf("Found %d wildcard root%s:", len(wildcardRoots), plural(len(wildcardRoots)))
+			for root := range wildcardRoots {
+				gologger.Info().Msgf("  *.%s", root)
+			}
+		} else {
+			gologger.Info().Msgf("Found 0 wildcard roots")
+		}
+
+		// restart output worker and filter results
+		r.startOutputWorker()
+		numFiltered := 0
+		for _, host := range allHosts {
+			if isSubdomainOfWildcard(host, wildcardRoots) {
+				numFiltered++
+			} else {
+				_ = r.lookupAndOutput(host)
+			}
+		}
+		close(r.outputchan)
+		r.wgoutputworker.Wait()
+		gologger.Info().Msgf("Found %d non-wildcard domains (%d wildcard subdomains filtered)", len(allHosts)-numFiltered, numFiltered)
+	}
+
 	return nil
+}
+
+func plural(n int) string {
+	if n != 1 {
+		return "s"
+	}
+	return ""
 }
 
 func (r *Runner) lookupAndOutput(host string) error {
@@ -565,6 +634,23 @@ func (r *Runner) lookupAndOutput(host string) error {
 			}
 			r.outputchan <- dnsDataJson
 			return err
+		}
+	}
+
+	if r.options.Response || r.options.ResponseOnly {
+		if data, ok := r.hm.Get(host); ok {
+			var dnsData retryabledns.DNSData
+			if err := json.Unmarshal(data, &dnsData); err != nil {
+				return err
+			}
+			for _, a := range dnsData.A {
+				if r.options.ResponseOnly {
+					r.outputchan <- a
+				} else {
+					r.outputchan <- fmt.Sprintf("%s [%s] [%s]", host, r.aurora.Magenta("A"), r.aurora.Green(a))
+				}
+			}
+			return nil
 		}
 	}
 
@@ -731,7 +817,7 @@ func (r *Runner) worker() {
 			}
 		}
 		// if wildcard filtering just store the data
-		if r.options.WildcardDomain != "" {
+		if r.options.WildcardDomain != "" || r.options.StrictWildcard {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
 				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
 			}

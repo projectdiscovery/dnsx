@@ -59,6 +59,8 @@ type Options struct {
 	TraceMaxRecursion     int
 	WildcardThreshold     int
 	WildcardDomain        string
+	StrictWildcard        bool
+	WildcardRetry         int
 	ShowStatistics        bool
 	rcodes                map[int]struct{}
 	RCode                 string
@@ -189,6 +191,8 @@ func ParseOptions() *Options {
 		flagSet.StringVarP(&options.Resolvers, "resolver", "r", "", "list of resolvers to use (file or comma separated)"),
 		flagSet.IntVarP(&options.WildcardThreshold, "wildcard-threshold", "wt", 5, "wildcard filter threshold"),
 		flagSet.StringVarP(&options.WildcardDomain, "wildcard-domain", "wd", "", "domain name for wildcard filtering (other flags will be ignored - only json output is supported)"),
+		flagSet.BoolVarP(&options.StrictWildcard, "strict-wildcard", "sw", false, "perform strict wildcard check on all found subdomains"),
+		flagSet.IntVar(&options.WildcardRetry, "wildcard-retry", 5, "number of dns retries for wildcard detection (used with -sw)"),
 		flagSet.StringVar(&options.Proxy, "proxy", "", "proxy to use (eg socks5://127.0.0.1:8080)"),
 	)
 
@@ -307,9 +311,16 @@ func (options *Options) validateOptions() {
 		if options.WildcardDomain != "" {
 			gologger.Fatal().Msgf("wildcard not supported in stream mode")
 		}
+		if options.StrictWildcard {
+			gologger.Fatal().Msgf("strict wildcard not supported in stream mode")
+		}
 		if options.ShowStatistics {
 			gologger.Fatal().Msgf("stats not supported in stream mode")
 		}
+	}
+
+	if options.StrictWildcard && options.WildcardDomain != "" {
+		gologger.Fatal().Msgf("strict-wildcard(sw) and wildcard-domain(wd) can't be used at the same time")
 	}
 }
 
