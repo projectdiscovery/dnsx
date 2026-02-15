@@ -116,7 +116,7 @@ func New(options *Options) (*Runner, error) {
 	}
 
 	// If no option is specified or wildcard filter has been requested use query type A
-	if len(questionTypes) == 0 || options.WildcardDomain != "" {
+	if len(questionTypes) == 0 || options.WildcardDomain != "" || options.AutoWildcard {
 		options.A = true
 		questionTypes = append(questionTypes, dns.TypeA)
 	}
