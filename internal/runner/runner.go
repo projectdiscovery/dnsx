@@ -48,6 +48,7 @@ type Runner struct {
 	stats               clistats.StatisticsClient
 	tmpStdinFile        string
 	aurora              aurora.Aurora
+	awFilter            *autoWildcardFilter
 }
 
 func New(options *Options) (*Runner, error) {
@@ -454,6 +455,11 @@ func (r *Runner) run() error {
 		gologger.Debug().Msgf("Resuming scan using file %s. Restarting at position %d: %s\n", DefaultResumeFile, r.options.resumeCfg.Index, r.options.resumeCfg.ResumeFrom)
 	}
 
+	// Perform auto wildcard detection before starting the scan
+	if r.options.AutoWildcard {
+		r.awFilter = r.detectWildcards()
+	}
+
 	r.startWorkers()
 
 	r.wgresolveworkers.Wait()
@@ -664,6 +670,11 @@ func (r *Runner) worker() {
 					continue
 				}
 			}
+		}
+
+		// Auto-wildcard filtering: skip results that match detected wildcard IPs
+		if r.options.AutoWildcard && r.awFilter != nil && r.awFilter.isAutoWildcard(domain, dnsData.A) {
+			continue
 		}
 
 		if !r.options.Raw {

@@ -79,6 +79,7 @@ type Options struct {
 	DisableUpdateCheck    bool
 	PdcpAuth              string
 	Proxy                 string
+	AutoWildcard          bool
 }
 
 // ShouldLoadResume resume file
@@ -141,6 +142,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.ResponseOnly, "resp-only", "ro", false, "display dns response only"),
 		flagSet.StringVarP(&options.RCode, "rcode", "rc", "", "filter result by dns status code (eg. -rcode noerror,servfail,refused)"),
 		flagSet.StringVarP(&options.ResponseTypeFilter, "response-type-filter", "rtf", "", "return entries with no records for the specified query types (e.g., a, cname)"),
+		flagSet.BoolVarP(&options.AutoWildcard, "auto-wildcard", "aw", false, "automatic wildcard detection and filtering"),
 	)
 
 	flagSet.CreateGroup("probe", "Probe",
@@ -294,6 +296,10 @@ func (options *Options) validateOptions() {
 		gologger.Fatal().Msgf("stdin can be set for one flag")
 	}
 
+	if options.AutoWildcard && options.WildcardDomain != "" {
+		gologger.Fatal().Msgf("auto-wildcard and wildcard-domain can't be used at the same time")
+	}
+
 	if options.Stream {
 		if wordListPresent {
 			gologger.Fatal().Msgf("wordlist not supported in stream mode")
@@ -306,6 +312,9 @@ func (options *Options) validateOptions() {
 		}
 		if options.WildcardDomain != "" {
 			gologger.Fatal().Msgf("wildcard not supported in stream mode")
+		}
+		if options.AutoWildcard {
+			gologger.Fatal().Msgf("auto-wildcard not supported in stream mode")
 		}
 		if options.ShowStatistics {
 			gologger.Fatal().Msgf("stats not supported in stream mode")
