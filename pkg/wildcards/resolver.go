@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/miekg/dns"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
@@ -21,6 +22,7 @@ type Resolver struct {
 
 	levelAnswersNormalCache *mapsutil.SyncLockMap[string, struct{}]
 	wildcardAnswersCache    *mapsutil.SyncLockMap[string, wildcardAnswerCacheValue]
+	cacheMu                 sync.Mutex
 }
 
 type wildcardAnswerCacheValue struct {
@@ -176,6 +178,9 @@ func (w *Resolver) LookupHost(host string, ip string) (bool, map[string]struct{}
 			}
 		}
 
+		// Lock to prevent TOCTOU race when multiple goroutines probe the same wildcard level
+		w.cacheMu.Lock()
+		cachedValue, cachedValueOk = w.wildcardAnswersCache.Get(original)
 		if !cachedValueOk {
 			cachedValue.IPS = mapsutil.NewSyncLockMap[string, struct{}]()
 		}
@@ -183,6 +188,8 @@ func (w *Resolver) LookupHost(host string, ip string) (bool, map[string]struct{}
 			_ = cachedValue.IPS.Set(record, struct{}{})
 		}
 		_ = w.wildcardAnswersCache.Set(original, cachedValue)
+		w.cacheMu.Unlock()
+
 		if _, ipExists := cachedValue.IPS.Get(ip); ipExists {
 			return true, getSyncLockMapValues(cachedValue.IPS)
 		}
@@ -200,10 +207,8 @@ func (w *Resolver) GetAllWildcardIPs() map[string]struct{} {
 	ips := make(map[string]struct{})
 
 	_ = w.wildcardAnswersCache.Iterate(func(key string, value wildcardAnswerCacheValue) error {
-		for ip := range value.IPS.Map {
-			if _, ok := ips[ip]; !ok {
-				ips[ip] = struct{}{}
-			}
+		for ip := range getSyncLockMapValues(value.IPS) {
+			ips[ip] = struct{}{}
 		}
 		return nil
 	})
