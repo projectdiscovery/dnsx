@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/logrusorgru/aurora"
@@ -17,6 +18,7 @@ import (
 	asnmap "github.com/projectdiscovery/asnmap/libs"
 	"github.com/projectdiscovery/clistats"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
+	"github.com/projectdiscovery/dnsx/pkg/wildcards"
 	"github.com/projectdiscovery/goconfig"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/hmap/store/hybrid"
@@ -28,6 +30,7 @@ import (
 	iputil "github.com/projectdiscovery/utils/ip"
 	mapsutil "github.com/projectdiscovery/utils/maps"
 	sliceutil "github.com/projectdiscovery/utils/slice"
+	"golang.org/x/net/publicsuffix"
 )
 
 // Runner is a client for running the enumeration process.
@@ -48,6 +51,11 @@ type Runner struct {
 	stats               clistats.StatisticsClient
 	tmpStdinFile        string
 	aurora              aurora.Aurora
+
+	// auto-wildcard fields
+	wildcardResolver      *wildcards.Resolver
+	autoWildcardDomains   []string
+	wildcardFilteredCount atomic.Int64
 }
 
 func New(options *Options) (*Runner, error) {
@@ -115,9 +123,11 @@ func New(options *Options) (*Runner, error) {
 	}
 
 	// If no option is specified or wildcard filter has been requested use query type A
-	if len(questionTypes) == 0 || options.WildcardDomain != "" {
+	if len(questionTypes) == 0 || options.WildcardDomain != "" || options.AutoWildcard {
+		if !options.A {
+			questionTypes = append(questionTypes, dns.TypeA)
+		}
 		options.A = true
-		questionTypes = append(questionTypes, dns.TypeA)
 	}
 	dnsxOptions.QuestionTypes = questionTypes
 	dnsxOptions.QueryAll = options.QueryAll
@@ -279,8 +289,20 @@ func (r *Runner) prepareInput() error {
 	}
 
 	numHosts := 0
+	// Collect domains for auto-wildcard detection during input processing
+	var awDomainSet map[string]struct{}
+	if r.options.AutoWildcard {
+		awDomainSet = make(map[string]struct{})
+	}
 	for item := range sc {
 		item := normalize(item)
+
+		// Capture root domains for auto-wildcard
+		if r.options.AutoWildcard && r.options.Domains != "" {
+			// In bruteforce mode, item is the root domain
+			awDomainSet[item] = struct{}{}
+		}
+
 		var hosts []string
 		switch {
 		case strings.Contains(item, "FUZZ"):
@@ -320,6 +342,31 @@ func (r *Runner) prepareInput() error {
 		default:
 			hosts = []string{item}
 			numHosts += r.addHostsToHMapFromList(hosts)
+		}
+	}
+
+	// For auto-wildcard in list mode (-l), extract root domains from hosts
+	if r.options.AutoWildcard && r.options.Domains == "" {
+		if awDomainSet == nil {
+			awDomainSet = make(map[string]struct{})
+		}
+		r.hm.Scan(func(k, _ []byte) error {
+			host := string(k)
+			if iputil.IsIP(host) {
+				return nil
+			}
+			domain, err := publicsuffix.EffectiveTLDPlusOne(host)
+			if err == nil && domain != "" {
+				awDomainSet[domain] = struct{}{}
+			}
+			return nil
+		})
+	}
+
+	// Store collected auto-wildcard domains
+	if r.options.AutoWildcard && len(awDomainSet) > 0 {
+		for d := range awDomainSet {
+			r.autoWildcardDomains = append(r.autoWildcardDomains, d)
 		}
 	}
 	if r.options.ShowStatistics {
@@ -449,6 +496,28 @@ func (r *Runner) run() error {
 		return err
 	}
 
+	// Setup auto-wildcard resolver after input preparation
+	if r.options.AutoWildcard {
+		if len(r.autoWildcardDomains) > 0 {
+			gologger.Info().Msgf("Auto-wildcard detection enabled for %d domain(s): %s\n",
+				len(r.autoWildcardDomains), strings.Join(r.autoWildcardDomains, ", "))
+
+			wcOptions := dnsx.DefaultOptions
+			wcOptions.BaseResolvers = r.dnsx.Options.BaseResolvers
+			wcOptions.MaxRetries = r.options.Retries
+			wcOptions.Timeout = r.options.Timeout
+			wcOptions.Proxy = r.options.Proxy
+
+			wcClient, err := dnsx.New(wcOptions)
+			if err != nil {
+				return fmt.Errorf("could not create wildcard resolver: %w", err)
+			}
+			r.wildcardResolver = wildcards.NewResolverWithClient(r.autoWildcardDomains, wcClient)
+		} else {
+			gologger.Warning().Msg("Auto-wildcard: no domains detected, wildcard filtering disabled\n")
+		}
+	}
+
 	// if resume is enabled inform the user
 	if r.options.ShouldLoadResume() && r.options.resumeCfg.Index > 0 {
 		gologger.Debug().Msgf("Resuming scan using file %s. Restarting at position %d: %s\n", DefaultResumeFile, r.options.resumeCfg.Index, r.options.resumeCfg.ResumeFrom)
@@ -546,6 +615,13 @@ func (r *Runner) run() error {
 		// waiting output worker
 		r.wgoutputworker.Wait()
 		gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
+	}
+
+	// Log auto-wildcard stats
+	if r.options.AutoWildcard {
+		if count := r.wildcardFilteredCount.Load(); count > 0 {
+			gologger.Info().Msgf("%d wildcard subdomains filtered\n", count)
+		}
 	}
 
 	return nil
@@ -730,6 +806,14 @@ func (r *Runner) worker() {
 				}
 			}
 		}
+		// Auto-wildcard inline filtering
+		if r.options.AutoWildcard && r.wildcardResolver != nil {
+			if r.isAutoWildcard(domain, &dnsData) {
+				r.wildcardFilteredCount.Add(1)
+				continue
+			}
+		}
+
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
@@ -944,4 +1028,17 @@ func (r *Runner) wildcardWorker() {
 			_ = r.wildcards.Set(host, struct{}{})
 		}
 	}
+}
+
+// isAutoWildcard checks if a host is a wildcard using the auto-wildcard resolver
+func (r *Runner) isAutoWildcard(host string, dnsData *dnsx.ResponseData) bool {
+	if dnsData.DNSData == nil || len(dnsData.A) == 0 {
+		return false
+	}
+	for _, ip := range dnsData.A {
+		if isWildcard, _ := r.wildcardResolver.LookupHost(host, ip); isWildcard {
+			return true
+		}
+	}
+	return false
 }
