@@ -129,6 +129,8 @@ CONFIGURATIONS:
    -r, -resolver string          list of resolvers to use (file or comma separated)
    -wt, -wildcard-threshold int  wildcard filter threshold (default 5)
    -wd, -wildcard-domain string  domain name for wildcard filtering (other flags will be ignored - only json output is supported)
+   -sw, -strict-wildcard         perform strict wildcard check on all found subdomains
+   -wildcard-retry int           number of dns retries for wildcard detection (used with -sw) (default 5)
 ```
 
 ## Running dnsx
@@ -405,6 +407,35 @@ A special feature of `dnsx` is its ability to handle **multi-level DNS based wil
 dnsx -l subdomain_list.txt -wd airbnb.com -o output.txt
 ```
 
+### Strict wildcard filtering
+
+The `-sw` flag provides automatic wildcard detection and filtering without requiring you to specify which domains are wildcards. It works by querying random subdomains for each parent domain — if a random subdomain resolves, the parent is a wildcard root and all its subdomains are filtered from the output.
+
+```console
+$ dnsx -l domains.txt -sw
+
+[INF] Detecting wildcard root subdomains
+[INF] Found 8 wildcard roots:
+[INF]   *.netlify.com
+[INF]   *.dev.projectdiscovery.io
+[INF]   *.netlify.app
+[INF]   *.ngrok.io
+[INF]   *.wordpress.com
+[INF]   *.vercel.app
+[INF]   *.github.io
+[INF]   *.herokuapp.com
+cloud.projectdiscovery.io
+docs.projectdiscovery.io
+www.example.com
+[INF] Found 3 non-wildcard domains (11 wildcard subdomains filtered)
+```
+
+The wildcard retry count can be configured with `-wildcard-retry` (default 5):
+
+```console
+dnsx -l subdomain_list.txt -sw -wildcard-retry 10
+```
+
 ---------
 
 ### Dnsx as a library
@@ -462,8 +493,8 @@ func main() {
 - As default, `dnsx` checks for **A** record.
 - As default `dnsx` uses Google, Cloudflare, Quad9 [resolver](https://github.com/projectdiscovery/dnsx/blob/43af78839e237ea8cbafe571df1ab0d6cbe7f445/libs/dnsx/dnsx.go#L31).
 - Custom resolver list can be loaded using the `r` flag.
-- Domain name (`wd`) input is mandatory for wildcard elimination.
-- DNS record flag can not be used when using wildcard filtering.
+- Domain name (`wd`) input is required for wildcard filtering with `-wd`. The `-sw` flag provides automatic wildcard detection without needing `-wd`.
+- DNS record flags cannot be used when using wildcard filtering (`-wd` or `-sw`).
 - DNS resolution (`l`) and DNS brute-forcing (`w`) can't be used together.
 - VPN operators tend to filter high DNS/UDP traffic, therefore the tool might experience packets loss (eg. [Mullvad VPN](https://github.com/projectdiscovery/dnsx/issues/221)). Check [this potential solution](./MULLVAD.md).
 
