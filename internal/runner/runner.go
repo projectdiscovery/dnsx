@@ -43,6 +43,7 @@ type Runner struct {
 	wildcards           *mapsutil.SyncLockMap[string, struct{}]
 	wildcardscache      map[string][]string
 	wildcardscachemutex sync.Mutex
+	autoWildcardDomains *mapsutil.SyncLockMap[string, bool]
 	limiter             *ratelimit.Limiter
 	hm                  *hybrid.HybridMap
 	stats               clistats.StatisticsClient
@@ -159,6 +160,7 @@ func New(options *Options) (*Runner, error) {
 		wildcardworkerchan: make(chan string),
 		wildcards:          mapsutil.NewSyncLockMap[string, struct{}](),
 		wildcardscache:     make(map[string][]string),
+		autoWildcardDomains: mapsutil.NewSyncLockMap[string, bool](),
 		limiter:            limiter,
 		hm:                 hm,
 		stats:              stats,
@@ -548,6 +550,11 @@ func (r *Runner) run() error {
 		gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
 	}
 
+	if r.options.AutoWildcard {
+		gologger.Print().Msgf("Starting auto wildcard detection and filtering\n")
+		r.runAutoWildcardFiltering()
+	}
+
 	return nil
 }
 
@@ -570,6 +577,91 @@ func (r *Runner) lookupAndOutput(host string) error {
 
 	r.outputchan <- host
 	return nil
+}
+
+func (r *Runner) runAutoWildcardFiltering() {
+	ipDomain := make(map[string]map[string]struct{})
+	domainHosts := make(map[string][]string)
+	listIPs := []string{}
+	
+	// Scan all stored DNS data and group by IP and domain
+	r.hm.Scan(func(k, v []byte) error {
+		var dnsdata retryabledns.DNSData
+		if err := json.Unmarshal(v, &dnsdata); err != nil {
+			return nil
+		}
+
+		host := string(k)
+		baseDomain := r.GetBaseDomain(host)
+		
+		// Track hosts per base domain
+		if _, ok := domainHosts[baseDomain]; !ok {
+			domainHosts[baseDomain] = make([]string, 0)
+		}
+		domainHosts[baseDomain] = append(domainHosts[baseDomain], host)
+
+		for _, a := range dnsdata.A {
+			_, ok := ipDomain[a]
+			if !ok {
+				ipDomain[a] = make(map[string]struct{})
+				listIPs = append(listIPs, a)
+			}
+			ipDomain[a][host] = struct{}{}
+		}
+
+		return nil
+	})
+
+	gologger.Debug().Msgf("Found %d unique IPs across %d domains\n", len(listIPs), len(domainHosts))
+	
+	// Start wildcard workers for auto detection
+	numThreads := r.options.Threads
+	if numThreads > len(listIPs) {
+		numThreads = len(listIPs)
+	}
+	for i := 0; i < numThreads; i++ {
+		r.wgwildcardworker.Add(1)
+		go r.wildcardWorkerAuto()
+	}
+
+	// Send hosts to wildcard worker for checking
+	seen := make(map[string]struct{})
+	for _, hosts := range domainHosts {
+		for _, host := range hosts {
+			if _, ok := seen[host]; !ok {
+				seen[host] = struct{}{}
+				r.wildcardworkerchan <- host
+			}
+		}
+	}
+	close(r.wildcardworkerchan)
+	r.wgwildcardworker.Wait()
+
+	// Restart output worker
+	r.startOutputWorker()
+	
+	// Output non-wildcard results
+	seen = make(map[string]struct{})
+	seenRemovedSubdomains := make(map[string]struct{})
+	numRemovedSubdomains := 0
+	
+	for _, hosts := range domainHosts {
+		for _, host := range hosts {
+			if _, ok := seen[host]; !ok {
+				seen[host] = struct{}{}
+				if !r.wildcards.Has(host) {
+					_ = r.lookupAndOutput(host)
+				} else {
+					numRemovedSubdomains++
+					seenRemovedSubdomains[host] = struct{}{}
+				}
+			}
+		}
+	}
+	
+	close(r.outputchan)
+	r.wgoutputworker.Wait()
+	gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
 }
 
 func (r *Runner) runStream() error {
@@ -731,7 +823,7 @@ func (r *Runner) worker() {
 			}
 		}
 		// if wildcard filtering just store the data
-		if r.options.WildcardDomain != "" {
+		if r.options.WildcardDomain != "" || r.options.AutoWildcard {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
 				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
 			}
@@ -940,6 +1032,21 @@ func (r *Runner) wildcardWorker() {
 			break
 		}
 		if r.IsWildcard(host) {
+			// mark this host as a wildcard subdomain
+			_ = r.wildcards.Set(host, struct{}{})
+		}
+	}
+}
+
+func (r *Runner) wildcardWorkerAuto() {
+	defer r.wgwildcardworker.Done()
+
+	for {
+		host, more := <-r.wildcardworkerchan
+		if !more {
+			break
+		}
+		if r.IsWildcardAuto(host) {
 			// mark this host as a wildcard subdomain
 			_ = r.wildcards.Set(host, struct{}{})
 		}
