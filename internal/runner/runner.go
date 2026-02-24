@@ -24,11 +24,11 @@ import (
 	"github.com/projectdiscovery/mapcidr/asn"
 	"github.com/projectdiscovery/ratelimit"
 	"github.com/projectdiscovery/retryabledns"
-	"golang.org/x/net/publicsuffix"
 	fileutil "github.com/projectdiscovery/utils/file"
 	iputil "github.com/projectdiscovery/utils/ip"
 	mapsutil "github.com/projectdiscovery/utils/maps"
 	sliceutil "github.com/projectdiscovery/utils/slice"
+	"golang.org/x/net/publicsuffix"
 )
 
 // Runner is a client for running the enumeration process.
