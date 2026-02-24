@@ -141,6 +141,34 @@ func TestRunner_fileInput_prepareInput(t *testing.T) {
 	require.ElementsMatch(t, expected, got, "could not match expected output")
 }
 
+func TestRunner_getWildcardDomainForHost(t *testing.T) {
+	t.Run("uses explicit wildcard domain when provided", func(t *testing.T) {
+		r := Runner{options: &Options{WildcardDomain: "example.com"}}
+		domain, ok := r.getWildcardDomainForHost("api.foo.bar")
+		require.True(t, ok)
+		require.Equal(t, "example.com", domain)
+	})
+
+	t.Run("derives effective tld+1 when auto wildcard enabled", func(t *testing.T) {
+		r := Runner{options: &Options{AutoWildcard: true}}
+		domain, ok := r.getWildcardDomainForHost("api.dev.example.co.uk")
+		require.True(t, ok)
+		require.Equal(t, "example.co.uk", domain)
+	})
+
+	t.Run("returns false for ip input", func(t *testing.T) {
+		r := Runner{options: &Options{AutoWildcard: true}}
+		_, ok := r.getWildcardDomainForHost("1.1.1.1")
+		require.False(t, ok)
+	})
+
+	t.Run("returns false when feature is disabled", func(t *testing.T) {
+		r := Runner{options: &Options{}}
+		_, ok := r.getWildcardDomainForHost("api.example.com")
+		require.False(t, ok)
+	})
+}
+
 func TestRunner_InputWorkerStream(t *testing.T) {
 	options := &Options{
 		Hosts: "tests/stream_input.txt",
