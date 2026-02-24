@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/rs/xid"
+	"github.com/weppos/publicsuffix-go/publicsuffix"
 )
 
 // IsWildcard checks if a host is wildcard
@@ -94,6 +95,20 @@ func (r *Runner) IsWildcardDomain(domain string) bool {
 
 // GetBaseDomain extracts the base domain from a subdomain
 func (r *Runner) GetBaseDomain(host string) string {
+	// Trim trailing dot if present
+	host = strings.TrimSuffix(host, ".")
+	
+	// Use publicsuffix library for accurate base domain extraction
+	if domain, err := publicsuffix.Parse(host); err == nil {
+		// domain has fields: TLD, SLD, TRD
+		// For co.uk, TLD is "co.uk", SLD is "example", TRD is "sub"
+		// We want eTLD+1: SLD + "." + TLD
+		if domain.TLD != "" && domain.SLD != "" {
+			return domain.SLD + "." + domain.TLD
+		}
+	}
+	
+	// Fallback to original logic if publicsuffix parsing fails
 	parts := strings.Split(host, ".")
 	if len(parts) <= 2 {
 		return host
