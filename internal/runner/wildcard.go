@@ -6,8 +6,28 @@ import (
 	"github.com/rs/xid"
 )
 
-// IsWildcard checks if a host is wildcard
-func (r *Runner) IsWildcard(host string) bool {
+// wildcardHosts returns the list of base domains at each subdomain level that
+// should be probed with a random prefix to detect wildcard DNS.
+// e.g. for host="deep.sub.example.com", baseDomain="example.com" it returns
+// ["example.com", "sub.example.com"].
+func wildcardHosts(host, baseDomain string) []string {
+	var hosts []string
+	hosts = append(hosts, baseDomain)
+
+	subdomainPart := strings.TrimSuffix(host, "."+baseDomain)
+	subdomainTokens := strings.Split(subdomainPart, ".")
+
+	if len(subdomainTokens) > 0 {
+		for i := 1; i < len(subdomainTokens); i++ {
+			newhost := strings.Join(subdomainTokens[i:], ".") + "." + baseDomain
+			hosts = append(hosts, newhost)
+		}
+	}
+	return hosts
+}
+
+// IsWildcard checks if a host is a wildcard subdomain under baseDomain.
+func (r *Runner) IsWildcard(host, baseDomain string) bool {
 	orig := make(map[string]struct{})
 	wildcards := make(map[string]struct{})
 
@@ -19,25 +39,8 @@ func (r *Runner) IsWildcard(host string) bool {
 		orig[A] = struct{}{}
 	}
 
-	subdomainPart := strings.TrimSuffix(host, "."+r.options.WildcardDomain)
-	subdomainTokens := strings.Split(subdomainPart, ".")
-
-	// Build an array by preallocating a slice of a length
-	// and create the wildcard generation prefix.
-	// We use a rand prefix at the beginning like %rand%.domain.tld
-	// A permutation is generated for each level of the subdomain.
-	var hosts []string
-	hosts = append(hosts, r.options.WildcardDomain)
-
-	if len(subdomainTokens) > 0 {
-		for i := 1; i < len(subdomainTokens); i++ {
-			newhost := strings.Join(subdomainTokens[i:], ".") + "." + r.options.WildcardDomain
-			hosts = append(hosts, newhost)
-		}
-	}
-
 	// Iterate over all the hosts generated for rand.
-	for _, h := range hosts {
+	for _, h := range wildcardHosts(host, baseDomain) {
 		r.wildcardscachemutex.Lock()
 		listip, ok := r.wildcardscache[h]
 		r.wildcardscachemutex.Unlock()

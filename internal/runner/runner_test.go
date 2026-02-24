@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/projectdiscovery/hmap/store/hybrid"
+	"github.com/projectdiscovery/retryabledns"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/stretchr/testify/require"
 )
@@ -114,6 +115,77 @@ func TestRunner_asnInput_prepareInput(t *testing.T) {
 
 func isUnauthorizedError(err error) bool {
 	return err != nil && stringsutil.ContainsAny(err.Error(), "unauthorized")
+}
+
+// TestAutoWildcardMutualExclusion verifies that combining -aw and -wd is
+// rejected by the dedicated validation helper.
+func TestAutoWildcardMutualExclusion(t *testing.T) {
+	// both flags set → error
+	opts := &Options{AutoWildcard: true, WildcardDomain: "example.com"}
+	require.Error(t, opts.validateAutoWildcardFlags(), "expected error when both -aw and -wd are set")
+
+	// only AutoWildcard → ok
+	opts = &Options{AutoWildcard: true}
+	require.NoError(t, opts.validateAutoWildcardFlags())
+
+	// only WildcardDomain → ok
+	opts = &Options{WildcardDomain: "example.com"}
+	require.NoError(t, opts.validateAutoWildcardFlags())
+
+	// neither → ok
+	opts = &Options{}
+	require.NoError(t, opts.validateAutoWildcardFlags())
+}
+
+// TestAutoWildcardStoresData verifies that storeDNSData persists DNS records
+// into the hybrid map, which is the mechanism the worker uses when
+// AutoWildcard (or WildcardDomain) is enabled.
+func TestAutoWildcardStoresData(t *testing.T) {
+	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+	require.Nil(t, err, "could not create hybrid map")
+	defer hm.Close()
+
+	r := &Runner{
+		options: &Options{AutoWildcard: true},
+		hm:      hm,
+	}
+
+	dnsData := &retryabledns.DNSData{
+		Host: "test.example.com",
+		A:    []string{"1.2.3.4"},
+	}
+
+	err = r.storeDNSData(dnsData)
+	require.Nil(t, err, "storeDNSData should succeed")
+
+	stored, ok := hm.Get("test.example.com")
+	require.True(t, ok, "DNS data should be stored in hm when AutoWildcard is set")
+	require.NotEmpty(t, stored, "stored data must not be empty")
+}
+
+// TestIsWildcardParameterized verifies that wildcardHosts (the core of
+// IsWildcard) uses the passed baseDomain parameter — not any global state —
+// to build the set of domains to probe.
+func TestIsWildcardParameterized(t *testing.T) {
+	// single-level subdomain: only the baseDomain itself is probed
+	hosts := wildcardHosts("sub.example.com", "example.com")
+	require.Equal(t, []string{"example.com"}, hosts)
+
+	// two-level subdomain: baseDomain + intermediate level probed
+	hosts = wildcardHosts("deep.sub.example.com", "example.com")
+	require.Equal(t, []string{"example.com", "sub.example.com"}, hosts)
+
+	// different base domain entirely — must reflect the new baseDomain
+	hosts = wildcardHosts("sub.other.com", "other.com")
+	require.Equal(t, []string{"other.com"}, hosts)
+
+	// multi-part TLD (e.g. .co.uk)
+	hosts = wildcardHosts("sub.example.co.uk", "example.co.uk")
+	require.Equal(t, []string{"example.co.uk"}, hosts)
+
+	// two-level under multi-part TLD
+	hosts = wildcardHosts("deep.sub.example.co.uk", "example.co.uk")
+	require.Equal(t, []string{"example.co.uk", "sub.example.co.uk"}, hosts)
 }
 
 func TestRunner_fileInput_prepareInput(t *testing.T) {

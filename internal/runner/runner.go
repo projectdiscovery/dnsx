@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/net/publicsuffix"
+
 	"github.com/logrusorgru/aurora"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
@@ -30,6 +32,15 @@ import (
 	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
+// wildcardTask carries the host to test alongside the base domain that should
+// be used for subdomain extraction in IsWildcard.  Using a struct instead of a
+// plain string lets us support multiple base domains (auto-wildcard mode) while
+// keeping the channel as a single, unambiguous type.
+type wildcardTask struct {
+	host       string
+	baseDomain string
+}
+
 // Runner is a client for running the enumeration process.
 type Runner struct {
 	options             *Options
@@ -39,7 +50,7 @@ type Runner struct {
 	wgwildcardworker    *sync.WaitGroup
 	workerchan          chan string
 	outputchan          chan string
-	wildcardworkerchan  chan string
+	wildcardworkerchan  chan wildcardTask
 	wildcards           *mapsutil.SyncLockMap[string, struct{}]
 	wildcardscache      map[string][]string
 	wildcardscachemutex sync.Mutex
@@ -114,8 +125,10 @@ func New(options *Options) (*Runner, error) {
 		questionTypes = append(questionTypes, dns.TypeCAA)
 	}
 
-	// If no option is specified or wildcard filter has been requested use query type A
-	if len(questionTypes) == 0 || options.WildcardDomain != "" {
+	// If no option is specified, or wildcard filtering is requested and TypeA has
+	// not already been added, ensure TypeA is queried.  The !options.A guard
+	// prevents a duplicate dns.TypeA entry when the caller also passes -a.
+	if len(questionTypes) == 0 || ((options.WildcardDomain != "" || options.AutoWildcard) && !options.A) {
 		options.A = true
 		questionTypes = append(questionTypes, dns.TypeA)
 	}
@@ -156,7 +169,7 @@ func New(options *Options) (*Runner, error) {
 		wgresolveworkers:   &sync.WaitGroup{},
 		wgwildcardworker:   &sync.WaitGroup{},
 		workerchan:         make(chan string),
-		wildcardworkerchan: make(chan string),
+		wildcardworkerchan: make(chan wildcardTask),
 		wildcards:          mapsutil.NewSyncLockMap[string, struct{}](),
 		wildcardscache:     make(map[string][]string),
 		limiter:            limiter,
@@ -509,7 +522,7 @@ func (r *Runner) run() error {
 				for host := range hosts {
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
-						r.wildcardworkerchan <- host
+						r.wildcardworkerchan <- wildcardTask{host: host, baseDomain: r.options.WildcardDomain}
 					}
 				}
 			}
@@ -530,6 +543,87 @@ func (r *Runner) run() error {
 						_ = r.lookupAndOutput(host)
 					}
 				} else if !r.wildcards.Has(host) {
+					if _, ok := seen[host]; !ok {
+						seen[host] = struct{}{}
+						_ = r.lookupAndOutput(host)
+					}
+				} else {
+					if _, ok := seenRemovedSubdomains[host]; !ok {
+						numRemovedSubdomains++
+						seenRemovedSubdomains[host] = struct{}{}
+					}
+				}
+			}
+		}
+		close(r.outputchan)
+		// waiting output worker
+		r.wgoutputworker.Wait()
+		gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
+	}
+
+	if r.options.AutoWildcard {
+		gologger.Print().Msgf("Starting to filter wildcard subdomains\n")
+		ipDomain := make(map[string]map[string]struct{})
+		listIPs := []string{}
+		// prepare in-memory structure similarly to shuffledns
+		r.hm.Scan(func(k, v []byte) error {
+			var dnsdata retryabledns.DNSData
+			if err := json.Unmarshal(v, &dnsdata); err != nil {
+				// the item has no A record – ignore
+				return nil
+			}
+
+			for _, a := range dnsdata.A {
+				_, ok := ipDomain[a]
+				if !ok {
+					ipDomain[a] = make(map[string]struct{})
+					listIPs = append(listIPs, a)
+				}
+				ipDomain[a][string(k)] = struct{}{}
+			}
+
+			return nil
+		})
+
+		gologger.Debug().Msgf("Found %d unique IPs:%s\n", len(listIPs), strings.Join(listIPs, ", "))
+		// wildcard workers
+		numThreads := r.options.Threads
+		if numThreads > len(listIPs) {
+			numThreads = len(listIPs)
+		}
+		for i := 0; i < numThreads; i++ {
+			r.wgwildcardworker.Add(1)
+			go r.wildcardWorker()
+		}
+
+		seen := make(map[string]struct{})
+		for _, a := range listIPs {
+			hosts := ipDomain[a]
+			if len(hosts) >= r.options.WildcardThreshold {
+				for host := range hosts {
+					if _, ok := seen[host]; !ok {
+						seen[host] = struct{}{}
+						baseDomain, err := publicsuffix.EffectiveTLDPlusOne(host)
+						if err != nil {
+							// IPs, bare TLDs, or invalid names – skip
+							continue
+						}
+						r.wildcardworkerchan <- wildcardTask{host: host, baseDomain: baseDomain}
+					}
+				}
+			}
+		}
+		close(r.wildcardworkerchan)
+		r.wgwildcardworker.Wait()
+
+		// restart output worker to emit the surviving hosts
+		r.startOutputWorker()
+		seen = make(map[string]struct{})
+		seenRemovedSubdomains := make(map[string]struct{})
+		numRemovedSubdomains := 0
+		for _, A := range listIPs {
+			for host := range ipDomain[A] {
+				if !r.wildcards.Has(host) {
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
 						_ = r.lookupAndOutput(host)
@@ -731,7 +825,7 @@ func (r *Runner) worker() {
 			}
 		}
 		// if wildcard filtering just store the data
-		if r.options.WildcardDomain != "" {
+		if r.options.WildcardDomain != "" || r.options.AutoWildcard {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
 				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
 			}
@@ -935,13 +1029,13 @@ func (r *Runner) wildcardWorker() {
 	defer r.wgwildcardworker.Done()
 
 	for {
-		host, more := <-r.wildcardworkerchan
+		task, more := <-r.wildcardworkerchan
 		if !more {
 			break
 		}
-		if r.IsWildcard(host) {
+		if r.IsWildcard(task.host, task.baseDomain) {
 			// mark this host as a wildcard subdomain
-			_ = r.wildcards.Set(host, struct{}{})
+			_ = r.wildcards.Set(task.host, struct{}{})
 		}
 	}
 }
