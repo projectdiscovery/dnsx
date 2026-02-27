@@ -32,22 +32,23 @@ import (
 
 // Runner is a client for running the enumeration process.
 type Runner struct {
-	options             *Options
-	dnsx                *dnsx.DNSX
-	wgoutputworker      *sync.WaitGroup
-	wgresolveworkers    *sync.WaitGroup
-	wgwildcardworker    *sync.WaitGroup
-	workerchan          chan string
-	outputchan          chan string
-	wildcardworkerchan  chan string
-	wildcards           *mapsutil.SyncLockMap[string, struct{}]
-	wildcardscache      map[string][]string
-	wildcardscachemutex sync.Mutex
-	limiter             *ratelimit.Limiter
-	hm                  *hybrid.HybridMap
-	stats               clistats.StatisticsClient
-	tmpStdinFile        string
-	aurora              aurora.Aurora
+	options              *Options
+	dnsx                 *dnsx.DNSX
+	wgoutputworker       *sync.WaitGroup
+	wgresolveworkers     *sync.WaitGroup
+	wgwildcardworker     *sync.WaitGroup
+	workerchan           chan string
+	outputchan           chan string
+	wildcardworkerchan   chan string
+	wildcards            *mapsutil.SyncLockMap[string, struct{}]
+	wildcardscache       map[string][]string
+	wildcardscachemutex  sync.Mutex
+	autoWildcardDetector *autoWildcardDetector
+	limiter              *ratelimit.Limiter
+	hm                   *hybrid.HybridMap
+	stats                clistats.StatisticsClient
+	tmpStdinFile         string
+	aurora               aurora.Aurora
 }
 
 func New(options *Options) (*Runner, error) {
@@ -115,7 +116,7 @@ func New(options *Options) (*Runner, error) {
 	}
 
 	// If no option is specified or wildcard filter has been requested use query type A
-	if len(questionTypes) == 0 || options.WildcardDomain != "" {
+	if len(questionTypes) == 0 || options.WildcardDomain != "" || options.AutoWildcard {
 		options.A = true
 		questionTypes = append(questionTypes, dns.TypeA)
 	}
@@ -163,6 +164,10 @@ func New(options *Options) (*Runner, error) {
 		hm:                 hm,
 		stats:              stats,
 		aurora:             aurora.NewAurora(!options.NoColor),
+	}
+
+	if options.AutoWildcard {
+		r.autoWildcardDetector = newAutoWildcardDetector(&r)
 	}
 
 	return &r, nil
@@ -663,6 +668,14 @@ func (r *Runner) worker() {
 				if _, ok := r.options.rcodes[dnsData.StatusCodeRaw]; !ok {
 					continue
 				}
+			}
+		}
+
+		// auto wildcard filtering: skip hosts whose A records match wildcard IPs
+		if r.autoWildcardDetector != nil && len(dnsData.A) > 0 {
+			if r.autoWildcardDetector.isWildcardMatch(domain, dnsData.A) {
+				gologger.Verbose().Msgf("Wildcard filtered: %s\n", domain)
+				continue
 			}
 		}
 

@@ -75,6 +75,7 @@ type Options struct {
 	ExcludeType           []string
 	OutputCDN             bool
 	ASN                   bool
+	AutoWildcard          bool
 	HealthCheck           bool
 	DisableUpdateCheck    bool
 	PdcpAuth              string
@@ -189,6 +190,7 @@ func ParseOptions() *Options {
 		flagSet.StringVarP(&options.Resolvers, "resolver", "r", "", "list of resolvers to use (file or comma separated)"),
 		flagSet.IntVarP(&options.WildcardThreshold, "wildcard-threshold", "wt", 5, "wildcard filter threshold"),
 		flagSet.StringVarP(&options.WildcardDomain, "wildcard-domain", "wd", "", "domain name for wildcard filtering (other flags will be ignored - only json output is supported)"),
+		flagSet.BoolVarP(&options.AutoWildcard, "auto-wildcard", "aw", false, "automatic wildcard detection and filtering across all domains"),
 		flagSet.StringVar(&options.Proxy, "proxy", "", "proxy to use (eg socks5://127.0.0.1:8080)"),
 	)
 
@@ -267,6 +269,10 @@ func (options *Options) validateOptions() {
 		gologger.Fatal().Msgf("resp and resp-only can't be used at the same time")
 	}
 
+	if options.AutoWildcard && options.WildcardDomain != "" {
+		gologger.Fatal().Msgf("auto-wildcard and wildcard-domain can't be used at the same time")
+	}
+
 	if options.Retries == 0 {
 		gologger.Fatal().Msgf("retries must be at least 1")
 	}
@@ -306,6 +312,9 @@ func (options *Options) validateOptions() {
 		}
 		if options.WildcardDomain != "" {
 			gologger.Fatal().Msgf("wildcard not supported in stream mode")
+		}
+		if options.AutoWildcard {
+			gologger.Fatal().Msgf("auto-wildcard not supported in stream mode")
 		}
 		if options.ShowStatistics {
 			gologger.Fatal().Msgf("stats not supported in stream mode")
