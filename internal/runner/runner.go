@@ -123,8 +123,10 @@ func New(options *Options) (*Runner, error) {
 
 	// If no option is specified or wildcard filter has been requested use query type A
 	if len(questionTypes) == 0 || options.WildcardDomain != "" || options.AutoWildcard {
-		options.A = true
-		questionTypes = append(questionTypes, dns.TypeA)
+		if !options.A {
+			options.A = true
+			questionTypes = append(questionTypes, dns.TypeA)
+		}
 	}
 	dnsxOptions.QuestionTypes = questionTypes
 	dnsxOptions.QueryAll = options.QueryAll
@@ -510,6 +512,10 @@ func (r *Runner) run() error {
 		}
 
 		seen := make(map[string]struct{})
+		rootDomains := make(map[string]struct{})
+		if r.options.WildcardDomain != "" {
+			rootDomains[r.options.WildcardDomain] = struct{}{}
+		}
 		for _, a := range listIPs {
 			hosts := ipDomain[a]
 			if len(hosts) >= r.options.WildcardThreshold {
@@ -520,6 +526,7 @@ func (r *Runner) run() error {
 						if wildcardDomain == "" {
 							continue
 						}
+						rootDomains[wildcardDomain] = struct{}{}
 						r.wildcardworkerchan <- wildcardTask{host: host, wildcardDomain: wildcardDomain}
 					}
 				}
@@ -527,12 +534,6 @@ func (r *Runner) run() error {
 		}
 		close(r.wildcardworkerchan)
 		r.wgwildcardworker.Wait()
-
-		// determine which hosts are root wildcard domains (should be kept)
-		rootDomains := make(map[string]struct{})
-		if r.options.WildcardDomain != "" {
-			rootDomains[r.options.WildcardDomain] = struct{}{}
-		}
 
 		// we need to restart output
 		r.startOutputWorker()
