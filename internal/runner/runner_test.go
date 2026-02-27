@@ -141,6 +141,86 @@ func TestRunner_fileInput_prepareInput(t *testing.T) {
 	require.ElementsMatch(t, expected, got, "could not match expected output")
 }
 
+func TestRunner_getWildcardDomainForHost(t *testing.T) {
+	tests := []struct {
+		name           string
+		host           string
+		wildcardDomain string
+		autoWildcard   bool
+		expected       string
+	}{
+		{
+			name:           "explicit wildcard domain takes precedence",
+			host:           "sub.example.com",
+			wildcardDomain: "example.com",
+			autoWildcard:   true,
+			expected:       "example.com",
+		},
+		{
+			name:           "auto-detect simple domain",
+			host:           "sub.example.com",
+			wildcardDomain: "",
+			autoWildcard:   true,
+			expected:       "example.com",
+		},
+		{
+			name:           "auto-detect multi-level subdomain",
+			host:           "a.b.c.example.com",
+			wildcardDomain: "",
+			autoWildcard:   true,
+			expected:       "example.com",
+		},
+		{
+			name:           "auto-detect with public suffix co.uk",
+			host:           "sub.example.co.uk",
+			wildcardDomain: "",
+			autoWildcard:   true,
+			expected:       "example.co.uk",
+		},
+		{
+			name:           "skip IP address",
+			host:           "192.168.1.1",
+			wildcardDomain: "",
+			autoWildcard:   true,
+			expected:       "",
+		},
+		{
+			name:           "skip IPv6 address",
+			host:           "::1",
+			wildcardDomain: "",
+			autoWildcard:   true,
+			expected:       "",
+		},
+		{
+			name:           "skip empty host",
+			host:           "",
+			wildcardDomain: "",
+			autoWildcard:   true,
+			expected:       "",
+		},
+		{
+			name:           "feature disabled returns empty",
+			host:           "sub.example.com",
+			wildcardDomain: "",
+			autoWildcard:   false,
+			expected:       "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := &Runner{
+				options: &Options{
+					WildcardDomain: tc.wildcardDomain,
+					AutoWildcard:   tc.autoWildcard,
+				},
+			}
+			got := r.getWildcardDomainForHost(tc.host)
+			require.Equal(t, tc.expected, got)
+		})
+	}
+}
+
 func TestRunner_InputWorkerStream(t *testing.T) {
 	options := &Options{
 		Hosts: "tests/stream_input.txt",
