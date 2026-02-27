@@ -116,9 +116,22 @@ func New(options *Options) (*Runner, error) {
 	}
 
 	// If no option is specified or wildcard filter has been requested use query type A
-	if len(questionTypes) == 0 || options.WildcardDomain != "" || options.AutoWildcard {
+	if len(questionTypes) == 0 {
 		options.A = true
 		questionTypes = append(questionTypes, dns.TypeA)
+	}
+	// Wildcard filtering needs A answers internally, but should not force A output.
+	if options.WildcardDomain != "" || options.AutoWildcard {
+		hasA := false
+		for _, qt := range questionTypes {
+			if qt == dns.TypeA {
+				hasA = true
+				break
+			}
+		}
+		if !hasA {
+			questionTypes = append(questionTypes, dns.TypeA)
+		}
 	}
 	dnsxOptions.QuestionTypes = questionTypes
 	dnsxOptions.QueryAll = options.QueryAll
