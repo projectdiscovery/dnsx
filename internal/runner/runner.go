@@ -115,7 +115,7 @@ func New(options *Options) (*Runner, error) {
 		questionTypes = append(questionTypes, dns.TypeCAA)
 	}
 
-	// If no option is specified or wildcard filter has been requested use query type A
+	// Default to A query type when no option is specified
 	if len(questionTypes) == 0 {
 		options.A = true
 		questionTypes = append(questionTypes, dns.TypeA)
