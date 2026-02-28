@@ -565,19 +565,21 @@ func (r *Runner) run() error {
 }
 
 func (r *Runner) getWildcardDomainForHost(host string) (string, bool) {
-	if r.options.WildcardDomain != "" {
-		return r.options.WildcardDomain, true
+	if domain := r.options.WildcardDomain; domain != "" {
+		return domain, true
 	}
 	if !r.options.AutoWildcard {
 		return "", false
 	}
+
 	h := strings.TrimSpace(host)
-	if h == "" {
+	switch {
+	case h == "":
+		return "", false
+	case strings.Contains(h, ":"):
 		return "", false
 	}
-	if strings.Contains(h, ":") {
-		return "", false
-	}
+
 	domain, err := publicsuffix.EffectiveTLDPlusOne(h)
 	if err != nil || domain == "" {
 		return "", false
