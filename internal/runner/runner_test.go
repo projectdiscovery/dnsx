@@ -167,6 +167,19 @@ func TestRunner_getWildcardDomainForHost(t *testing.T) {
 		_, ok := r.getWildcardDomainForHost("api.example.com")
 		require.False(t, ok)
 	})
+
+	t.Run("trims whitespace before deriving domain", func(t *testing.T) {
+		r := Runner{options: &Options{AutoWildcard: true}}
+		domain, ok := r.getWildcardDomainForHost("  www.projectdiscovery.io  ")
+		require.True(t, ok)
+		require.Equal(t, "projectdiscovery.io", domain)
+	})
+
+	t.Run("returns false for host with port", func(t *testing.T) {
+		r := Runner{options: &Options{AutoWildcard: true}}
+		_, ok := r.getWildcardDomainForHost("api.example.com:443")
+		require.False(t, ok)
+	})
 }
 
 func TestRunner_InputWorkerStream(t *testing.T) {

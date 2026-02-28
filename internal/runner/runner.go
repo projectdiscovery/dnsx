@@ -32,6 +32,7 @@ import (
 )
 
 // Runner is a client for running the enumeration process.
+// wildcardTask carries the input host and the wildcard root domain used for matching.
 type wildcardTask struct {
 	host   string
 	domain string
@@ -564,6 +565,11 @@ func (r *Runner) run() error {
 	return nil
 }
 
+// getWildcardDomainForHost resolves the wildcard root domain for a host.
+//
+// Resolution order:
+//   - explicit options.WildcardDomain
+//   - auto-derived eTLD+1 when options.AutoWildcard is enabled
 func (r *Runner) getWildcardDomainForHost(host string) (string, bool) {
 	if domain := r.options.WildcardDomain; domain != "" {
 		return domain, true
