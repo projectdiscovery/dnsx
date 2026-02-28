@@ -28,7 +28,14 @@ import (
 	iputil "github.com/projectdiscovery/utils/ip"
 	mapsutil "github.com/projectdiscovery/utils/maps"
 	sliceutil "github.com/projectdiscovery/utils/slice"
+	"github.com/weppos/publicsuffix-go/publicsuffix"
 )
+
+// wildcardTask holds a host and the wildcard domain to use for filtering.
+type wildcardTask struct {
+	host           string
+	wildcardDomain string
+}
 
 // Runner is a client for running the enumeration process.
 type Runner struct {
@@ -39,7 +46,7 @@ type Runner struct {
 	wgwildcardworker    *sync.WaitGroup
 	workerchan          chan string
 	outputchan          chan string
-	wildcardworkerchan  chan string
+	wildcardworkerchan  chan wildcardTask
 	wildcards           *mapsutil.SyncLockMap[string, struct{}]
 	wildcardscache      map[string][]string
 	wildcardscachemutex sync.Mutex
@@ -156,7 +163,7 @@ func New(options *Options) (*Runner, error) {
 		wgresolveworkers:   &sync.WaitGroup{},
 		wgwildcardworker:   &sync.WaitGroup{},
 		workerchan:         make(chan string),
-		wildcardworkerchan: make(chan string),
+		wildcardworkerchan: make(chan wildcardTask),
 		wildcards:          mapsutil.NewSyncLockMap[string, struct{}](),
 		wildcardscache:     make(map[string][]string),
 		limiter:            limiter,
@@ -467,7 +474,7 @@ func (r *Runner) run() error {
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
 
-	if r.options.WildcardDomain != "" {
+	if r.options.WildcardDomain != "" || r.options.AutoWildcard {
 		gologger.Print().Msgf("Starting to filter wildcard subdomains\n")
 		ipDomain := make(map[string]map[string]struct{})
 		listIPs := []string{}
@@ -509,13 +516,23 @@ func (r *Runner) run() error {
 				for host := range hosts {
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
-						r.wildcardworkerchan <- host
+						wildcardDomain := r.getWildcardDomainForHost(host)
+						if wildcardDomain == "" {
+							continue
+						}
+						r.wildcardworkerchan <- wildcardTask{host: host, wildcardDomain: wildcardDomain}
 					}
 				}
 			}
 		}
 		close(r.wildcardworkerchan)
 		r.wgwildcardworker.Wait()
+
+		// determine which hosts are root wildcard domains (should be kept)
+		rootDomains := make(map[string]struct{})
+		if r.options.WildcardDomain != "" {
+			rootDomains[r.options.WildcardDomain] = struct{}{}
+		}
 
 		// we need to restart output
 		r.startOutputWorker()
@@ -524,7 +541,7 @@ func (r *Runner) run() error {
 		numRemovedSubdomains := 0
 		for _, A := range listIPs {
 			for host := range ipDomain[A] {
-				if host == r.options.WildcardDomain {
+				if _, isRoot := rootDomains[host]; isRoot {
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
 						_ = r.lookupAndOutput(host)
@@ -731,7 +748,7 @@ func (r *Runner) worker() {
 			}
 		}
 		// if wildcard filtering just store the data
-		if r.options.WildcardDomain != "" {
+		if r.options.WildcardDomain != "" || r.options.AutoWildcard {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
 				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
 			}
@@ -935,13 +952,38 @@ func (r *Runner) wildcardWorker() {
 	defer r.wgwildcardworker.Done()
 
 	for {
-		host, more := <-r.wildcardworkerchan
+		task, more := <-r.wildcardworkerchan
 		if !more {
 			break
 		}
-		if r.IsWildcard(host) {
+		if r.IsWildcard(task.host, task.wildcardDomain) {
 			// mark this host as a wildcard subdomain
-			_ = r.wildcards.Set(host, struct{}{})
+			_ = r.wildcards.Set(task.host, struct{}{})
 		}
 	}
+}
+
+// getWildcardDomainForHost determines the wildcard domain for a given host.
+// If --wildcard-domain is explicitly set, it takes precedence.
+// If --auto-wildcard is enabled, the root domain is derived using EffectiveTLDPlusOne.
+func (r *Runner) getWildcardDomainForHost(host string) string {
+	// explicit wildcard domain always takes precedence
+	if r.options.WildcardDomain != "" {
+		return r.options.WildcardDomain
+	}
+
+	if !r.options.AutoWildcard {
+		return ""
+	}
+
+	// skip IP addresses
+	if host == "" || strings.Contains(host, ":") || iputil.IsIP(host) {
+		return ""
+	}
+
+	domain, err := publicsuffix.Domain(host)
+	if err != nil {
+		return ""
+	}
+	return domain
 }

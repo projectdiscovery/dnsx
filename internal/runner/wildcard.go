@@ -6,8 +6,9 @@ import (
 	"github.com/rs/xid"
 )
 
-// IsWildcard checks if a host is wildcard
-func (r *Runner) IsWildcard(host string) bool {
+// IsWildcard checks if a host is wildcard by comparing its A records
+// against random subdomain resolutions under the given wildcardDomain.
+func (r *Runner) IsWildcard(host, wildcardDomain string) bool {
 	orig := make(map[string]struct{})
 	wildcards := make(map[string]struct{})
 
@@ -19,7 +20,7 @@ func (r *Runner) IsWildcard(host string) bool {
 		orig[A] = struct{}{}
 	}
 
-	subdomainPart := strings.TrimSuffix(host, "."+r.options.WildcardDomain)
+	subdomainPart := strings.TrimSuffix(host, "."+wildcardDomain)
 	subdomainTokens := strings.Split(subdomainPart, ".")
 
 	// Build an array by preallocating a slice of a length
@@ -27,11 +28,11 @@ func (r *Runner) IsWildcard(host string) bool {
 	// We use a rand prefix at the beginning like %rand%.domain.tld
 	// A permutation is generated for each level of the subdomain.
 	var hosts []string
-	hosts = append(hosts, r.options.WildcardDomain)
+	hosts = append(hosts, wildcardDomain)
 
 	if len(subdomainTokens) > 0 {
 		for i := 1; i < len(subdomainTokens); i++ {
-			newhost := strings.Join(subdomainTokens[i:], ".") + "." + r.options.WildcardDomain
+			newhost := strings.Join(subdomainTokens[i:], ".") + "." + wildcardDomain
 			hosts = append(hosts, newhost)
 		}
 	}
