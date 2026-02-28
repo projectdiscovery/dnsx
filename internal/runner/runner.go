@@ -114,6 +114,8 @@ func New(options *Options) (*Runner, error) {
 		questionTypes = append(questionTypes, dns.TypeCAA)
 	}
 
+	questionTypes = optimizeQuestionTypes(questionTypes)
+
 	// If no option is specified or wildcard filter has been requested use query type A
 	if len(questionTypes) == 0 || options.WildcardDomain != "" {
 		options.A = true
@@ -824,6 +826,34 @@ func (r *Runner) worker() {
 			r.outputRecordType(domain, dnsData.CAA, "CAA", dnsData.CDNName, dnsData.ASN)
 		}
 	}
+}
+
+func optimizeQuestionTypes(questionTypes []uint16) []uint16 {
+	var hasA, hasAAAA, hasCNAME bool
+	for _, q := range questionTypes {
+		switch q {
+		case dns.TypeA:
+			hasA = true
+		case dns.TypeAAAA:
+			hasAAAA = true
+		case dns.TypeCNAME:
+			hasCNAME = true
+		}
+	}
+
+	// If user only requested {A,CNAME} or {AAAA,CNAME}, keep a single query type.
+	// Resolvers already follow CNAME chains when resolving address records.
+	if hasCNAME && (hasA || hasAAAA) && len(questionTypes) == 2 {
+		optimized := make([]uint16, 0, 1)
+		for _, q := range questionTypes {
+			if q != dns.TypeCNAME {
+				optimized = append(optimized, q)
+			}
+		}
+		return optimized
+	}
+
+	return questionTypes
 }
 
 func (r *Runner) outputRecordType(domain string, items interface{}, queryType, cdnName string, asn *dnsx.AsnResponse) {

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/miekg/dns"
 	"github.com/projectdiscovery/hmap/store/hybrid"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/stretchr/testify/require"
@@ -141,6 +142,23 @@ func TestRunner_fileInput_prepareInput(t *testing.T) {
 	require.ElementsMatch(t, expected, got, "could not match expected output")
 }
 
+func TestOptimizeQuestionTypes(t *testing.T) {
+	t.Run("keeps single address query when A and CNAME are selected", func(t *testing.T) {
+		got := optimizeQuestionTypes([]uint16{dns.TypeA, dns.TypeCNAME})
+		require.Equal(t, []uint16{dns.TypeA}, got)
+	})
+
+	t.Run("keeps single address query when AAAA and CNAME are selected", func(t *testing.T) {
+		got := optimizeQuestionTypes([]uint16{dns.TypeAAAA, dns.TypeCNAME})
+		require.Equal(t, []uint16{dns.TypeAAAA}, got)
+	})
+
+	t.Run("does not alter query set when more than two record types are selected", func(t *testing.T) {
+		input := []uint16{dns.TypeA, dns.TypeAAAA, dns.TypeCNAME}
+		got := optimizeQuestionTypes(input)
+		require.Equal(t, input, got)
+	})
+}
 func TestRunner_InputWorkerStream(t *testing.T) {
 	options := &Options{
 		Hosts: "tests/stream_input.txt",
