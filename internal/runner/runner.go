@@ -686,8 +686,13 @@ func (r *Runner) worker() {
 
 		// auto wildcard filtering: skip hosts whose A records match wildcard IPs
 		if r.autoWildcardDetector != nil && len(dnsData.A) > 0 {
-			if r.autoWildcardDetector.isWildcardMatch(domain, dnsData.A) {
-				gologger.Verbose().Msgf("Wildcard filtered: %s\n", domain)
+			// use canonical host value for matching to avoid mismatches
+			hostForMatch := dnsData.Host
+			if hostForMatch == "" {
+				hostForMatch = domain
+			}
+			if r.autoWildcardDetector.isWildcardMatch(hostForMatch, dnsData.A) {
+				gologger.Verbose().Msgf("Wildcard filtered: %s\n", hostForMatch)
 				continue
 			}
 		}
