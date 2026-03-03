@@ -306,9 +306,7 @@ func (options *Options) validateOptions() {
 		if options.Resume {
 			gologger.Fatal().Msgf("resume not supported in stream mode")
 		}
-		if options.WildcardDomain != "" || options.AutoWildcard {
-			gologger.Fatal().Msgf("wildcard not supported in stream mode")
-		}
+		// wildcard filtering is handled via buffered execution path even when stream is enabled
 		if options.ShowStatistics {
 			gologger.Fatal().Msgf("stats not supported in stream mode")
 		}

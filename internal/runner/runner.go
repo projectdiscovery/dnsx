@@ -57,6 +57,10 @@ type Runner struct {
 	aurora              aurora.Aurora
 }
 
+func normalizeHostname(host string) string {
+	return strings.TrimSuffix(strings.TrimSpace(host), ".")
+}
+
 func New(options *Options) (*Runner, error) {
 	retryabledns.CheckInternalIPs = true
 
@@ -444,6 +448,10 @@ func (r *Runner) SaveResumeConfig() error {
 
 func (r *Runner) Run() error {
 	if r.options.Stream {
+		if r.options.WildcardDomain != "" || r.options.AutoWildcard {
+			gologger.Warning().Msgf("Wildcard filtering enabled in stream mode: falling back to buffered execution")
+			return r.run()
+		}
 		return r.runStream()
 	}
 
@@ -520,6 +528,9 @@ func (r *Runner) run() error {
 						continue
 					}
 					hostToWildcardDomain[host] = wildcardDomain
+					if r.isWildcardApexHost(host, wildcardDomain) {
+						continue
+					}
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
 						r.wildcardworkerchan <- wildcardTask{host: host, domain: wildcardDomain}
@@ -538,7 +549,7 @@ func (r *Runner) run() error {
 		for _, A := range listIPs {
 			for host := range ipDomain[A] {
 				wildcardDomain, hasDomain := hostToWildcardDomain[host]
-				if hasDomain && host == wildcardDomain {
+				if hasDomain && r.isWildcardApexHost(host, wildcardDomain) {
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
 						_ = r.lookupAndOutput(host)
@@ -571,14 +582,14 @@ func (r *Runner) run() error {
 //   - explicit options.WildcardDomain
 //   - auto-derived eTLD+1 when options.AutoWildcard is enabled
 func (r *Runner) getWildcardDomainForHost(host string) (string, bool) {
-	if domain := r.options.WildcardDomain; domain != "" {
+	if domain := normalizeHostname(r.options.WildcardDomain); domain != "" {
 		return domain, true
 	}
 	if !r.options.AutoWildcard {
 		return "", false
 	}
 
-	h := strings.TrimSpace(host)
+	h := normalizeHostname(host)
 	switch {
 	case h == "":
 		return "", false
@@ -591,6 +602,10 @@ func (r *Runner) getWildcardDomainForHost(host string) (string, bool) {
 		return "", false
 	}
 	return domain, true
+}
+
+func (r *Runner) isWildcardApexHost(host, wildcardDomain string) bool {
+	return normalizeHostname(host) == normalizeHostname(wildcardDomain)
 }
 
 func (r *Runner) lookupAndOutput(host string) error {

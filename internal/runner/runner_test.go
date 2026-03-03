@@ -175,11 +175,26 @@ func TestRunner_getWildcardDomainForHost(t *testing.T) {
 		require.Equal(t, "projectdiscovery.io", domain)
 	})
 
+	t.Run("trims trailing dot before deriving domain", func(t *testing.T) {
+		r := Runner{options: &Options{AutoWildcard: true}}
+		domain, ok := r.getWildcardDomainForHost("api.projectdiscovery.io.")
+		require.True(t, ok)
+		require.Equal(t, "projectdiscovery.io", domain)
+	})
+
 	t.Run("returns false for host with port", func(t *testing.T) {
 		r := Runner{options: &Options{AutoWildcard: true}}
 		_, ok := r.getWildcardDomainForHost("api.example.com:443")
 		require.False(t, ok)
 	})
+}
+
+func TestRunner_isWildcardApexHost(t *testing.T) {
+	r := Runner{}
+
+	require.True(t, r.isWildcardApexHost("example.com", "example.com"))
+	require.True(t, r.isWildcardApexHost("example.com.", "example.com"))
+	require.False(t, r.isWildcardApexHost("api.example.com", "example.com"))
 }
 
 func TestRunner_InputWorkerStream(t *testing.T) {
