@@ -26,6 +26,14 @@ const (
 var PDCPApiKey string
 
 type Options struct {
+	// AutoWildcard enables automatic auto-detection and filtering of wildcard DNS entries
+	AutoWildcard bool `json:"auto_wildcard" yaml:"auto_wildcard"`
+
+	// Existing fields below
+
+	// AutoWildcard enables automatic wildcard detection and filtering for multiple domains
+	AutoWildcard bool
+
 	Resolvers             string
 	Hosts                 string
 	Domains               string
@@ -93,6 +101,16 @@ func (options *Options) ShouldSaveResume() bool {
 
 // ParseOptions parses the command line options for application
 func ParseOptions() *Options {
+	// after flag parsing
+	if opts.AutoWildcard {
+		if opts.WildcardDomain != "" {
+			gologger.Fatal().Msgf("--auto-wildcard cannot be used with -wd/--wildcard-domain")
+		}
+		if opts.Stream {
+			gologger.Fatal().Msgf("--auto-wildcard cannot be used with --stream")
+		}
+	}
+
 	options := &Options{}
 	flagSet := goflags.NewFlagSet()
 	flagSet.SetDescription(`dnsx is a fast and multi-purpose DNS toolkit allow to run multiple probes using retryabledns library.`)
