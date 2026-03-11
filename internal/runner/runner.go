@@ -43,6 +43,9 @@ type Runner struct {
 	wildcards           *mapsutil.SyncLockMap[string, struct{}]
 	wildcardscache      map[string][]string
 	wildcardscachemutex sync.Mutex
+	// autoWildcard fields for -aw flag
+	autoWildcardMu    sync.RWMutex
+	autoWildcardCache map[string]*wildcardFingerprint
 	limiter             *ratelimit.Limiter
 	hm                  *hybrid.HybridMap
 	stats               clistats.StatisticsClient
@@ -115,9 +118,11 @@ func New(options *Options) (*Runner, error) {
 	}
 
 	// If no option is specified or wildcard filter has been requested use query type A
-	if len(questionTypes) == 0 || options.WildcardDomain != "" {
-		options.A = true
-		questionTypes = append(questionTypes, dns.TypeA)
+	if len(questionTypes) == 0 || options.WildcardDomain != "" || options.AutoWildcard {
+		if !options.A {
+			options.A = true
+			questionTypes = append(questionTypes, dns.TypeA)
+		}
 	}
 	dnsxOptions.QuestionTypes = questionTypes
 	dnsxOptions.QueryAll = options.QueryAll
@@ -159,6 +164,7 @@ func New(options *Options) (*Runner, error) {
 		wildcardworkerchan: make(chan string),
 		wildcards:          mapsutil.NewSyncLockMap[string, struct{}](),
 		wildcardscache:     make(map[string][]string),
+		autoWildcardCache:  make(map[string]*wildcardFingerprint),
 		limiter:            limiter,
 		hm:                 hm,
 		stats:              stats,
@@ -738,6 +744,14 @@ func (r *Runner) worker() {
 			continue
 		}
 
+		// auto-wildcard: filter results that match wildcard fingerprint for their root domain
+		if r.options.AutoWildcard {
+			if r.isAutoWildcardMatch(domain, dnsData.A, dnsData.AAAA, dnsData.CNAME) {
+				gologger.Debug().Msgf("[auto-wildcard] Filtered wildcard result: %s\n", domain)
+				continue
+			}
+		}
+
 		// if response type filter is set, we don't want to ignore them
 		if len(r.options.responseTypeFilterMap) > 0 && r.shouldSkipRecord(&dnsData) {
 			continue
@@ -939,7 +953,7 @@ func (r *Runner) wildcardWorker() {
 		if !more {
 			break
 		}
-		if r.IsWildcard(host) {
+		if r.IsWildcard(host, r.options.WildcardDomain) {
 			// mark this host as a wildcard subdomain
 			_ = r.wildcards.Set(host, struct{}{})
 		}

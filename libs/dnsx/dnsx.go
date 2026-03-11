@@ -138,6 +138,12 @@ func (d *DNSX) QueryOne(hostname string) (*retryabledns.DNSData, error) {
 	return d.dnsClient.Query(hostname, d.Options.QuestionTypes[0])
 }
 
+// QueryType performs a DNS question of the given type and returns raw responses.
+// This is used for explicit type-based probing (e.g. TypeCNAME) independent of configured QuestionTypes.
+func (d *DNSX) QueryType(hostname string, qtype uint16) (*retryabledns.DNSData, error) {
+	return d.dnsClient.Query(hostname, qtype)
+}
+
 // QueryMultiple performs a DNS question of the specified types and returns raw responses
 func (d *DNSX) QueryMultiple(hostname string) (*retryabledns.DNSData, error) {
 	// Omit PTR queries unless the input is an IP address to decrease execution time, as PTR queries can lead to timeouts.

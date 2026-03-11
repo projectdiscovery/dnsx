@@ -129,6 +129,7 @@ CONFIGURATIONS:
    -r, -resolver string          list of resolvers to use (file or comma separated)
    -wt, -wildcard-threshold int  wildcard filter threshold (default 5)
    -wd, -wildcard-domain string  domain name for wildcard filtering (other flags will be ignored - only json output is supported)
+   -aw, -auto-wildcard           automatically detect wildcard DNS per root domain and filter matching results (supports A, AAAA, CNAME; uses 3 probes per domain)
 ```
 
 ## Running dnsx
@@ -456,6 +457,38 @@ func main() {
 	return
 }
 ```
+
+### Auto wildcard filtering
+
+The `-aw` (`--auto-wildcard`) flag automatically detects wildcard DNS per root domain and filters matching results. Unlike `-wd`, you don't need to know which domains are wildcards in advance — it works transparently across mixed-domain input lists.
+
+**How it works:**
+1. For each unique root domain (eTLD+1), three random subdomains are probed (e.g. `<rand1>.example.com`, `<rand2>.example.com`, `<rand3>.example.com`)
+2. If any probe resolves, the domain is marked as a wildcard and its A/AAAA/CNAME fingerprint is cached
+3. During resolution, any result matching the wildcard fingerprint is silently filtered
+4. Results that resolve to *different* IPs (real overrides) pass through
+
+```console
+$ dnsx -l subdomains.txt -aw
+[INF] [auto-wildcard] Detected wildcard domain: *.dev.example.com
+[INF] [auto-wildcard] Detected wildcard domain: *.app.example.net
+api.example.com
+www.example.com
+```
+
+**Improvements over `-wd`:**
+- No need to specify domains manually
+- Uses 3 probes per domain (reduces false negatives from intermittent DNS)
+- Detects CNAME wildcards in addition to A/AAAA wildcards
+- Thread-safe cache — works with concurrent resolution
+- Handles multi-level TLDs correctly (e.g. `co.uk`, `com.au`)
+- Compatible with `-re`, `-ro`, `-j` output flags
+
+```console
+dnsx -l subdomain_list.txt -aw -re
+```
+
+> Note: `-aw` and `-wd` cannot be used together. Use `-aw` when scanning multiple domains; use `-wd` for single-domain targeted filtering.
 
 # 📋 Notes
 
