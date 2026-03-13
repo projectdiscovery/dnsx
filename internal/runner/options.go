@@ -59,6 +59,7 @@ type Options struct {
 	TraceMaxRecursion     int
 	WildcardThreshold     int
 	WildcardDomain        string
+	AutoWildcard          bool
 	ShowStatistics        bool
 	rcodes                map[int]struct{}
 	RCode                 string
@@ -189,6 +190,7 @@ func ParseOptions() *Options {
 		flagSet.StringVarP(&options.Resolvers, "resolver", "r", "", "list of resolvers to use (file or comma separated)"),
 		flagSet.IntVarP(&options.WildcardThreshold, "wildcard-threshold", "wt", 5, "wildcard filter threshold"),
 		flagSet.StringVarP(&options.WildcardDomain, "wildcard-domain", "wd", "", "domain name for wildcard filtering (other flags will be ignored - only json output is supported)"),
+		flagSet.BoolVarP(&options.AutoWildcard, "auto-wildcard", "aw", false, "enable automatic wildcard filtering"),
 		flagSet.StringVar(&options.Proxy, "proxy", "", "proxy to use (eg socks5://127.0.0.1:8080)"),
 	)
 

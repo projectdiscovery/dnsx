@@ -43,12 +43,26 @@ func isURL(toTest string) bool {
 }
 
 func extractDomain(URL string) string {
+	if !strings.Contains(URL, "://") && !isURL(URL) {
+		// If it's not a URL, it might be a domain/subdomain
+		// We want to extract the base domain (e.g., sub.example.com -> example.com)
+		parts := strings.Split(URL, ".")
+		if len(parts) >= 2 {
+			return strings.Join(parts[len(parts)-2:], ".")
+		}
+		return URL
+	}
 	u, err := url.Parse(URL)
 	if err != nil {
 		return ""
 	}
 
-	return u.Hostname()
+	hostname := u.Hostname()
+	parts := strings.Split(hostname, ".")
+	if len(parts) >= 2 {
+		return strings.Join(parts[len(parts)-2:], ".")
+	}
+	return hostname
 }
 
 func prepareResolver(resolver string) string {

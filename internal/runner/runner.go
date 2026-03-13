@@ -115,7 +115,7 @@ func New(options *Options) (*Runner, error) {
 	}
 
 	// If no option is specified or wildcard filter has been requested use query type A
-	if len(questionTypes) == 0 || options.WildcardDomain != "" {
+	if len(questionTypes) == 0 || options.WildcardDomain != "" || options.AutoWildcard {
 		options.A = true
 		questionTypes = append(questionTypes, dns.TypeA)
 	}
@@ -467,7 +467,7 @@ func (r *Runner) run() error {
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
 
-	if r.options.WildcardDomain != "" {
+	if r.options.WildcardDomain != "" || r.options.AutoWildcard {
 		gologger.Print().Msgf("Starting to filter wildcard subdomains\n")
 		ipDomain := make(map[string]map[string]struct{})
 		listIPs := []string{}
@@ -524,7 +524,11 @@ func (r *Runner) run() error {
 		numRemovedSubdomains := 0
 		for _, A := range listIPs {
 			for host := range ipDomain[A] {
-				if host == r.options.WildcardDomain {
+				wildcardDomain := r.options.WildcardDomain
+				if r.options.AutoWildcard {
+					wildcardDomain = extractDomain(host)
+				}
+				if host == wildcardDomain {
 					if _, ok := seen[host]; !ok {
 						seen[host] = struct{}{}
 						_ = r.lookupAndOutput(host)
@@ -731,7 +735,7 @@ func (r *Runner) worker() {
 			}
 		}
 		// if wildcard filtering just store the data
-		if r.options.WildcardDomain != "" {
+		if r.options.WildcardDomain != "" || r.options.AutoWildcard {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
 				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
 			}
