@@ -7,6 +7,7 @@ import (
 	"time"
 
 	fileutil "github.com/projectdiscovery/utils/file"
+	"golang.org/x/net/publicsuffix"
 )
 
 const (
@@ -43,26 +44,28 @@ func isURL(toTest string) bool {
 }
 
 func extractDomain(URL string) string {
+	var host string
 	if !strings.Contains(URL, "://") && !isURL(URL) {
-		// If it's not a URL, it might be a domain/subdomain
-		// We want to extract the base domain (e.g., sub.example.com -> example.com)
-		parts := strings.Split(URL, ".")
+		host = strings.TrimSuffix(URL, ".")
+	} else {
+		u, err := url.Parse(URL)
+		if err != nil {
+			return ""
+		}
+		host = strings.TrimSuffix(u.Hostname(), ".")
+	}
+
+	// Use public suffix list for accurate eTLD+1 extraction
+	domain, err := publicsuffix.EffectiveTLDPlusOne(host)
+	if err != nil {
+		// fallback to last two parts if publicsuffix fails
+		parts := strings.Split(host, ".")
 		if len(parts) >= 2 {
 			return strings.Join(parts[len(parts)-2:], ".")
 		}
-		return URL
+		return host
 	}
-	u, err := url.Parse(URL)
-	if err != nil {
-		return ""
-	}
-
-	hostname := u.Hostname()
-	parts := strings.Split(hostname, ".")
-	if len(parts) >= 2 {
-		return strings.Join(parts[len(parts)-2:], ".")
-	}
-	return hostname
+	return domain
 }
 
 func prepareResolver(resolver string) string {
