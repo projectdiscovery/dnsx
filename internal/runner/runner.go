@@ -289,8 +289,8 @@ func (r *Runner) prepareInput() error {
 				return err
 			}
 			for r := range fuzz {
-				subdomain := strings.ReplaceAll(item, "FUZZ", r)
-				hosts = append(hosts, subdomain)
+				_ = strings.ReplaceAll(item, "FUZZ", r)
+				hosts = append(hosts, fmt.Sprintf("aw-%d.%s", time.Now().UnixNano(), item))
 			}
 			numHosts += r.addHostsToHMapFromList(hosts)
 		case r.options.WordList != "":
