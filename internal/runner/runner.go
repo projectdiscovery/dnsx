@@ -454,6 +454,14 @@ func (r *Runner) run() error {
 		gologger.Debug().Msgf("Resuming scan using file %s. Restarting at position %d: %s\n", DefaultResumeFile, r.options.resumeCfg.Index, r.options.resumeCfg.ResumeFrom)
 	}
 
+	// Auto wildcard detection
+	if r.options.AutoWildcard {
+		err = r.AutoDetectWildcards()
+		if err != nil {
+			return err
+		}
+	}
+
 	r.startWorkers()
 
 	r.wgresolveworkers.Wait()
@@ -542,6 +550,43 @@ func (r *Runner) run() error {
 				}
 			}
 		}
+		close(r.outputchan)
+		// waiting output worker
+		r.wgoutputworker.Wait()
+		gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
+	}
+
+	// Auto wildcard filtering - filter results from detected wildcard domains
+	if r.options.AutoWildcard && len(autoWildcardDomains) > 0 {
+		gologger.Print().Msgf("Starting to filter auto-detected wildcard domains\n")
+
+		// we need to restart output
+		r.startOutputWorker()
+
+		seen := make(map[string]struct{})
+		numRemovedSubdomains := 0
+
+		r.hm.Scan(func(k, v []byte) error {
+			host := string(k)
+			rootDomain := getRootDomain(host)
+
+			// Skip if this domain was detected as wildcard
+			if IsAutoWildcardDomain(rootDomain) {
+				if _, ok := seen[host]; !ok {
+					numRemovedSubdomains++
+					seen[host] = struct{}{}
+				}
+				return nil
+			}
+
+			// Output non-wildcard results
+			if _, ok := seen[host]; !ok {
+				seen[host] = struct{}{}
+				_ = r.lookupAndOutput(host)
+			}
+			return nil
+		})
+
 		close(r.outputchan)
 		// waiting output worker
 		r.wgoutputworker.Wait()
