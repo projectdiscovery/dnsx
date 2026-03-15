@@ -731,7 +731,7 @@ func (r *Runner) worker() {
 			}
 		}
 		// if wildcard filtering just store the data
-		if r.options.WildcardDomain != "" {
+		if r.options.Wildcard Domain != "" {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
 				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
 			}
