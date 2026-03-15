@@ -289,8 +289,8 @@ func (r *Runner) prepareInput() error {
 				return err
 			}
 			for r := range fuzz {
-				_ = strings.ReplaceAll(item, "FUZZ", r)
-				hosts = append(hosts, fmt.Sprintf("aw-%d.%s", time.Now().UnixNano(), item))
+				subdomain := strings.ReplaceAll(item, "FUZZ", r)
+				hosts = append(hosts, subdomain)
 			}
 			numHosts += r.addHostsToHMapFromList(hosts)
 		case r.options.WordList != "":
@@ -731,7 +731,7 @@ func (r *Runner) worker() {
 			}
 		}
 		// if wildcard filtering just store the data
-		if r.options.Wildcard Domain != "" {
+		if r.options.WildcardDomain != "" {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
 				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
 			}
@@ -944,4 +944,14 @@ func (r *Runner) wildcardWorker() {
 			_ = r.wildcards.Set(host, struct{}{})
 		}
 	}
+}
+
+// isWildcard checks if the domain resolves wildcard records.
+// When AutoWildcard is enabled, the function generates a random subdomain (randomSub)
+// and calls r.dnsx.Lookup to detect if the domain resolves wildcard records.
+func (r *Runner) isWildcard(item string) bool {
+
+randomSub := fmt.Sprintf("aw-%d.%s", time.Now().UnixNano(), item)
+_, err := r.dnsx.Lookup(randomSub)
+return err == nil
 }
