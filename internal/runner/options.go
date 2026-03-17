@@ -58,6 +58,7 @@ type Options struct {
 	Trace                 bool
 	TraceMaxRecursion     int
 	WildcardThreshold     int
+AutoWildcard bool
 	WildcardDomain        string
 	ShowStatistics        bool
 	rcodes                map[int]struct{}
@@ -95,6 +96,9 @@ func (options *Options) ShouldSaveResume() bool {
 func ParseOptions() *Options {
 	options := &Options{}
 	flagSet := goflags.NewFlagSet()
+	flagSet.BoolVar(&options.AutoWildcard, "auto-wildcard", false, "enable automatic wildcard detection")
+	flagSet.BoolVar(&options.AutoWildcard, "aw", false, "enable automatic wildcard detection (alias)")
+
 	flagSet.SetDescription(`dnsx is a fast and multi-purpose DNS toolkit allow to run multiple probes using retryabledns library.`)
 
 	flagSet.CreateGroup("input", "Input",

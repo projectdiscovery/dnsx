@@ -5,7 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
+"math/rand"
+"io"
 	"os"
 	"strings"
 	"sync"
@@ -640,6 +641,10 @@ func (r *Runner) startWorkers() {
 func (r *Runner) worker() {
 	defer r.wgresolveworkers.Done()
 	for domain := range r.workerchan {
+		if r.options.AutoWildcard && r.isWildcard(domain) {
+			continue
+		}
+
 		if isURL(domain) {
 			domain = extractDomain(domain)
 		}
@@ -946,12 +951,20 @@ func (r *Runner) wildcardWorker() {
 	}
 }
 
-// isWildcard checks if the domain resolves wildcard records.
-// When AutoWildcard is enabled, the function generates a random subdomain (randomSub)
-// and calls r.dnsx.Lookup to detect if the domain resolves wildcard records.
-func (r *Runner) isWildcard(item string) bool {
 
-randomSub := fmt.Sprintf("aw-%d.%s", time.Now().UnixNano(), item)
-_, err := r.dnsx.Lookup(randomSub)
-return err == nil
+func (r *Runner) isWildcard(host string) bool {
+	randomSubdomain := r.generateRandomSubdomain(host)
+	// This checks if our fake name gets an IP
+	results, _ := r.dnsx.Lookup(randomSubdomain)
+	return len(results) > 0
 }
+
+func (r *Runner) generateRandomSubdomain(domain string) string {
+	letters := "abcdefghijklmnopqrstuvwxyz0123456789"
+	b := make([]byte, 10)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b) + "." + domain
+}
+
