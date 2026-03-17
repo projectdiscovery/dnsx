@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-"math/rand"
-"io"
+	"io"
+	"math/rand"
 	"os"
 	"strings"
 	"sync"
@@ -951,7 +951,6 @@ func (r *Runner) wildcardWorker() {
 	}
 }
 
-
 func (r *Runner) isWildcard(host string) bool {
 	randomSubdomain := r.generateRandomSubdomain(host)
 	// This checks if our fake name gets an IP
@@ -967,4 +966,3 @@ func (r *Runner) generateRandomSubdomain(domain string) string {
 	}
 	return string(b) + "." + domain
 }
-

@@ -58,7 +58,7 @@ type Options struct {
 	Trace                 bool
 	TraceMaxRecursion     int
 	WildcardThreshold     int
-AutoWildcard bool
+	AutoWildcard          bool
 	WildcardDomain        string
 	ShowStatistics        bool
 	rcodes                map[int]struct{}
