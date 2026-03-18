@@ -115,7 +115,7 @@ func New(options *Options) (*Runner, error) {
 	}
 
 	// If no option is specified or wildcard filter has been requested use query type A
-	if len(questionTypes) == 0 || options.WildcardDomain != "" {
+	if len(questionTypes) == 0 || options.WildcardDomain != "" || options.AutoWildcard {
 		options.A = true
 		questionTypes = append(questionTypes, dns.TypeA)
 	}
@@ -467,8 +467,13 @@ func (r *Runner) run() error {
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
 
-	if r.options.WildcardDomain != "" {
-		gologger.Print().Msgf("Starting to filter wildcard subdomains\n")
+	if r.options.WildcardDomain != "" || r.options.AutoWildcard {
+		if r.options.AutoWildcard {
+			// Auto-wildcard detection and filtering
+			r.AutoWildcardFilter()
+		} else {
+			gologger.Print().Msgf("Starting to filter wildcard subdomains\n")
+		}
 		ipDomain := make(map[string]map[string]struct{})
 		listIPs := []string{}
 		// prepare in memory structure similarly to shuffledns
@@ -491,53 +496,69 @@ func (r *Runner) run() error {
 			return nil
 		})
 
-		gologger.Debug().Msgf("Found %d unique IPs:%s\n", len(listIPs), strings.Join(listIPs, ", "))
-		// wildcard workers
-		numThreads := r.options.Threads
-		if numThreads > len(listIPs) {
-			numThreads = len(listIPs)
-		}
-		for i := 0; i < numThreads; i++ {
-			r.wgwildcardworker.Add(1)
-			go r.wildcardWorker()
-		}
+		if !r.options.AutoWildcard {
+			gologger.Debug().Msgf("Found %d unique IPs:%s\n", len(listIPs), strings.Join(listIPs, ", "))
+			// wildcard workers
+			numThreads := r.options.Threads
+			if numThreads > len(listIPs) {
+				numThreads = len(listIPs)
+			}
+			for i := 0; i < numThreads; i++ {
+				r.wgwildcardworker.Add(1)
+				go r.wildcardWorker()
+			}
 
-		seen := make(map[string]struct{})
-		for _, a := range listIPs {
-			hosts := ipDomain[a]
-			if len(hosts) >= r.options.WildcardThreshold {
-				for host := range hosts {
-					if _, ok := seen[host]; !ok {
-						seen[host] = struct{}{}
-						r.wildcardworkerchan <- host
+			seen := make(map[string]struct{})
+			for _, a := range listIPs {
+				hosts := ipDomain[a]
+				if len(hosts) >= r.options.WildcardThreshold {
+					for host := range hosts {
+						if _, ok := seen[host]; !ok {
+							seen[host] = struct{}{}
+							r.wildcardworkerchan <- host
+						}
 					}
 				}
 			}
+			close(r.wildcardworkerchan)
+			r.wgwildcardworker.Wait()
 		}
-		close(r.wildcardworkerchan)
-		r.wgwildcardworker.Wait()
 
 		// we need to restart output
 		r.startOutputWorker()
-		seen = make(map[string]struct{})
+		seen := make(map[string]struct{})
 		seenRemovedSubdomains := make(map[string]struct{})
 		numRemovedSubdomains := 0
 		for _, A := range listIPs {
 			for host := range ipDomain[A] {
-				if host == r.options.WildcardDomain {
-					if _, ok := seen[host]; !ok {
-						seen[host] = struct{}{}
-						_ = r.lookupAndOutput(host)
-					}
-				} else if !r.wildcards.Has(host) {
-					if _, ok := seen[host]; !ok {
-						seen[host] = struct{}{}
-						_ = r.lookupAndOutput(host)
+				if r.options.AutoWildcard {
+					if !r.wildcards.Has(host) {
+						if _, ok := seen[host]; !ok {
+							seen[host] = struct{}{}
+							_ = r.lookupAndOutput(host)
+						}
+					} else {
+						if _, ok := seenRemovedSubdomains[host]; !ok {
+							numRemovedSubdomains++
+							seenRemovedSubdomains[host] = struct{}{}
+						}
 					}
 				} else {
-					if _, ok := seenRemovedSubdomains[host]; !ok {
-						numRemovedSubdomains++
-						seenRemovedSubdomains[host] = struct{}{}
+					if host == r.options.WildcardDomain {
+						if _, ok := seen[host]; !ok {
+							seen[host] = struct{}{}
+							_ = r.lookupAndOutput(host)
+						}
+					} else if !r.wildcards.Has(host) {
+						if _, ok := seen[host]; !ok {
+							seen[host] = struct{}{}
+							_ = r.lookupAndOutput(host)
+						}
+					} else {
+						if _, ok := seenRemovedSubdomains[host]; !ok {
+							numRemovedSubdomains++
+							seenRemovedSubdomains[host] = struct{}{}
+						}
 					}
 				}
 			}
@@ -545,7 +566,9 @@ func (r *Runner) run() error {
 		close(r.outputchan)
 		// waiting output worker
 		r.wgoutputworker.Wait()
-		gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
+		if !r.options.AutoWildcard {
+			gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
+		}
 	}
 
 	return nil
@@ -731,7 +754,7 @@ func (r *Runner) worker() {
 			}
 		}
 		// if wildcard filtering just store the data
-		if r.options.WildcardDomain != "" {
+		if r.options.WildcardDomain != "" || r.options.AutoWildcard {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
 				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
 			}
