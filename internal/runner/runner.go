@@ -943,10 +943,17 @@ func (r *Runner) wildcardWorker() {
 		host, more := <-r.wildcardworkerchan
 		if !more {
 			break
-		}
-		if r.IsWildcard(host) {
-			// mark this host as a wildcard subdomain
-			_ = r.wildcards.Set(host, struct{}{})
+			    if r.isWildcard(host) {
+        if !r.options.Subdomain {
+            // Normal behavior: mark it and move on
+            _ = r.wildcards.Set(host, struct{}{})
+            continue
+        }
+    } 
+
+    // If we are here, -subdomain is ON.
+    // We skip the 'Set' and the 'continue' so it keeps going.
+
 		}
 	}
 }

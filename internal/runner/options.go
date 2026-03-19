@@ -46,6 +46,7 @@ type Options struct {
 	AAAA                  bool
 	NS                    bool
 	CNAME                 bool
+Subdomain bool
 	PTR                   bool
 	MX                    bool
 	SOA                   bool
@@ -98,14 +99,15 @@ func ParseOptions() *Options {
 	flagSet := goflags.NewFlagSet()
 	flagSet.BoolVar(&options.AutoWildcard, "auto-wildcard", false, "enable automatic wildcard detection")
 	flagSet.BoolVar(&options.AutoWildcard, "aw", false, "enable automatic wildcard detection (alias)")
+flagSet.BoolVar(&options.Subdomain, "subdomain", false, "Identify subdomains for wildcard results")
+flagSet.SetDescription(`dnsx is a fast multi-purpose DNS toolkit`)
 
-	flagSet.SetDescription(`dnsx is a fast and multi-purpose DNS toolkit allow to run multiple probes using retryabledns library.`)
 
 	flagSet.CreateGroup("input", "Input",
 		flagSet.StringVarP(&options.Hosts, "list", "l", "", "list of sub(domains)/hosts to resolve (file or stdin)"),
 		flagSet.StringVarP(&options.Domains, "domain", "d", "", "list of domain to bruteforce (file or comma separated or stdin)"),
 		flagSet.StringVarP(&options.WordList, "wordlist", "w", "", "list of words to bruteforce (file or comma separated or stdin)"),
-	)
+	  )
 
 	queries := goflags.AllowdTypes{
 		"none":  goflags.EnumVariable(0),
