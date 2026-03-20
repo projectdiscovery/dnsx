@@ -269,6 +269,10 @@ func (options *Options) validateOptions() {
 		gologger.Fatal().Msgf("resp and resp-only can't be used at the same time")
 	}
 
+	if options.AutoWildcard && options.WildcardDomain != "" {
+		gologger.Fatal().Msgf("auto-wildcard and wildcard-domain are mutually exclusive")
+	}
+
 	if options.Retries == 0 {
 		gologger.Fatal().Msgf("retries must be at least 1")
 	}

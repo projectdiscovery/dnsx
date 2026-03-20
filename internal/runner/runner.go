@@ -32,22 +32,24 @@ import (
 
 // Runner is a client for running the enumeration process.
 type Runner struct {
-	options             *Options
-	dnsx                *dnsx.DNSX
-	wgoutputworker      *sync.WaitGroup
-	wgresolveworkers    *sync.WaitGroup
-	wgwildcardworker    *sync.WaitGroup
-	workerchan          chan string
-	outputchan          chan string
-	wildcardworkerchan  chan string
-	wildcards           *mapsutil.SyncLockMap[string, struct{}]
-	wildcardscache      map[string][]string
-	wildcardscachemutex sync.Mutex
-	limiter             *ratelimit.Limiter
-	hm                  *hybrid.HybridMap
-	stats               clistats.StatisticsClient
-	tmpStdinFile        string
-	aurora              aurora.Aurora
+	options                  *Options
+	dnsx                     *dnsx.DNSX
+	wgoutputworker           *sync.WaitGroup
+	wgresolveworkers         *sync.WaitGroup
+	wgwildcardworker         *sync.WaitGroup
+	workerchan               chan string
+	outputchan               chan string
+	wildcardworkerchan       chan string
+	wildcards                *mapsutil.SyncLockMap[string, struct{}]
+	wildcardscache           map[string][]string
+	wildcardscachemutex      sync.Mutex
+	autoWildcardDomains      map[string]struct{}
+	autoWildcardDomainsMutex sync.RWMutex
+	limiter                  *ratelimit.Limiter
+	hm                       *hybrid.HybridMap
+	stats                    clistats.StatisticsClient
+	tmpStdinFile             string
+	aurora                   aurora.Aurora
 }
 
 func New(options *Options) (*Runner, error) {
@@ -150,19 +152,20 @@ func New(options *Options) (*Runner, error) {
 	}
 
 	r := Runner{
-		options:            options,
-		dnsx:               dnsX,
-		wgoutputworker:     &sync.WaitGroup{},
-		wgresolveworkers:   &sync.WaitGroup{},
-		wgwildcardworker:   &sync.WaitGroup{},
-		workerchan:         make(chan string),
-		wildcardworkerchan: make(chan string),
-		wildcards:          mapsutil.NewSyncLockMap[string, struct{}](),
-		wildcardscache:     make(map[string][]string),
-		limiter:            limiter,
-		hm:                 hm,
-		stats:              stats,
-		aurora:             aurora.NewAurora(!options.NoColor),
+		options:             options,
+		dnsx:                dnsX,
+		wgoutputworker:      &sync.WaitGroup{},
+		wgresolveworkers:    &sync.WaitGroup{},
+		wgwildcardworker:    &sync.WaitGroup{},
+		workerchan:          make(chan string),
+		wildcardworkerchan:  make(chan string),
+		wildcards:           mapsutil.NewSyncLockMap[string, struct{}](),
+		wildcardscache:      make(map[string][]string),
+		autoWildcardDomains: make(map[string]struct{}),
+		limiter:             limiter,
+		hm:                  hm,
+		stats:               stats,
+		aurora:              aurora.NewAurora(!options.NoColor),
 	}
 
 	return &r, nil
@@ -556,8 +559,8 @@ func (r *Runner) run() error {
 		gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
 	}
 
-	// Auto wildcard filtering - filter results from detected wildcard domains
-	if r.options.AutoWildcard && len(autoWildcardDomains) > 0 {
+	// Auto wildcard filtering - output results, filtering detected wildcard domains
+	if r.options.AutoWildcard {
 		gologger.Print().Msgf("Starting to filter auto-detected wildcard domains\n")
 
 		// we need to restart output
@@ -571,7 +574,7 @@ func (r *Runner) run() error {
 			rootDomain := getRootDomain(host)
 
 			// Skip if this domain was detected as wildcard
-			if IsAutoWildcardDomain(rootDomain) {
+			if r.isAutoWildcardDomain(rootDomain) {
 				if _, ok := seen[host]; !ok {
 					numRemovedSubdomains++
 					seen[host] = struct{}{}
@@ -776,7 +779,7 @@ func (r *Runner) worker() {
 			}
 		}
 		// if wildcard filtering just store the data
-		if r.options.WildcardDomain != "" {
+		if r.options.WildcardDomain != "" || r.options.AutoWildcard {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
 				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
 			}
