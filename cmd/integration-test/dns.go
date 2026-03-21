@@ -12,7 +12,7 @@ import (
 var dnsTestcases = map[string]testutils.TestCase{
 	"DNS A Request":                 &dnsARequest{question: "projectdiscovery.io", expectedOutput: "projectdiscovery.io"},
 	"DNS AAAA Request":              &dnsAAAARequest{question: "projectdiscovery.io", expectedOutput: "projectdiscovery.io"},
-	"DNS Filter Additional Section": &dnsFilterAdditionalSection{question: "anyinvaliddomain.projectdiscovery.io", expectedOutput: ""},
+	"DNS Filter Additional Section": &dnsFilterAdditionalSection{question: "anyinvaliddomain.projectdiscovery.io"},
 }
 
 type dnsARequest struct {
@@ -136,17 +136,16 @@ func buildAnswer(r *dns.Msg, ans answer) *dns.Msg {
 	return &msg
 }
 
+// dnsFilterAdditionalSection verifies that A records from AUTHORITY/ADDITIONAL
+// sections are not incorrectly treated as answer records for the queried domain.
+// The fix for this lives in retryabledns (ParseFromMsg only parses Answer section).
 type dnsFilterAdditionalSection struct {
-	question       string
-	expectedOutput string
+	question string
 }
 
 func (h *dnsFilterAdditionalSection) Execute() error {
-	handler := &dnshandlerWithAdditional{
-		question: h.question,
-	}
 	srv := &dns.Server{
-		Handler: handler,
+		Handler: &dnshandlerWithAdditional{question: h.question},
 		Addr:    "127.0.0.1:15001",
 		Net:     "udp",
 	}
@@ -162,21 +161,23 @@ func (h *dnsFilterAdditionalSection) Execute() error {
 		return err
 	}
 
-	if len(results) > 0 {
-		for _, result := range results {
-			var jsonData map[string]interface{}
-			if err := json.Unmarshal([]byte(result), &jsonData); err != nil {
-				continue
-			}
+	for _, result := range results {
+		var jsonData map[string]interface{}
+		if err := json.Unmarshal([]byte(result), &jsonData); err != nil {
+			continue
+		}
 
-			if aField, ok := jsonData["a"].([]interface{}); ok {
-				for _, ip := range aField {
-					ipStr := strings.ToLower(ip.(string))
-					if ipStr == "192.112.36.4" ||
-						ipStr == "198.97.190.53" ||
-						ipStr == "198.41.0.4" {
-						return errIncorrectResult("(no root server IPs in 'a' field)", result)
-					}
+		if aField, ok := jsonData["a"].([]interface{}); ok {
+			for _, ip := range aField {
+				s, ok := ip.(string)
+				if !ok {
+					continue
+				}
+				ipStr := strings.ToLower(s)
+				if ipStr == "192.112.36.4" ||
+					ipStr == "198.97.190.53" ||
+					ipStr == "198.41.0.4" {
+					return errIncorrectResult("(no root server IPs in 'a' field)", result)
 				}
 			}
 		}
@@ -190,9 +191,10 @@ type dnshandlerWithAdditional struct {
 }
 
 func (t *dnshandlerWithAdditional) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
-	question := r.Question[0].Name
-	question = strings.TrimSuffix(question, ".")
-
+	if len(r.Question) == 0 {
+		return
+	}
+	question := strings.TrimSuffix(r.Question[0].Name, ".")
 	if !strings.EqualFold(question, t.question) {
 		return
 	}
