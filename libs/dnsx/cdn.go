@@ -1,31 +1,44 @@
 package dnsx
 
 import (
+	"errors"
+	"fmt"
 	"net"
 
-	"github.com/projectdiscovery/retryabledns"
-	errorutil "github.com/projectdiscovery/utils/errors"
+	retryabledns "github.com/projectdiscovery/retryabledns"
 	iputil "github.com/projectdiscovery/utils/ip"
 )
 
-// CdnCheck verifies if the given domain/ip is part of Cdn/Waf/Cloud ranges
-func (d *DNSX) CdnCheck(input string) (matched bool, value string, itemType string, err error) {
+// CdnCheck verifies if the given ip is part of Cdn ranges
+func (d *DNSX) CdnCheck(domain string) (bool, string, error) {
 	if d.cdn == nil {
-		return false, "", "", errorutil.New("cdn client not initialized")
+		return false, "", errors.New("cdn client not initialized")
 	}
-	if iputil.IsIP(input) {
-		ipAddr := net.ParseIP(input)
-		matched, value, itemType, err = d.cdn.Check(ipAddr)
-		return
+	ips, err := net.LookupIP(domain)
+	if err != nil {
+		return false, "", err
 	}
-
-	return d.cdn.CheckDomainWithFallback(input)
+	ipv4Ips := []net.IP{}
+	for _, ip := range ips {
+		if iputil.IsIPv4(ip) {
+			ipv4Ips = append(ipv4Ips, ip)
+		}
+	}
+	if len(ipv4Ips) < 1 {
+		return false, "", fmt.Errorf("no IPV4s found in lookup for %v", domain)
+	}
+	ipAddr := ipv4Ips[0].String()
+	if !iputil.IsIP(ipAddr) {
+		return false, "", fmt.Errorf("%s is not a valid ip", ipAddr)
+	}
+	return d.cdn.CheckCDN(net.ParseIP(ipAddr))
 }
 
-// CdnCheck verifies if the given dnsResponse is part of Cdn/Waf/Cloud ranges
+// CdnCheckRespData verifies if the given DNS response data is part of known CDN/WAF/Cloud ranges,
+// avoiding additional DNS lookups by reusing already-resolved data.
 func (d *DNSX) CdnCheckRespData(dnsdata *retryabledns.DNSData) (matched bool, value string, itemType string, err error) {
 	if d.cdn == nil {
-		return false, "", "", errorutil.New("cdn client not initialized")
+		return false, "", "", errors.New("cdn client not initialized")
 	}
 	return d.cdn.CheckDNSResponse(dnsdata)
 }

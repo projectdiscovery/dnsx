@@ -27,9 +27,9 @@ builds:
   main: cmd/dnsx/dnsx.go
 
 archives:
-- format: zip
-  replacements:
-      darwin: macOS
+- formats:
+  - zip
+  name_template: '{{ .ProjectName }}_{{ .Version }}_{{ if eq .Os "darwin" }}macOS{{ else }}{{ .Os }}{{ end }}_{{ .Arch }}'
 
 checksum:
   algorithm: sha256

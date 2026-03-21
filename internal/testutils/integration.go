@@ -26,7 +26,7 @@ func RunDnsxAndGetResults(question string, debug bool, extra ...string) ([]strin
 		return nil, err
 	}
 	parts := []string{}
-	items := strings.Split(string(data), "\n")
+	items := strings.Split(strings.TrimSpace(string(data)), "\n")
 	for _, i := range items {
 		if i != "" {
 			parts = append(parts, i)
@@ -51,7 +51,7 @@ func RunDnsxBinaryAndGetResults(target string, dnsxBinary string, debug bool, ar
 		return nil, err
 	}
 	parts := []string{}
-	items := strings.Split(string(data), "\n")
+	items := strings.Split(strings.TrimSpace(string(data)), "\n")
 	for _, i := range items {
 		if i != "" {
 			parts = append(parts, i)
