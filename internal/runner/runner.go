@@ -682,10 +682,21 @@ func (r *Runner) worker() {
 			if len(dnsData.A) > 0 || len(dnsData.AAAA) > 0 || len(dnsData.CNAME) > 0 {
 				// reuse existing DNS response to avoid redundant lookups and ensure
 				// consistency between reported records and CDN detection
-				dnsData.IsCDNIP, dnsData.CDNName, dnsData.CDNType, _ = r.dnsx.CdnCheckRespData(dnsData.DNSData)
+				var cdnErr error
+				dnsData.IsCDNIP, dnsData.CDNName, dnsData.CDNType, cdnErr = r.dnsx.CdnCheckRespData(dnsData.DNSData)
+				if cdnErr != nil {
+					gologger.Debug().Msgf("cdn check failed for %s: %v", domain, cdnErr)
+				}
 			} else {
 				// fall back to a fresh lookup when the response lacks A/AAAA/CNAME records
-				dnsData.IsCDNIP, dnsData.CDNName, _ = r.dnsx.CdnCheck(domain)
+				var cdnErr error
+				dnsData.IsCDNIP, dnsData.CDNName, cdnErr = r.dnsx.CdnCheck(domain)
+				if cdnErr != nil {
+					gologger.Debug().Msgf("cdn check failed for %s: %v", domain, cdnErr)
+				}
+				if dnsData.IsCDNIP {
+					dnsData.CDNType = "cdn"
+				}
 			}
 		}
 		if r.options.ASN {
