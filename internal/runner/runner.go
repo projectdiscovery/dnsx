@@ -679,9 +679,14 @@ func (r *Runner) worker() {
 		}
 		// add flags for cdn
 		if r.options.OutputCDN {
-			// dnsData.IsCDNIP, dnsData.CDNName, _, _ = r.dnsx.CdnCheck(domain)
-			// prevent new dns requests
-			dnsData.IsCDNIP, dnsData.CDNName, _, _ = r.dnsx.CdnCheckRespData(dnsData.DNSData)
+			if len(dnsData.A) > 0 || len(dnsData.AAAA) > 0 || len(dnsData.CNAME) > 0 {
+				// reuse existing DNS response to avoid redundant lookups and ensure
+				// consistency between reported records and CDN detection
+				dnsData.IsCDNIP, dnsData.CDNName, dnsData.CDNType, _ = r.dnsx.CdnCheckRespData(dnsData.DNSData)
+			} else {
+				// fall back to a fresh lookup when the response lacks A/AAAA/CNAME records
+				dnsData.IsCDNIP, dnsData.CDNName, _ = r.dnsx.CdnCheck(domain)
+			}
 		}
 		if r.options.ASN {
 			results := []*asnmap.Response{}

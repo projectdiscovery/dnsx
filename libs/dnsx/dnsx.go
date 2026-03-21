@@ -39,6 +39,7 @@ type ResponseData struct {
 	*retryabledns.DNSData
 	IsCDNIP bool         `json:"cdn,omitempty" csv:"cdn"`
 	CDNName string       `json:"cdn-name,omitempty" csv:"cdn-name"`
+	CDNType string       `json:"cdn-type,omitempty" csv:"cdn-type"`
 	ASN     *AsnResponse `json:"asn,omitempty" csv:"asn"`
 }
 type AsnResponse struct {
