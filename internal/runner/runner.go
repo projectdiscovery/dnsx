@@ -223,9 +223,11 @@ func (r *Runner) prepareInput() error {
 		err         error
 	)
 
-	// copy stdin to a temporary file
+	// copy stdin to a temporary file, but only when no file-based or inline input
+	// is already available — avoids blocking forever on an empty pipe
 	hasStdin := fileutil.HasStdin()
-	if hasStdin {
+	hasInlineHosts := r.options.Hosts != "" && !fileutil.FileExists(r.options.Hosts) && !argumentHasStdin(r.options.Hosts)
+	if hasStdin && !fileutil.FileExists(r.options.Hosts) && r.options.Domains == "" && !hasInlineHosts {
 		tmpStdinFile, err := fileutil.GetTempFileName()
 		if err != nil {
 			return err
@@ -239,9 +241,12 @@ func (r *Runner) prepareInput() error {
 		if _, err := io.Copy(stdinFile, os.Stdin); err != nil {
 			return err
 		}
-		// closes the file as we will read it multiple times to build the iterations
-		stdinFile.Close()
-		defer os.RemoveAll(r.tmpStdinFile)
+		_ = stdinFile.Close()
+		defer func() {
+			_ = os.RemoveAll(r.tmpStdinFile)
+		}()
+	} else if hasStdin {
+		hasStdin = false
 	}
 
 	if r.options.Domains != "" {
@@ -253,7 +258,11 @@ func (r *Runner) prepareInput() error {
 	}
 
 	if sc == nil {
-		sc, err = r.preProcessArgument(r.options.Hosts)
+		hostArg := r.options.Hosts
+		if hostArg == "" && hasStdin {
+			hostArg = stdinMarker
+		}
+		sc, err = r.preProcessArgument(hostArg)
 		if err != nil {
 			return err
 		}

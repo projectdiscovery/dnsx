@@ -86,8 +86,10 @@ func TestRunner_asnInput_prepareInput(t *testing.T) {
 		options: options,
 		hm:      hm,
 	}
-	// call the prepareInput
 	err = r.prepareInput()
+	if err != nil && strings.Contains(err.Error(), "unauthorized") {
+		t.Skip("skipping: ASN API key not configured")
+	}
 	require.Nil(t, err, "failed to prepare input")
 	expectedOutputFile := "tests/AS14421.txt"
 	// read the expected IPs from the file
@@ -122,6 +124,68 @@ func TestRunner_fileInput_prepareInput(t *testing.T) {
 		return nil
 	})
 	require.ElementsMatch(t, expected, got, "could not match expected output")
+}
+
+func TestRunner_hostsInput_prepareInput(t *testing.T) {
+	t.Run("file", func(t *testing.T) {
+		hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+		require.NoError(t, err)
+		r := Runner{options: &Options{Hosts: "tests/file_input.txt"}, hm: hm}
+		require.NoError(t, r.prepareInput())
+		got := scanHMap(t, r.hm)
+		require.ElementsMatch(t, []string{"one.one.one.one", "example.com"}, got)
+	})
+
+	t.Run("stdin", func(t *testing.T) {
+		tmp, err := os.CreateTemp("", "dnsx-stdin-test")
+		require.NoError(t, err)
+		defer os.Remove(tmp.Name())
+		_, err = tmp.WriteString("one.one.one.one\nexample.com\n")
+		require.NoError(t, err)
+		tmp.Close()
+
+		hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+		require.NoError(t, err)
+		r := Runner{options: &Options{Hosts: "-"}, hm: hm, tmpStdinFile: tmp.Name()}
+		require.NoError(t, r.prepareInput())
+		got := scanHMap(t, r.hm)
+		require.ElementsMatch(t, []string{"one.one.one.one", "example.com"}, got)
+	})
+
+	t.Run("single inline host", func(t *testing.T) {
+		hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+		require.NoError(t, err)
+		r := Runner{options: &Options{Hosts: "one.one.one.one"}, hm: hm}
+		require.NoError(t, r.prepareInput())
+		got := scanHMap(t, r.hm)
+		require.ElementsMatch(t, []string{"one.one.one.one"}, got)
+	})
+
+	t.Run("comma separated", func(t *testing.T) {
+		hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+		require.NoError(t, err)
+		r := Runner{options: &Options{Hosts: "one.one.one.one,example.com,cloudflare.com"}, hm: hm}
+		require.NoError(t, r.prepareInput())
+		got := scanHMap(t, r.hm)
+		require.ElementsMatch(t, []string{"one.one.one.one", "example.com", "cloudflare.com"}, got)
+	})
+
+	t.Run("empty returns error", func(t *testing.T) {
+		hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+		require.NoError(t, err)
+		r := Runner{options: &Options{}, hm: hm}
+		require.Error(t, r.prepareInput())
+	})
+}
+
+func scanHMap(t *testing.T, hm *hybrid.HybridMap) []string {
+	t.Helper()
+	var items []string
+	hm.Scan(func(k, v []byte) error {
+		items = append(items, string(k))
+		return nil
+	})
+	return items
 }
 
 func TestRunner_InputWorkerStream(t *testing.T) {
