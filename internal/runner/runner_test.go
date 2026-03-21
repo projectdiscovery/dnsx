@@ -153,10 +153,12 @@ func TestRunner_hostsInput_prepareInput(t *testing.T) {
 	t.Run("stdin", func(t *testing.T) {
 		tmp, err := os.CreateTemp("", "dnsx-stdin-test")
 		require.NoError(t, err)
-		defer os.Remove(tmp.Name())
+		defer func() {
+			_ = os.Remove(tmp.Name())
+		}()
 		_, err = tmp.WriteString("one.one.one.one\nexample.com\n")
 		require.NoError(t, err)
-		tmp.Close()
+		_ = tmp.Close()
 
 		hm, err := hybrid.New(hybrid.DefaultDiskOptions)
 		require.NoError(t, err)
