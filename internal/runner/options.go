@@ -5,10 +5,14 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/logrusorgru/aurora"
+	"github.com/miekg/dns"
 	"github.com/projectdiscovery/goconfig"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/gologger/formatter"
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/utils/auth/pdcp"
 	"github.com/projectdiscovery/utils/env"
@@ -55,6 +59,7 @@ type Options struct {
 	Trace                 bool
 	TraceMaxRecursion     int
 	WildcardThreshold     int
+	AutoWildcard          bool
 	WildcardDomain        string
 	ShowStatistics        bool
 	rcodes                map[int]struct{}
@@ -66,6 +71,7 @@ type Options struct {
 	resumeCfg             *ResumeCfg
 	HostsFile             bool
 	Stream                bool
+	Timeout               time.Duration
 	CAA                   bool
 	QueryAll              bool
 	ExcludeType           []string
@@ -177,13 +183,15 @@ func ParseOptions() *Options {
 		flagSet.IntVar(&options.TraceMaxRecursion, "trace-max-recursion", 255, "Max recursion for dns trace"),
 		flagSet.BoolVar(&options.Resume, "resume", false, "resume existing scan"),
 		flagSet.BoolVar(&options.Stream, "stream", false, "stream mode (wordlist, wildcard, stats and stop/resume will be disabled)"),
+		flagSet.DurationVar(&options.Timeout, "timeout", 3*time.Second, "maximum time to wait for a DNS query to complete"),
 	)
 
 	flagSet.CreateGroup("configs", "Configurations",
 		flagSet.DynamicVar(&options.PdcpAuth, "auth", "true", "configure ProjectDiscovery Cloud Platform (PDCP) api key"),
 		flagSet.StringVarP(&options.Resolvers, "resolver", "r", "", "list of resolvers to use (file or comma separated)"),
 		flagSet.IntVarP(&options.WildcardThreshold, "wildcard-threshold", "wt", 5, "wildcard filter threshold"),
-		flagSet.StringVarP(&options.WildcardDomain, "wildcard-domain", "wd", "", "domain name for wildcard filtering (other flags will be ignored - only json output is supported)"),
+		flagSet.BoolVar(&options.AutoWildcard, "auto-wildcard", false, "automatically detect wildcard domains for filtering"),
+		flagSet.StringVarP(&options.WildcardDomain, "wildcard-domain", "wd", "", "domain name for manual wildcard filtering (mutually exclusive with -auto-wildcard; other flags will be ignored - json output recommended)"),
 		flagSet.StringVar(&options.Proxy, "proxy", "", "proxy to use (eg socks5://127.0.0.1:8080)"),
 	)
 
@@ -193,6 +201,12 @@ func ParseOptions() *Options {
 		gologger.Print().Msgf("%s\n", DoHealthCheck(options, flagSet))
 		os.Exit(0)
 	}
+
+	normalizedWildcardDomain, err := normalizeAndValidateWildcardDomain(options.WildcardDomain)
+	if err != nil {
+		gologger.Fatal().Msgf("invalid wildcard-domain value")
+	}
+	options.WildcardDomain = normalizedWildcardDomain
 
 	if options.ResponseTypeFilter != "" {
 		filterTypes := strings.Split(options.ResponseTypeFilter, ",")
@@ -209,10 +223,7 @@ func ParseOptions() *Options {
 
 	options.configureQueryOptions()
 
-	// Read the inputs and configure the logging
-	options.configureOutput()
-
-	err := options.configureRcodes()
+	err = options.configureRcodes()
 	if err != nil {
 		gologger.Fatal().Msgf("%s\n", err)
 	}
@@ -236,6 +247,7 @@ func ParseOptions() *Options {
 		}
 	}
 
+	options.configureOutput()
 	showBanner()
 
 	if options.Version {
@@ -306,17 +318,54 @@ func (options *Options) validateOptions() {
 		if options.Resume {
 			gologger.Fatal().Msgf("resume not supported in stream mode")
 		}
-		if options.WildcardDomain != "" {
+		if options.hasWildcardFiltering() {
 			gologger.Fatal().Msgf("wildcard not supported in stream mode")
 		}
 		if options.ShowStatistics {
 			gologger.Fatal().Msgf("stats not supported in stream mode")
 		}
 	}
+
+	if options.AutoWildcard && options.WildcardDomain != "" {
+		gologger.Fatal().Msgf("auto-wildcard and wildcard-domain can't be used at the same time")
+	}
+}
+
+func (options *Options) hasWildcardFiltering() bool {
+	return options.AutoWildcard || options.WildcardDomain != ""
 }
 
 func argumentHasStdin(arg string) bool {
 	return arg == stdinMarker
+}
+
+func normalizeWildcardDomain(domain string) string {
+	domain = strings.TrimSpace(strings.ToLower(domain))
+	domain = strings.TrimPrefix(domain, "*.")
+	domain = strings.TrimSuffix(domain, ".")
+	return domain
+}
+
+func normalizeAndValidateWildcardDomain(raw string) (string, error) {
+	normalized := normalizeWildcardDomain(raw)
+	if raw == "" {
+		return normalized, nil
+	}
+	if !isValidWildcardDomain(normalized) {
+		return "", errors.New("invalid wildcard domain")
+	}
+	return normalized, nil
+}
+
+func isValidWildcardDomain(domain string) bool {
+	if domain == "" {
+		return false
+	}
+	if strings.Contains(domain, "*") || strings.Contains(domain, "..") || strings.ContainsAny(domain, " \t\r\n") {
+		return false
+	}
+	_, ok := dns.IsDomainName(dns.Fqdn(domain))
+	return ok
 }
 
 // configureOutput configures the output on the screen
@@ -324,6 +373,10 @@ func (options *Options) configureOutput() {
 	// If the user desires verbose output, show verbose output
 	if options.Verbose {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelVerbose)
+	}
+	if options.NoColor {
+		updateutils.Aurora = aurora.NewAurora(false)
+		gologger.DefaultLogger.SetFormatter(formatter.NewCLI(true))
 	}
 	if options.Silent {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelSilent)
