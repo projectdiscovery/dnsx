@@ -223,7 +223,7 @@ func (r *Runner) InputWorkerStream() {
 			gologger.Error().Msgf("Could not open hosts file '%s': %s", r.options.Hosts, err)
 			return
 		}
-		defer f.Close()
+		defer f.Close() //nolint:errcheck
 		sc = bufio.NewScanner(f)
 	} else if fileutil.HasStdin() {
 		sc = bufio.NewScanner(os.Stdin)
