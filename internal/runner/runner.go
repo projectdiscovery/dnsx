@@ -24,6 +24,7 @@ import (
 	"github.com/projectdiscovery/mapcidr/asn"
 	"github.com/projectdiscovery/ratelimit"
 	"github.com/projectdiscovery/retryabledns"
+	"github.com/projectdiscovery/utils/dns/wildcard"
 	fileutil "github.com/projectdiscovery/utils/file"
 	iputil "github.com/projectdiscovery/utils/ip"
 	mapsutil "github.com/projectdiscovery/utils/maps"
@@ -32,25 +33,46 @@ import (
 
 // Runner is a client for running the enumeration process.
 type Runner struct {
-	options             *Options
-	dnsx                *dnsx.DNSX
-	wgoutputworker      *sync.WaitGroup
-	wgresolveworkers    *sync.WaitGroup
-	wgwildcardworker    *sync.WaitGroup
-	workerchan          chan string
-	outputchan          chan string
-	wildcardworkerchan  chan string
-	wildcards           *mapsutil.SyncLockMap[string, struct{}]
-	wildcardscache      map[string][]string
-	wildcardscachemutex sync.Mutex
-	limiter             *ratelimit.Limiter
-	hm                  *hybrid.HybridMap
-	stats               clistats.StatisticsClient
-	tmpStdinFile        string
-	aurora              aurora.Aurora
+	options              *Options
+	dnsx                 *dnsx.DNSX
+	wgoutputworker       *sync.WaitGroup
+	wgresolveworkers     *sync.WaitGroup
+	wgwildcardworker     *sync.WaitGroup
+	workerchan           chan string
+	outputchan           chan string
+	wildcardworkerchan   chan wildcardJob
+	wildcardAResolver    *wildcard.Resolver
+	wildcardAAAAResolver *wildcard.Resolver
+	wildcardAAdapter     *wildcardLookupAdapter
+	wildcardAAAAAdapter  *wildcardLookupAdapter
+	wildcardDomains      *sliceutil.SyncSlice[string]
+	wildcardDomainSet    *mapsutil.SyncLockMap[string, struct{}]
+	wildcards            *mapsutil.SyncLockMap[string, struct{}]
+	limiter              *ratelimit.Limiter
+	hm                   *hybrid.HybridMap
+	stats                clistats.StatisticsClient
+	tmpStdinFile         string
+	aurora               aurora.Aurora
+}
+
+type wildcardJob struct {
+	host string
+	root string
 }
 
 func New(options *Options) (*Runner, error) {
+	normalizedWildcardDomain, err := normalizeAndValidateWildcardDomain(options.WildcardDomain)
+	if err != nil {
+		return nil, errors.New("invalid wildcard domain")
+	}
+	options.WildcardDomain = normalizedWildcardDomain
+	if options.AutoWildcard && options.WildcardDomain != "" {
+		return nil, errors.New("auto-wildcard and wildcard-domain can't be used at the same time")
+	}
+	if options.Stream && options.hasWildcardFiltering() {
+		return nil, errors.New("wildcard not supported in stream mode")
+	}
+
 	retryabledns.CheckInternalIPs = true
 
 	dnsxOptions := dnsx.DefaultOptions
@@ -114,7 +136,8 @@ func New(options *Options) (*Runner, error) {
 		questionTypes = append(questionTypes, dns.TypeCAA)
 	}
 
-	// If no option is specified or wildcard filter has been requested use query type A
+	// If no option is specified or manual wildcard filtering has been requested, use query type A.
+	// Auto wildcard mode uses internal address probes and preserves the selected record types.
 	if len(questionTypes) == 0 || options.WildcardDomain != "" {
 		options.A = true
 		questionTypes = append(questionTypes, dns.TypeA)
@@ -149,20 +172,43 @@ func New(options *Options) (*Runner, error) {
 		options.NoColor = true
 	}
 
+	var wildcardAResolver *wildcard.Resolver
+	var wildcardAAAAResolver *wildcard.Resolver
+	var wildcardAAdapter *wildcardLookupAdapter
+	var wildcardAAAAAdapter *wildcardLookupAdapter
+	wildcardDomains := sliceutil.NewSyncSlice[string]()
+	wildcardDomainSet := mapsutil.NewSyncLockMap[string, struct{}]()
+	if options.hasWildcardFiltering() {
+		wildcardAResolver, wildcardAAAAResolver, wildcardAAdapter, wildcardAAAAAdapter, wildcardDomains, wildcardDomainSet, err = newWildcardResolvers(dnsX, limiter, func() {
+			if stats != nil {
+				stats.IncrementCounter("requests", 1)
+				stats.IncrementCounter("total", 1)
+			}
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	r := Runner{
-		options:            options,
-		dnsx:               dnsX,
-		wgoutputworker:     &sync.WaitGroup{},
-		wgresolveworkers:   &sync.WaitGroup{},
-		wgwildcardworker:   &sync.WaitGroup{},
-		workerchan:         make(chan string),
-		wildcardworkerchan: make(chan string),
-		wildcards:          mapsutil.NewSyncLockMap[string, struct{}](),
-		wildcardscache:     make(map[string][]string),
-		limiter:            limiter,
-		hm:                 hm,
-		stats:              stats,
-		aurora:             aurora.NewAurora(!options.NoColor),
+		options:              options,
+		dnsx:                 dnsX,
+		wgoutputworker:       &sync.WaitGroup{},
+		wgresolveworkers:     &sync.WaitGroup{},
+		wgwildcardworker:     &sync.WaitGroup{},
+		workerchan:           make(chan string),
+		wildcardworkerchan:   make(chan wildcardJob),
+		wildcardAResolver:    wildcardAResolver,
+		wildcardAAAAResolver: wildcardAAAAResolver,
+		wildcardAAdapter:     wildcardAAdapter,
+		wildcardAAAAAdapter:  wildcardAAAAAdapter,
+		wildcardDomains:      wildcardDomains,
+		wildcardDomainSet:    wildcardDomainSet,
+		wildcards:            mapsutil.NewSyncLockMap[string, struct{}](),
+		limiter:              limiter,
+		hm:                   hm,
+		stats:                stats,
+		aurora:               aurora.NewAurora(!options.NoColor),
 	}
 
 	return &r, nil
@@ -187,12 +233,20 @@ func (r *Runner) InputWorkerStream() {
 		item := strings.TrimSpace(sc.Text())
 		switch {
 		case iputil.IsCIDR(item):
-			hostsC, _ := mapcidr.IPAddressesAsStream(item)
+			hostsC, err := mapcidr.IPAddressesAsStream(item)
+			if err != nil {
+				gologger.Warning().Msgf("Could not parse CIDR '%s': %s\n", item, err)
+				continue
+			}
 			for host := range hostsC {
 				r.workerchan <- host
 			}
 		case asn.IsASN(item):
-			hostsC, _ := asn.GetIPAddressesAsStream(item)
+			hostsC, err := asn.GetIPAddressesAsStream(item)
+			if err != nil {
+				gologger.Warning().Msgf("Could not get IPs for ASN '%s': %s\n", item, err)
+				continue
+			}
 			for host := range hostsC {
 				r.workerchan <- host
 			}
@@ -468,84 +522,9 @@ func (r *Runner) run() error {
 	r.wgoutputworker.Wait()
 
 	if r.options.WildcardDomain != "" {
-		gologger.Print().Msgf("Starting to filter wildcard subdomains\n")
-		ipDomain := make(map[string]map[string]struct{})
-		listIPs := []string{}
-		// prepare in memory structure similarly to shuffledns
-		r.hm.Scan(func(k, v []byte) error {
-			var dnsdata retryabledns.DNSData
-			if err := json.Unmarshal(v, &dnsdata); err != nil {
-				// the item has no record - ignore
-				return nil
-			}
-
-			for _, a := range dnsdata.A {
-				_, ok := ipDomain[a]
-				if !ok {
-					ipDomain[a] = make(map[string]struct{})
-					listIPs = append(listIPs, a)
-				}
-				ipDomain[a][string(k)] = struct{}{}
-			}
-
-			return nil
-		})
-
-		gologger.Debug().Msgf("Found %d unique IPs:%s\n", len(listIPs), strings.Join(listIPs, ", "))
-		// wildcard workers
-		numThreads := r.options.Threads
-		if numThreads > len(listIPs) {
-			numThreads = len(listIPs)
+		if err := r.filterWildcardHosts(); err != nil {
+			return err
 		}
-		for i := 0; i < numThreads; i++ {
-			r.wgwildcardworker.Add(1)
-			go r.wildcardWorker()
-		}
-
-		seen := make(map[string]struct{})
-		for _, a := range listIPs {
-			hosts := ipDomain[a]
-			if len(hosts) >= r.options.WildcardThreshold {
-				for host := range hosts {
-					if _, ok := seen[host]; !ok {
-						seen[host] = struct{}{}
-						r.wildcardworkerchan <- host
-					}
-				}
-			}
-		}
-		close(r.wildcardworkerchan)
-		r.wgwildcardworker.Wait()
-
-		// we need to restart output
-		r.startOutputWorker()
-		seen = make(map[string]struct{})
-		seenRemovedSubdomains := make(map[string]struct{})
-		numRemovedSubdomains := 0
-		for _, A := range listIPs {
-			for host := range ipDomain[A] {
-				if host == r.options.WildcardDomain {
-					if _, ok := seen[host]; !ok {
-						seen[host] = struct{}{}
-						_ = r.lookupAndOutput(host)
-					}
-				} else if !r.wildcards.Has(host) {
-					if _, ok := seen[host]; !ok {
-						seen[host] = struct{}{}
-						_ = r.lookupAndOutput(host)
-					}
-				} else {
-					if _, ok := seenRemovedSubdomains[host]; !ok {
-						numRemovedSubdomains++
-						seenRemovedSubdomains[host] = struct{}{}
-					}
-				}
-			}
-		}
-		close(r.outputchan)
-		// waiting output worker
-		r.wgoutputworker.Wait()
-		gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
 	}
 
 	return nil
@@ -730,6 +709,10 @@ func (r *Runner) worker() {
 				}
 			}
 		}
+		if r.options.AutoWildcard && r.shouldAutoFilterHost(domain, dnsData.DNSData) {
+			continue
+		}
+
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
@@ -926,6 +909,20 @@ func (r *Runner) storeDNSData(dnsdata *retryabledns.DNSData) error {
 	return r.hm.Set(dnsdata.Host, []byte(data))
 }
 
+func (r *Runner) loadStoredDNSData(host string) (*retryabledns.DNSData, error) {
+	data, ok := r.hm.Get(host)
+	if !ok {
+		return nil, errors.New("dns data not found")
+	}
+
+	var dnsdata retryabledns.DNSData
+	if err := json.Unmarshal(data, &dnsdata); err != nil {
+		return nil, err
+	}
+
+	return &dnsdata, nil
+}
+
 // Close running instance
 func (r *Runner) Close() {
 	_ = r.hm.Close()
@@ -935,13 +932,19 @@ func (r *Runner) wildcardWorker() {
 	defer r.wgwildcardworker.Done()
 
 	for {
-		host, more := <-r.wildcardworkerchan
+		job, more := <-r.wildcardworkerchan
 		if !more {
 			break
 		}
-		if r.IsWildcard(host) {
-			// mark this host as a wildcard subdomain
-			_ = r.wildcards.Set(host, struct{}{})
+		dnsdata, err := r.loadStoredDNSData(job.host)
+		if err != nil {
+			continue
+		}
+		aAnswers := dnsDataAAnswers(dnsdata)
+		r.ensureWildcardRoot(job.root)
+		matched, _ := r.wildcardAResolver.LookupHost(job.host, aAnswers)
+		if matched {
+			_ = r.wildcards.Set(job.host, struct{}{})
 		}
 	}
 }

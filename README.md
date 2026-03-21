@@ -128,7 +128,8 @@ CONFIGURATIONS:
    -auth                         configure projectdiscovery cloud (pdcp) api key (default true)
    -r, -resolver string          list of resolvers to use (file or comma separated)
    -wt, -wildcard-threshold int  wildcard filter threshold (default 5)
-   -wd, -wildcard-domain string  domain name for wildcard filtering (other flags will be ignored - only json output is supported)
+   -auto-wildcard                automatically detect wildcard domains for filtering
+   -wd, -wildcard-domain string  domain name for manual wildcard filtering (mutually exclusive with -auto-wildcard; other flags will be ignored - json output recommended)
 ```
 
 ## Running dnsx
@@ -405,7 +406,15 @@ A special feature of `dnsx` is its ability to handle **multi-level DNS based wil
 dnsx -l subdomain_list.txt -wd airbnb.com -o output.txt
 ```
 
----------
+To detect and filter wildcard DNS automatically across multiple domains in a single run while preserving the selected output mode:
+
+```console
+dnsx -l subdomain_list.txt -auto-wildcard -o output.txt
+```
+
+`-auto-wildcard` and `-wd` / `-wildcard-domain` are mutually exclusive. Use `-wd` when you want the existing manual single-domain wildcard filtering flow; use `-auto-wildcard` when you want dnsx to detect wildcard roots automatically across mixed-domain input.
+
+---
 
 ### Dnsx as a library
 
@@ -462,8 +471,9 @@ func main() {
 - As default, `dnsx` checks for **A** record.
 - As default `dnsx` uses Google, Cloudflare, Quad9 [resolver](https://github.com/projectdiscovery/dnsx/blob/43af78839e237ea8cbafe571df1ab0d6cbe7f445/libs/dnsx/dnsx.go#L31).
 - Custom resolver list can be loaded using the `r` flag.
-- Domain name (`wd`) input is mandatory for wildcard elimination.
-- DNS record flag can not be used when using wildcard filtering.
+- `-auto-wildcard` automatically detects wildcard domains across multiple registrable roots in a single run.
+- Domain name (`-wd`) is required only for manual wildcard filtering and can not be used together with `-auto-wildcard`.
+- When using manual wildcard filtering with `-wd`, other DNS record flags are ignored and JSON output is recommended.
 - DNS resolution (`l`) and DNS brute-forcing (`w`) can't be used together.
 - VPN operators tend to filter high DNS/UDP traffic, therefore the tool might experience packets loss (eg. [Mullvad VPN](https://github.com/projectdiscovery/dnsx/issues/221)). Check [this potential solution](./MULLVAD.md).
 
