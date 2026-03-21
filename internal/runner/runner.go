@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/logrusorgru/aurora"
@@ -52,6 +53,7 @@ type Runner struct {
 	hm                   *hybrid.HybridMap
 	stats                clistats.StatisticsClient
 	tmpStdinFile         string
+	droppedDomains       atomic.Int64
 	aurora               aurora.Aurora
 }
 
@@ -283,9 +285,10 @@ func (r *Runner) prepareInput() error {
 		err         error
 	)
 
-	// copy stdin to a temporary file
+	// copy stdin to a temporary file, but only when no file-based input
+	// is already available — avoids blocking forever on an empty pipe
 	hasStdin := fileutil.HasStdin()
-	if hasStdin {
+	if hasStdin && !fileutil.FileExists(r.options.Hosts) && r.options.Domains == "" {
 		tmpStdinFile, err := fileutil.GetTempFileName()
 		if err != nil {
 			return err
@@ -299,11 +302,12 @@ func (r *Runner) prepareInput() error {
 		if _, err := io.Copy(stdinFile, os.Stdin); err != nil {
 			return err
 		}
-		// closes the file as we will read it multiple times to build the iterations
 		_ = stdinFile.Close()
 		defer func() {
 			_ = os.RemoveAll(r.tmpStdinFile)
 		}()
+	} else if hasStdin {
+		hasStdin = false
 	}
 
 	if r.options.Domains != "" {
@@ -521,6 +525,10 @@ func (r *Runner) run() error {
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
 
+	if dropped := r.droppedDomains.Load(); dropped > 0 {
+		fmt.Fprintf(os.Stderr, "[WRN] %d domains failed to resolve (consider increasing -retry or reducing -threads)\n", dropped)
+	}
+
 	if r.options.WildcardDomain != "" {
 		if err := r.filterWildcardHosts(); err != nil {
 			return err
@@ -558,6 +566,10 @@ func (r *Runner) runStream() error {
 
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
+
+	if dropped := r.droppedDomains.Load(); dropped > 0 {
+		fmt.Fprintf(os.Stderr, "[WRN] %d domains failed to resolve (consider increasing -retry or reducing -threads)\n", dropped)
+	}
 
 	return nil
 }
@@ -626,14 +638,22 @@ func (r *Runner) worker() {
 		dnsData := dnsx.ResponseData{}
 		// Ignoring errors as partial results are still good
 		queryStart := time.Now()
-		dnsData.DNSData, _ = r.dnsx.QueryMultiple(domain)
+		var queryErr error
+		dnsData.DNSData, queryErr = r.dnsx.QueryMultiple(domain)
 		dnsData.QueryTime = time.Since(queryStart).Round(time.Millisecond).String()
+		if queryErr != nil {
+			gologger.Debug().Msgf("query error for %s: %v", domain, queryErr)
+		}
 		// Just skipping nil responses (in case of critical errors)
 		if dnsData.DNSData == nil {
+			r.droppedDomains.Add(1)
+			gologger.Debug().Msgf("no response for %s (query err: %v)", domain, queryErr)
 			continue
 		}
 
 		if dnsData.Host == "" || dnsData.Timestamp.IsZero() {
+			r.droppedDomains.Add(1)
+			gologger.Debug().Msgf("incomplete response for %s (all retries exhausted)", domain)
 			continue
 		}
 
