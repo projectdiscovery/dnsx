@@ -809,6 +809,11 @@ func (r *Runner) worker() {
 		}
 		if r.options.MX {
 			r.outputRecordType(domain, dnsData.MX, "MX", dnsData.CDNName, dnsData.ASN)
+			if r.options.MXResolve {
+				if mxIPs := r.resolveMXHosts(dnsData.MX); len(mxIPs) > 0 {
+					r.outputRecordType(domain, mxIPs, "MX_IP", dnsData.CDNName, dnsData.ASN)
+				}
+			}
 		}
 		if r.options.NS {
 			r.outputRecordType(domain, dnsData.NS, "NS", dnsData.CDNName, dnsData.ASN)
@@ -841,6 +846,30 @@ func (r *Runner) worker() {
 			r.outputRecordType(domain, dnsData.CAA, "CAA", dnsData.CDNName, dnsData.ASN)
 		}
 	}
+}
+
+// resolveMXHosts performs an A-record lookup on each MX hostname returned by
+// the DNS server and returns the deduplicated list of IPs that back them.
+// Hosts that fail to resolve (NXDOMAIN, no answer, transient errors) are
+// silently dropped — the existing MX output still shows the hostnames so the
+// user can spot the gap.
+func (r *Runner) resolveMXHosts(mxHosts []string) []string {
+	if len(mxHosts) == 0 {
+		return nil
+	}
+	var ips []string
+	for _, host := range mxHosts {
+		host = strings.TrimRight(host, ".")
+		if host == "" {
+			continue
+		}
+		resolved, err := r.dnsx.Lookup(host)
+		if err != nil {
+			continue
+		}
+		ips = append(ips, resolved...)
+	}
+	return sliceutil.Dedupe(ips)
 }
 
 func (r *Runner) outputRecordType(domain string, items interface{}, queryType, cdnName string, asn *dnsx.AsnResponse) {

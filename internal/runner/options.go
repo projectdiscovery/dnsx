@@ -49,6 +49,7 @@ type Options struct {
 	CNAME                 bool
 	PTR                   bool
 	MX                    bool
+	MXResolve             bool
 	SOA                   bool
 	ANY                   bool
 	TXT                   bool
@@ -130,6 +131,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.SRV, "srv", false, "query SRV record"),
 		flagSet.BoolVar(&options.PTR, "ptr", false, "query PTR record"),
 		flagSet.BoolVar(&options.MX, "mx", false, "query MX record"),
+		flagSet.BoolVarP(&options.MXResolve, "mx-resolve", "mxr", false, "resolve MX hostnames to A/AAAA records (implies -mx)"),
 		flagSet.BoolVar(&options.SOA, "soa", false, "query SOA record"),
 		flagSet.BoolVar(&options.ANY, "any", false, "query ANY record"),
 		flagSet.BoolVar(&options.AXFR, "axfr", false, "query AXFR"),
@@ -483,5 +485,11 @@ func (options *Options) configureQueryOptions() {
 		if val, ok := queryMap[et]; ok {
 			*val = false
 		}
+	}
+
+	// -mx-resolve implies -mx so the user only needs to set the resolve flag
+	// to also see the MX hostnames their IPs were derived from.
+	if options.MXResolve {
+		options.MX = true
 	}
 }
