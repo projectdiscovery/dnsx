@@ -781,6 +781,11 @@ func (r *Runner) worker() {
 			r.outputRecordType(domain, dnsData.AAAA, "AAAA", dnsData.CDNName, dnsData.ASN)
 			r.outputRecordType(domain, dnsData.CNAME, "CNAME", dnsData.CDNName, dnsData.ASN)
 			r.outputRecordType(domain, dnsData.MX, "MX", dnsData.CDNName, dnsData.ASN)
+			if r.options.MXResolve {
+				if mxIPs := r.resolveMXHosts(dnsData.MX); len(mxIPs) > 0 {
+					r.outputRecordType(domain, mxIPs, "MX_IP", dnsData.CDNName, dnsData.ASN)
+				}
+			}
 			r.outputRecordType(domain, dnsData.NS, "NS", dnsData.CDNName, dnsData.ASN)
 			r.outputRecordType(domain, sliceutil.Dedupe(dnsData.GetSOARecords()), "SOA", dnsData.CDNName, dnsData.ASN)
 			r.outputRecordType(domain, dnsData.TXT, "TXT", dnsData.CDNName, dnsData.ASN)
@@ -865,6 +870,9 @@ func (r *Runner) resolveMXHosts(mxHosts []string) []string {
 			continue
 		}
 		r.limiter.Take()
+		if r.options.ShowStatistics {
+			r.stats.IncrementCounter("requests", 1)
+		}
 		resolved, err := r.dnsx.Lookup(host)
 		if err != nil {
 			continue
