@@ -131,7 +131,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.SRV, "srv", false, "query SRV record"),
 		flagSet.BoolVar(&options.PTR, "ptr", false, "query PTR record"),
 		flagSet.BoolVar(&options.MX, "mx", false, "query MX record"),
-		flagSet.BoolVarP(&options.MXResolve, "mx-resolve", "mxr", false, "resolve MX hostnames to A/AAAA records (implies -mx)"),
+		flagSet.BoolVarP(&options.MXResolve, "mx-resolve", "mxr", false, "resolve MX hostnames to A records (implies -mx)"),
 		flagSet.BoolVar(&options.SOA, "soa", false, "query SOA record"),
 		flagSet.BoolVar(&options.ANY, "any", false, "query ANY record"),
 		flagSet.BoolVar(&options.AXFR, "axfr", false, "query AXFR"),
