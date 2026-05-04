@@ -9,7 +9,7 @@ require (
 	github.com/miekg/dns v1.1.62
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/asnmap v1.1.1
-	github.com/projectdiscovery/cdncheck v1.2.33
+	github.com/projectdiscovery/cdncheck v1.2.34
 	github.com/projectdiscovery/clistats v0.1.2
 	github.com/projectdiscovery/goconfig v0.0.1
 	github.com/projectdiscovery/goflags v0.1.74
@@ -87,7 +87,7 @@ require (
 	github.com/projectdiscovery/freeport v0.0.7 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.37 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.3.9 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.3.10 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
