@@ -5,20 +5,20 @@ go 1.24.0
 toolchain go1.24.5
 
 require (
-	github.com/logrusorgru/aurora v2.0.3+incompatible
+	github.com/logrusorgru/aurora/v4 v4.0.0
 	github.com/miekg/dns v1.1.62
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/asnmap v1.1.1
-	github.com/projectdiscovery/cdncheck v1.2.34
-	github.com/projectdiscovery/clistats v0.1.2
+	github.com/projectdiscovery/cdncheck v1.2.36
+	github.com/projectdiscovery/clistats v0.1.3
 	github.com/projectdiscovery/goconfig v0.0.1
 	github.com/projectdiscovery/goflags v0.1.74
 	github.com/projectdiscovery/gologger v1.1.68
 	github.com/projectdiscovery/hmap v0.0.100
 	github.com/projectdiscovery/mapcidr v1.1.97
-	github.com/projectdiscovery/ratelimit v0.0.86
+	github.com/projectdiscovery/ratelimit v0.0.87
 	github.com/projectdiscovery/retryabledns v1.0.114
-	github.com/projectdiscovery/utils v0.10.1
+	github.com/projectdiscovery/utils v0.11.0
 	github.com/stretchr/testify v1.11.1
 )
 
@@ -63,7 +63,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.2 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
-	github.com/logrusorgru/aurora/v4 v4.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -83,11 +82,11 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/projectdiscovery/blackrock v0.0.1 // indirect
-	github.com/projectdiscovery/fastdialer v0.5.6 // indirect
+	github.com/projectdiscovery/fastdialer v0.5.7 // indirect
 	github.com/projectdiscovery/freeport v0.0.7 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.37 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.3.10 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.38 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.3.11 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect

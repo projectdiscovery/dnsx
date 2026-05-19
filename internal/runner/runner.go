@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/logrusorgru/aurora"
+	"github.com/logrusorgru/aurora/v4"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 	asnmap "github.com/projectdiscovery/asnmap/libs"
@@ -54,7 +54,7 @@ type Runner struct {
 	stats                clistats.StatisticsClient
 	tmpStdinFile         string
 	droppedDomains       atomic.Int64
-	aurora               aurora.Aurora
+	aurora               *aurora.Aurora
 }
 
 type wildcardJob struct {
@@ -210,7 +210,7 @@ func New(options *Options) (*Runner, error) {
 		limiter:              limiter,
 		hm:                   hm,
 		stats:                stats,
-		aurora:               aurora.NewAurora(!options.NoColor),
+		aurora:               aurora.New(aurora.WithColors(!options.NoColor)),
 	}
 
 	return &r, nil

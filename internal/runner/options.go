@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/logrusorgru/aurora"
+	"github.com/logrusorgru/aurora/v4"
 	"github.com/miekg/dns"
 	"github.com/projectdiscovery/goconfig"
 	"github.com/projectdiscovery/goflags"
@@ -375,7 +375,7 @@ func (options *Options) configureOutput() {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelVerbose)
 	}
 	if options.NoColor {
-		updateutils.Aurora = aurora.NewAurora(false)
+		updateutils.Aurora = aurora.New(aurora.WithColors(false))
 		gologger.DefaultLogger.SetFormatter(formatter.NewCLI(true))
 	}
 	if options.Silent {
