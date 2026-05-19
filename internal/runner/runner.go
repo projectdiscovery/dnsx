@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/logrusorgru/aurora"
+	"github.com/logrusorgru/aurora/v4"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 	asnmap "github.com/projectdiscovery/asnmap/libs"
@@ -47,7 +47,7 @@ type Runner struct {
 	hm                  *hybrid.HybridMap
 	stats               clistats.StatisticsClient
 	tmpStdinFile        string
-	aurora              aurora.Aurora
+	aurora              *aurora.Aurora
 }
 
 func New(options *Options) (*Runner, error) {
@@ -162,7 +162,7 @@ func New(options *Options) (*Runner, error) {
 		limiter:            limiter,
 		hm:                 hm,
 		stats:              stats,
-		aurora:             aurora.NewAurora(!options.NoColor),
+		aurora:             aurora.New(aurora.WithColors(!options.NoColor)),
 	}
 
 	return &r, nil
