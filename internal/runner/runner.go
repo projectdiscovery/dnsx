@@ -139,6 +139,8 @@ func New(options *Options) (*Runner, error) {
 		questionTypes = append(questionTypes, dns.TypeCAA)
 	}
 
+	options.explicitRecordTypes = len(questionTypes) > 0
+
 	// If no option is specified or manual wildcard filtering has been requested, use query type A.
 	// Auto wildcard mode uses internal address probes and preserves the selected record types.
 	if len(questionTypes) == 0 || options.WildcardDomain != "" {
@@ -775,6 +777,14 @@ func (r *Runner) worker() {
 			continue
 		}
 
+		// JSON and raw output emit a whole host record at once, so they must
+		// apply the record-type selectors themselves to stay consistent with
+		// the text output, which only prints hosts that have a matching record.
+		// AXFR keeps its own full-dump contract and is left untouched.
+		if (r.options.JSON || r.options.Raw) && r.options.explicitRecordTypes && !r.options.QueryAll && !r.options.AXFR && !r.hasSelectedRecord(&dnsData) {
+			continue
+		}
+
 		if r.options.JSON {
 			var marshalOptions []dnsx.MarshalOption
 			if r.options.OmitRaw {
@@ -896,6 +906,24 @@ func (r *Runner) outputResponseCode(domain string, responsecode int) {
 	if ok {
 		r.outputchan <- domain + " [" + responseCodeExt + "]"
 	}
+}
+
+func (r *Runner) hasSelectedRecord(dnsData *dnsx.ResponseData) bool {
+	switch {
+	case r.options.A && len(dnsData.A) > 0,
+		r.options.AAAA && len(dnsData.AAAA) > 0,
+		r.options.CNAME && len(dnsData.CNAME) > 0,
+		r.options.NS && len(dnsData.NS) > 0,
+		r.options.TXT && len(dnsData.TXT) > 0,
+		r.options.SRV && len(dnsData.SRV) > 0,
+		r.options.PTR && len(dnsData.PTR) > 0,
+		r.options.MX && len(dnsData.MX) > 0,
+		r.options.SOA && len(dnsData.SOA) > 0,
+		r.options.CAA && len(dnsData.CAA) > 0,
+		r.options.ANY:
+		return true
+	}
+	return false
 }
 
 func (r *Runner) shouldSkipRecord(dnsData *dnsx.ResponseData) bool {

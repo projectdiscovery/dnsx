@@ -5,7 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/hmap/store/hybrid"
+	"github.com/projectdiscovery/retryabledns"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/stretchr/testify/require"
 )
@@ -268,4 +270,30 @@ func TestNewRejectsInvalidWildcardDomain(t *testing.T) {
 	runner, err := New(&Options{WildcardDomain: "foo bar"})
 	require.Nil(t, runner)
 	require.EqualError(t, err, "invalid wildcard domain")
+}
+
+func TestHasSelectedRecord(t *testing.T) {
+	withCNAME := &dnsx.ResponseData{DNSData: &retryabledns.DNSData{CNAME: []string{"target.example.com"}}}
+	withA := &dnsx.ResponseData{DNSData: &retryabledns.DNSData{A: []string{"1.2.3.4"}}}
+	empty := &dnsx.ResponseData{DNSData: &retryabledns.DNSData{}}
+
+	tests := []struct {
+		name     string
+		options  *Options
+		data     *dnsx.ResponseData
+		expected bool
+	}{
+		{"cname requested and present", &Options{CNAME: true}, withCNAME, true},
+		{"cname requested but absent", &Options{CNAME: true}, withA, false},
+		{"a requested and present", &Options{A: true}, withA, true},
+		{"any of several requested types present", &Options{A: true, CNAME: true}, withA, true},
+		{"any record type always matches", &Options{ANY: true}, empty, true},
+		{"no requested type present", &Options{CNAME: true, MX: true}, empty, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := Runner{options: tt.options}
+			require.Equal(t, tt.expected, r.hasSelectedRecord(tt.data))
+		})
+	}
 }

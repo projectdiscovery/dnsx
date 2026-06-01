@@ -66,6 +66,7 @@ type Options struct {
 	RCode                 string
 	ResponseTypeFilter    string
 	responseTypeFilterMap []string
+	explicitRecordTypes   bool
 	hasRCodes             bool
 	Resume                bool
 	resumeCfg             *ResumeCfg
