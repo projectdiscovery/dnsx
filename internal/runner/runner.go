@@ -336,30 +336,34 @@ func (r *Runner) prepareInput() error {
 	numHosts := 0
 	for item := range sc {
 		item := normalize(item)
-		var hosts []string
 		switch {
 		case strings.Contains(item, "FUZZ"):
 			fuzz, err := r.preProcessArgument(r.options.WordList)
 			if err != nil {
 				return err
 			}
-			for r := range fuzz {
-				subdomain := strings.ReplaceAll(item, "FUZZ", r)
-				hosts = append(hosts, subdomain)
+			// stream the expansion straight into the hybrid map instead of
+			// materializing the whole product in memory
+			for word := range fuzz {
+				subdomain := strings.ReplaceAll(item, "FUZZ", word)
+				if r.addHostToHMap(subdomain) {
+					numHosts++
+				}
 			}
-			numHosts += r.addHostsToHMapFromList(hosts)
 		case r.options.WordList != "":
 			// prepare wordlist
 			prefixes, err := r.preProcessArgument(r.options.WordList)
 			if err != nil {
 				return err
 			}
+			// domains Cartesian product with wordlist, streamed into the
+			// hybrid map to keep memory bounded on large wordlists
 			for prefix := range prefixes {
-				// domains Cartesian product with wordlist
 				subdomain := strings.TrimSpace(prefix) + "." + item
-				hosts = append(hosts, subdomain)
+				if r.addHostToHMap(subdomain) {
+					numHosts++
+				}
 			}
-			numHosts += r.addHostsToHMapFromList(hosts)
 		case iputil.IsCIDR(item):
 			hostC, err := mapcidr.IPAddressesAsStream(item)
 			if err != nil {
@@ -373,8 +377,7 @@ func (r *Runner) prepareInput() error {
 			}
 			numHosts += r.addHostsToHMapFromChan(hostC)
 		default:
-			hosts = []string{item}
-			numHosts += r.addHostsToHMapFromList(hosts)
+			numHosts += r.addHostsToHMapFromList([]string{item})
 		}
 	}
 	if r.options.ShowStatistics {
@@ -395,28 +398,31 @@ func (r *Runner) prepareInput() error {
 	return nil
 }
 
+// addHostToHMap inserts a single host into the hybrid map, deduplicating, and
+// reports whether it was newly added (used to count the exact number of targets).
+func (r *Runner) addHostToHMap(host string) (added bool) {
+	if _, ok := r.hm.Get(host); ok {
+		return false
+	}
+	// nolint:errcheck
+	r.hm.Set(host, nil)
+	return true
+}
+
 func (r *Runner) addHostsToHMapFromList(hosts []string) (numHosts int) {
 	for _, host := range hosts {
-		// Used just to get the exact number of targets
-		if _, ok := r.hm.Get(host); ok {
-			continue
+		if r.addHostToHMap(host) {
+			numHosts++
 		}
-		numHosts++
-		// nolint:errcheck
-		r.hm.Set(host, nil)
 	}
 	return
 }
 
 func (r *Runner) addHostsToHMapFromChan(hosts chan string) (numHosts int) {
 	for host := range hosts {
-		// Used just to get the exact number of targets
-		if _, ok := r.hm.Get(host); ok {
-			continue
+		if r.addHostToHMap(host) {
+			numHosts++
 		}
-		numHosts++
-		// nolint:errcheck
-		r.hm.Set(host, nil)
 	}
 	return
 }

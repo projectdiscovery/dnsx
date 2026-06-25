@@ -60,6 +60,58 @@ func TestRunner_domainWildCard_prepareInput(t *testing.T) {
 	require.ElementsMatch(t, expected, got, "could not match expected output")
 }
 
+func TestRunner_fuzzInput_prepareInput(t *testing.T) {
+	options := &Options{
+		Hosts:    "FUZZ.example.com",
+		WordList: "a,b,c",
+	}
+	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+	require.Nil(t, err, "could not create hybrid map")
+	r := Runner{
+		options: options,
+		hm:      hm,
+	}
+	err = r.prepareInput()
+	if isUnauthorizedError(err) {
+		t.Skip()
+	}
+	require.Nil(t, err, "failed to prepare input")
+	expected := []string{"a.example.com", "b.example.com", "c.example.com"}
+	got := []string{}
+	r.hm.Scan(func(k, v []byte) error {
+		got = append(got, string(k))
+		return nil
+	})
+	require.ElementsMatch(t, expected, got, "could not match expected output")
+}
+
+// TestRunner_wordlistStreamingDedup_prepareInput ensures the streamed wordlist
+// expansion still deduplicates entries (and does not buffer the whole product).
+func TestRunner_wordlistStreamingDedup_prepareInput(t *testing.T) {
+	options := &Options{
+		Domains:  "example.com",
+		WordList: "a,b,a,b,c",
+	}
+	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+	require.Nil(t, err, "could not create hybrid map")
+	r := Runner{
+		options: options,
+		hm:      hm,
+	}
+	err = r.prepareInput()
+	if isUnauthorizedError(err) {
+		t.Skip()
+	}
+	require.Nil(t, err, "failed to prepare input")
+	expected := []string{"a.example.com", "b.example.com", "c.example.com"}
+	got := []string{}
+	r.hm.Scan(func(k, v []byte) error {
+		got = append(got, string(k))
+		return nil
+	})
+	require.ElementsMatch(t, expected, got, "could not match expected output")
+}
+
 func TestRunner_cidrInput_prepareInput(t *testing.T) {
 	options := &Options{
 		Domains: "173.0.84.0/30",
