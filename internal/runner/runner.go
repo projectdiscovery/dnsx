@@ -31,6 +31,7 @@ import (
 	iputil "github.com/projectdiscovery/utils/ip"
 	mapsutil "github.com/projectdiscovery/utils/maps"
 	sliceutil "github.com/projectdiscovery/utils/slice"
+	"github.com/valyala/fasttemplate"
 )
 
 // Runner is a client for running the enumeration process.
@@ -56,6 +57,7 @@ type Runner struct {
 	tmpStdinFile         string
 	droppedDomains       atomic.Int64
 	aurora               *aurora.Aurora
+	outputTemplate       *fasttemplate.Template
 }
 
 type wildcardJob struct {
@@ -214,6 +216,14 @@ func New(options *Options) (*Runner, error) {
 		hm:                   hm,
 		stats:                stats,
 		aurora:               aurora.New(aurora.WithColors(!options.NoColor)),
+	}
+
+	if options.OutputTemplate != "" {
+		tmpl, err := fasttemplate.NewTemplate(options.OutputTemplate, "{{", "}}")
+		if err != nil {
+			return nil, errors.Wrap(err, "could not parse output template")
+		}
+		r.outputTemplate = tmpl
 	}
 
 	return &r, nil
@@ -781,7 +791,12 @@ func (r *Runner) worker() {
 		// apply the record-type selectors themselves to stay consistent with
 		// the text output, which only prints hosts that have a matching record.
 		// AXFR keeps its own full-dump contract and is left untouched.
-		if (r.options.JSON || r.options.Raw) && r.options.explicitRecordTypes && !r.options.QueryAll && !r.options.AXFR && !r.hasSelectedRecord(&dnsData) {
+		if (r.options.JSON || r.options.Raw || r.options.OutputTemplate != "") && r.options.explicitRecordTypes && !r.options.QueryAll && !r.options.AXFR && !r.hasSelectedRecord(&dnsData) {
+			continue
+		}
+
+		if r.options.OutputTemplate != "" {
+			r.outputTemplateRecord(&dnsData)
 			continue
 		}
 

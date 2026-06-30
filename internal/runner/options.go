@@ -35,6 +35,7 @@ type Options struct {
 	RateLimit             int
 	Retries               int
 	OutputFormat          string
+	OutputTemplate        string
 	OutputFile            string
 	Raw                   bool
 	Silent                bool
@@ -165,6 +166,7 @@ func ParseOptions() *Options {
 		flagSet.StringVarP(&options.OutputFile, "output", "o", "", "file to write output"),
 		flagSet.BoolVarP(&options.JSON, "json", "j", false, "write output in JSONL(ines) format"),
 		flagSet.BoolVarP(&options.OmitRaw, "or", "omit-raw", false, "omit raw dns response from jsonl output"),
+		flagSet.StringVarP(&options.OutputTemplate, "output-template", "ot", "", "custom output template (e.g. -ot '{{host}} {{a}}')"),
 	)
 
 	flagSet.CreateGroup("debug", "Debug",
@@ -275,6 +277,10 @@ func ParseOptions() *Options {
 func (options *Options) validateOptions() {
 	if options.Response && options.ResponseOnly {
 		gologger.Fatal().Msgf("resp and resp-only can't be used at the same time")
+	}
+
+	if options.OutputTemplate != "" && (options.JSON || options.Raw) {
+		gologger.Fatal().Msgf("output-template can't be used with json or raw output")
 	}
 
 	if options.Retries == 0 {

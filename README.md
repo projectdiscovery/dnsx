@@ -102,9 +102,10 @@ UPDATE:
    -duc, -disable-update-check  disable automatic dnsx update check
 
 OUTPUT:
-   -o, -output string  file to write output
-   -j, -json           write output in JSONL(ines) format
-   -omit-raw, -or      omit raw dns response from jsonl output
+   -o, -output string           file to write output
+   -j, -json                    write output in JSONL(ines) format
+   -omit-raw, -or               omit raw dns response from jsonl output
+   -ot, -output-template string custom output template (e.g. -ot '{{host}} {{a}}')
 
 DEBUG:
    -hc, -health-check  run diagnostic check up
@@ -291,6 +292,33 @@ paypal-portal.com
 micropayments.paypal-labs.com
 minicart.paypal-labs.com
 ```
+---------
+
+### Custom Output Format
+
+The `-output-template` (`-ot`) flag lets you customize the output format using a template, instead of the default bracketed layout (e.g. `example.com [A] [104.20.23.154]`). You specify the template directly on the command line to control how the resolved data is presented.
+
+Template variables map to the same field names used in the JSONL output (`-json`), so any of the following can be referenced as `{{field}}`:
+
+`host`, `a`, `aaaa`, `cname`, `ns`, `txt`, `mx`, `srv`, `ptr`, `soa`, `caa`, `ttl`, `resolver`, `status_code`, `cdn-name`, `cdn-type`, `asn`, `query-time`. A convenience `{{ip}}` alias holds the combined `A` and `AAAA` records.
+
+Records with multiple values (e.g. several `A` records) are comma-joined within a single field.
+
+```console
+echo example.com | dnsx -silent -a -ot '{{host}} {{a}}'
+
+example.com 104.20.23.154,172.66.147.243
+```
+
+```console
+echo example.com | dnsx -silent -a -ot '{{ip}} - {{host}}'
+
+104.20.23.154,172.66.147.243 - example.com
+```
+
+> [!NOTE]
+> If a specified field does not exist or does not contain a value, it is simply omitted from the output. `-output-template` cannot be combined with `-json` or `-raw`.
+
 ---------
 
 ### DNS Bruteforce
