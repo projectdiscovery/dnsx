@@ -35,6 +35,17 @@ func TestBuildTemplateFields(t *testing.T) {
 	require.Empty(t, fields["mx"])
 }
 
+func TestStringifyTemplateValue(t *testing.T) {
+	require.Equal(t, "example.com", stringifyTemplateValue("example.com"))
+	require.Equal(t, "1.1.1.1,2.2.2.2", stringifyTemplateValue([]any{"1.1.1.1", "2.2.2.2"}))
+	require.Equal(t, "300", stringifyTemplateValue(float64(300)))
+	require.Equal(t, "3.14", stringifyTemplateValue(3.14))
+	require.Equal(t, "true", stringifyTemplateValue(true))
+	require.Equal(t, "", stringifyTemplateValue(nil))
+	// nested/object values fall back to their JSON representation
+	require.Equal(t, `{"as-number":"AS123"}`, stringifyTemplateValue(map[string]any{"as-number": "AS123"}))
+}
+
 func TestOutputTemplateRendering(t *testing.T) {
 	dnsData := &dnsx.ResponseData{
 		DNSData: &retryabledns.DNSData{

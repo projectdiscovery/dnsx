@@ -787,10 +787,10 @@ func (r *Runner) worker() {
 			continue
 		}
 
-		// JSON and raw output emit a whole host record at once, so they must
-		// apply the record-type selectors themselves to stay consistent with
-		// the text output, which only prints hosts that have a matching record.
-		// AXFR keeps its own full-dump contract and is left untouched.
+		// JSON, raw, and template output emit a whole host record at once, so
+		// they must apply the record-type selectors themselves to stay
+		// consistent with the text output, which only prints hosts that have a
+		// matching record. AXFR keeps its own full-dump contract and is left untouched.
 		if (r.options.JSON || r.options.Raw || r.options.OutputTemplate != "") && r.options.explicitRecordTypes && !r.options.QueryAll && !r.options.AXFR && !r.hasSelectedRecord(&dnsData) {
 			continue
 		}

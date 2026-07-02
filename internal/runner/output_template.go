@@ -25,7 +25,7 @@ func buildTemplateFields(dnsData *dnsx.ResponseData) (map[string]string, error) 
 		return nil, err
 	}
 
-	fields := make(map[string]string, len(raw)+1)
+	fields := make(map[string]string, len(raw))
 	for k, v := range raw {
 		fields[k] = stringifyTemplateValue(v)
 	}
