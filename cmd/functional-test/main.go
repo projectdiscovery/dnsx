@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/logrusorgru/aurora"
+	"github.com/logrusorgru/aurora/v4"
 	"github.com/pkg/errors"
 
 	"github.com/projectdiscovery/dnsx/internal/testutils"

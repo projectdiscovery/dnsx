@@ -2,10 +2,12 @@ name: 🧪 Functional Test
 
 on:
   pull_request:
+    paths:
+      - '**.go'
+      - '**.mod'
   workflow_dispatch:
 
-
-jobs:  
+jobs:
   functional:
     name: Functional Test
     runs-on: ${{ matrix.os }}
@@ -13,13 +15,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.24.x
-
-      - name: Check out code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - uses: projectdiscovery/actions/setup/go@v1
 
       - name: Functional Tests
         run: |
