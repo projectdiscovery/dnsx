@@ -16,12 +16,11 @@ const (
 )
 
 func linesInFile(fileName string) ([]string, error) {
-	result := []string{}
-	f, err := fileutil.ReadFile(fileName)
-	if err != nil {
-		return nil, err
-	}
-	for line := range f {
+	var result []string
+	for line, err := range fileutil.Lines(fileName) {
+		if err != nil {
+			return nil, err
+		}
 		result = append(result, line)
 	}
 	return result, nil

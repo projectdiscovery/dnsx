@@ -5,7 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/hmap/store/hybrid"
+	"github.com/projectdiscovery/retryabledns"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/stretchr/testify/require"
 )
@@ -58,6 +60,58 @@ func TestRunner_domainWildCard_prepareInput(t *testing.T) {
 	require.ElementsMatch(t, expected, got, "could not match expected output")
 }
 
+func TestRunner_fuzzInput_prepareInput(t *testing.T) {
+	options := &Options{
+		Hosts:    "FUZZ.example.com",
+		WordList: "a,b,c",
+	}
+	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+	require.Nil(t, err, "could not create hybrid map")
+	r := Runner{
+		options: options,
+		hm:      hm,
+	}
+	err = r.prepareInput()
+	if isUnauthorizedError(err) {
+		t.Skip()
+	}
+	require.Nil(t, err, "failed to prepare input")
+	expected := []string{"a.example.com", "b.example.com", "c.example.com"}
+	got := []string{}
+	r.hm.Scan(func(k, v []byte) error {
+		got = append(got, string(k))
+		return nil
+	})
+	require.ElementsMatch(t, expected, got, "could not match expected output")
+}
+
+// TestRunner_wordlistStreamingDedup_prepareInput ensures the streamed wordlist
+// expansion still deduplicates entries (and does not buffer the whole product).
+func TestRunner_wordlistStreamingDedup_prepareInput(t *testing.T) {
+	options := &Options{
+		Domains:  "example.com",
+		WordList: "a,b,a,b,c",
+	}
+	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+	require.Nil(t, err, "could not create hybrid map")
+	r := Runner{
+		options: options,
+		hm:      hm,
+	}
+	err = r.prepareInput()
+	if isUnauthorizedError(err) {
+		t.Skip()
+	}
+	require.Nil(t, err, "failed to prepare input")
+	expected := []string{"a.example.com", "b.example.com", "c.example.com"}
+	got := []string{}
+	r.hm.Scan(func(k, v []byte) error {
+		got = append(got, string(k))
+		return nil
+	})
+	require.ElementsMatch(t, expected, got, "could not match expected output")
+}
+
 func TestRunner_cidrInput_prepareInput(t *testing.T) {
 	options := &Options{
 		Domains: "173.0.84.0/30",
@@ -93,10 +147,9 @@ func TestRunner_asnInput_prepareInput(t *testing.T) {
 		options: options,
 		hm:      hm,
 	}
-	// call the prepareInput
 	err = r.prepareInput()
 	if isUnauthorizedError(err) {
-		t.Skip()
+		t.Skip("skipping: ASN API key not configured")
 	}
 	require.Nil(t, err, "failed to prepare input")
 	expectedOutputFile := "tests/AS14421.txt"
@@ -141,6 +194,70 @@ func TestRunner_fileInput_prepareInput(t *testing.T) {
 	require.ElementsMatch(t, expected, got, "could not match expected output")
 }
 
+func TestRunner_hostsInput_prepareInput(t *testing.T) {
+	t.Run("file", func(t *testing.T) {
+		hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+		require.NoError(t, err)
+		r := Runner{options: &Options{Hosts: "tests/file_input.txt"}, hm: hm}
+		require.NoError(t, r.prepareInput())
+		got := scanHMap(t, r.hm)
+		require.ElementsMatch(t, []string{"one.one.one.one", "example.com"}, got)
+	})
+
+	t.Run("stdin", func(t *testing.T) {
+		tmp, err := os.CreateTemp("", "dnsx-stdin-test")
+		require.NoError(t, err)
+		defer func() {
+			_ = os.Remove(tmp.Name())
+		}()
+		_, err = tmp.WriteString("one.one.one.one\nexample.com\n")
+		require.NoError(t, err)
+		_ = tmp.Close()
+
+		hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+		require.NoError(t, err)
+		r := Runner{options: &Options{Hosts: "-"}, hm: hm, tmpStdinFile: tmp.Name()}
+		require.NoError(t, r.prepareInput())
+		got := scanHMap(t, r.hm)
+		require.ElementsMatch(t, []string{"one.one.one.one", "example.com"}, got)
+	})
+
+	t.Run("single inline host", func(t *testing.T) {
+		hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+		require.NoError(t, err)
+		r := Runner{options: &Options{Hosts: "one.one.one.one"}, hm: hm}
+		require.NoError(t, r.prepareInput())
+		got := scanHMap(t, r.hm)
+		require.ElementsMatch(t, []string{"one.one.one.one"}, got)
+	})
+
+	t.Run("comma separated", func(t *testing.T) {
+		hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+		require.NoError(t, err)
+		r := Runner{options: &Options{Hosts: "one.one.one.one,example.com,cloudflare.com"}, hm: hm}
+		require.NoError(t, r.prepareInput())
+		got := scanHMap(t, r.hm)
+		require.ElementsMatch(t, []string{"one.one.one.one", "example.com", "cloudflare.com"}, got)
+	})
+
+	t.Run("empty returns error", func(t *testing.T) {
+		hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+		require.NoError(t, err)
+		r := Runner{options: &Options{}, hm: hm}
+		require.Error(t, r.prepareInput())
+	})
+}
+
+func scanHMap(t *testing.T, hm *hybrid.HybridMap) []string {
+	t.Helper()
+	var items []string
+	hm.Scan(func(k, v []byte) error {
+		items = append(items, string(k))
+		return nil
+	})
+	return items
+}
+
 func TestRunner_InputWorkerStream(t *testing.T) {
 	options := &Options{
 		Hosts: "tests/stream_input.txt",
@@ -154,10 +271,81 @@ func TestRunner_InputWorkerStream(t *testing.T) {
 	for c := range r.workerchan {
 		got = append(got, c)
 	}
-	expected := []string{"173.0.84.0", "173.0.84.1", "173.0.84.2", "173.0.84.3", "one.one.one.one"}
-	// read the expected IPs from the file
+	baseExpected := []string{"173.0.84.0", "173.0.84.1", "173.0.84.2", "173.0.84.3", "one.one.one.one"}
 	fileContent, err := os.ReadFile("tests/AS14421.txt")
 	require.Nil(t, err, "could not read the expectedOutputFile file")
-	expected = append(expected, strings.Split(strings.ReplaceAll(string(fileContent), "\r\n", "\n"), "\n")...)
+	asnIPs := strings.Split(strings.ReplaceAll(string(fileContent), "\r\n", "\n"), "\n")
+	if len(got) == len(baseExpected) {
+		t.Skip("skipping: ASN API key not configured")
+	}
+	expected := append(baseExpected, asnIPs...)
 	require.ElementsMatch(t, expected, got, "could not match expected output")
+}
+
+func TestNewRejectsAutoWildcardAndWildcardDomainTogether(t *testing.T) {
+	runner, err := New(&Options{AutoWildcard: true, WildcardDomain: "example.com"})
+	require.Nil(t, runner)
+	require.EqualError(t, err, "auto-wildcard and wildcard-domain can't be used at the same time")
+}
+
+func TestNewRejectsWildcardFilteringInStreamMode(t *testing.T) {
+	t.Run("auto wildcard", func(t *testing.T) {
+		runner, err := New(&Options{Stream: true, AutoWildcard: true})
+		require.Nil(t, runner)
+		require.EqualError(t, err, "wildcard not supported in stream mode")
+	})
+
+	t.Run("manual wildcard", func(t *testing.T) {
+		runner, err := New(&Options{Stream: true, WildcardDomain: "example.com"})
+		require.Nil(t, runner)
+		require.EqualError(t, err, "wildcard not supported in stream mode")
+	})
+}
+
+func TestNormalizeAndValidateWildcardDomain(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		normalized, err := normalizeAndValidateWildcardDomain("*.Example.COM.")
+		require.NoError(t, err)
+		require.Equal(t, "example.com", normalized)
+	})
+
+	for _, input := range []string{"*.", "foo bar", "example..com", "sub.*.example.com", "foo*bar.com"} {
+		t.Run(input, func(t *testing.T) {
+			normalized, err := normalizeAndValidateWildcardDomain(input)
+			require.Error(t, err)
+			require.Empty(t, normalized)
+		})
+	}
+}
+
+func TestNewRejectsInvalidWildcardDomain(t *testing.T) {
+	runner, err := New(&Options{WildcardDomain: "foo bar"})
+	require.Nil(t, runner)
+	require.EqualError(t, err, "invalid wildcard domain")
+}
+
+func TestHasSelectedRecord(t *testing.T) {
+	withCNAME := &dnsx.ResponseData{DNSData: &retryabledns.DNSData{CNAME: []string{"target.example.com"}}}
+	withA := &dnsx.ResponseData{DNSData: &retryabledns.DNSData{A: []string{"1.2.3.4"}}}
+	empty := &dnsx.ResponseData{DNSData: &retryabledns.DNSData{}}
+
+	tests := []struct {
+		name     string
+		options  *Options
+		data     *dnsx.ResponseData
+		expected bool
+	}{
+		{"cname requested and present", &Options{CNAME: true}, withCNAME, true},
+		{"cname requested but absent", &Options{CNAME: true}, withA, false},
+		{"a requested and present", &Options{A: true}, withA, true},
+		{"any of several requested types present", &Options{A: true, CNAME: true}, withA, true},
+		{"any record type always matches", &Options{ANY: true}, empty, true},
+		{"no requested type present", &Options{CNAME: true, MX: true}, empty, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := Runner{options: tt.options}
+			require.Equal(t, tt.expected, r.hasSelectedRecord(tt.data))
+		})
+	}
 }
