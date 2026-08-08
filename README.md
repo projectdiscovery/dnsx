@@ -54,6 +54,8 @@
 go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
 ```
 
+On Windows, add `%USERPROFILE%\go\bin` (or `$env:GOBIN`) to `PATH` after `go install`, then open a **new** shell so `dnsx` is found.
+
 # Usage
 
 ```sh
