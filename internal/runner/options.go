@@ -193,7 +193,7 @@ func ParseOptions() *Options {
 		flagSet.DynamicVar(&options.PdcpAuth, "auth", "true", "configure ProjectDiscovery Cloud Platform (PDCP) api key"),
 		flagSet.StringVarP(&options.Resolvers, "resolver", "r", "", "list of resolvers to use (file or comma separated)"),
 		flagSet.IntVarP(&options.WildcardThreshold, "wildcard-threshold", "wt", 5, "wildcard filter threshold"),
-		flagSet.BoolVar(&options.AutoWildcard, "auto-wildcard", false, "automatically detect wildcard domains for filtering"),
+		flagSet.BoolVarP(&options.AutoWildcard, "auto-wildcard", "aw", false, "automatically detect wildcard domains for filtering"),
 		flagSet.StringVarP(&options.WildcardDomain, "wildcard-domain", "wd", "", "domain name for manual wildcard filtering (mutually exclusive with -auto-wildcard; other flags will be ignored - json output recommended)"),
 		flagSet.StringVar(&options.Proxy, "proxy", "", "proxy to use (eg socks5://127.0.0.1:8080)"),
 	)

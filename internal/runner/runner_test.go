@@ -349,3 +349,34 @@ func TestHasSelectedRecord(t *testing.T) {
 		})
 	}
 }
+
+func TestRunner_AutoWildcardDetection(t *testing.T) {
+	t.Run("wildcard detection on wildcard-enabled domains", func(t *testing.T) {
+		results := runWildcardTestRunner(t, &Options{AutoWildcard: true})
+		// wild1.example.com and wild2.example.com are wildcard subdomains and should be filtered
+		require.NotContains(t, results, "wild1.example.com")
+		require.NotContains(t, results, "wild2.example.com")
+		require.NotContains(t, results, "v6wild1.example.org")
+		require.NotContains(t, results, "v6wild2.example.org")
+	})
+
+	t.Run("non-wildcard domain passthrough", func(t *testing.T) {
+		results := runWildcardTestRunner(t, &Options{AutoWildcard: true})
+		// Valid non-wildcard hosts should pass through
+		require.Contains(t, results, "example.com")
+		require.Contains(t, results, "keep.example.com")
+		require.Contains(t, results, "shared.example.net")
+		require.Contains(t, results, "keepv6.example.org")
+	})
+
+	t.Run("multi-domain input handling", func(t *testing.T) {
+		results := runWildcardTestRunner(t, &Options{AutoWildcard: true})
+		require.ElementsMatch(t, []string{
+			"example.com",
+			"keep.example.com",
+			"shared.example.net",
+			"keepv6.example.org",
+		}, results)
+	})
+}
+
