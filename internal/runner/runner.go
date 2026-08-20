@@ -66,7 +66,9 @@ type wildcardJob struct {
 }
 
 func New(options *Options) (*Runner, error) {
-	options.configureQueryOptions()
+	if err := options.configureQueryOptions(); err != nil {
+		return nil, err
+	}
 
 	normalizedWildcardDomain, err := normalizeAndValidateWildcardDomain(options.WildcardDomain)
 	if err != nil {

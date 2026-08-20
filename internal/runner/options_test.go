@@ -13,7 +13,8 @@ func TestConfigureQueryOptions_QueryTypeAndExcludeType(t *testing.T) {
 			QueryType:   goflags.StringSlice{"all"},
 			ExcludeType: goflags.StringSlice{"ptr", "axfr", "any"},
 		}
-		options.configureQueryOptions()
+		err := options.configureQueryOptions()
+		require.NoError(t, err)
 
 		require.True(t, options.A)
 		require.True(t, options.AAAA)
@@ -34,7 +35,8 @@ func TestConfigureQueryOptions_QueryTypeAndExcludeType(t *testing.T) {
 		options := &Options{
 			QueryType: goflags.StringSlice{"a", "cname", "txt"},
 		}
-		options.configureQueryOptions()
+		err := options.configureQueryOptions()
+		require.NoError(t, err)
 
 		require.True(t, options.A)
 		require.True(t, options.CNAME)
@@ -55,7 +57,8 @@ func TestConfigureQueryOptions_QueryTypeAndExcludeType(t *testing.T) {
 		options := &Options{
 			QueryType: goflags.StringSlice{"A", "AAAA"},
 		}
-		options.configureQueryOptions()
+		err := options.configureQueryOptions()
+		require.NoError(t, err)
 
 		require.True(t, options.A)
 		require.True(t, options.AAAA)
@@ -77,7 +80,8 @@ func TestConfigureQueryOptions_QueryTypeAndExcludeType(t *testing.T) {
 			AAAA: true,
 			MX:   true,
 		}
-		options.configureQueryOptions()
+		err := options.configureQueryOptions()
+		require.NoError(t, err)
 
 		require.True(t, options.AAAA)
 		require.True(t, options.MX)
@@ -98,7 +102,8 @@ func TestConfigureQueryOptions_QueryTypeAndExcludeType(t *testing.T) {
 		options := &Options{
 			QueryAll: true,
 		}
-		options.configureQueryOptions()
+		err := options.configureQueryOptions()
+		require.NoError(t, err)
 
 		require.True(t, options.A)
 		require.True(t, options.AAAA)
@@ -114,6 +119,24 @@ func TestConfigureQueryOptions_QueryTypeAndExcludeType(t *testing.T) {
 		require.False(t, options.ANY)
 		require.True(t, options.Response)
 	})
+
+	t.Run("invalid query type returns error", func(t *testing.T) {
+		options := &Options{
+			QueryType: goflags.StringSlice{"invalid_type"},
+		}
+		err := options.configureQueryOptions()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "unsupported query type: invalid_type")
+	})
+
+	t.Run("invalid exclude type returns error", func(t *testing.T) {
+		options := &Options{
+			ExcludeType: goflags.StringSlice{"invalid_type"},
+		}
+		err := options.configureQueryOptions()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "unsupported exclude type: invalid_type")
+	})
 }
 
 func TestFlagSet_QueryTypeAndExcludeTypeFlags(t *testing.T) {
@@ -122,6 +145,7 @@ func TestFlagSet_QueryTypeAndExcludeTypeFlags(t *testing.T) {
 		args        []string
 		expected    map[string]bool
 		notExpected map[string]bool
+		expectErr   bool
 	}{
 		{
 			name: "short flags -q and -eq",
@@ -136,12 +160,12 @@ func TestFlagSet_QueryTypeAndExcludeTypeFlags(t *testing.T) {
 		},
 		{
 			name: "long flags -query-type and -exclude-type",
-			args: []string{"-query-type", "a,cname,txt"},
+			args: []string{"-query-type", "a,cname,txt", "-exclude-type", "txt"},
 			expected: map[string]bool{
-				"a": true, "cname": true, "txt": true,
+				"a": true, "cname": true,
 			},
 			notExpected: map[string]bool{
-				"aaaa": true, "ns": true, "srv": true, "ptr": true,
+				"txt": true, "aaaa": true, "ns": true, "srv": true, "ptr": true,
 				"mx": true, "soa": true, "axfr": true, "caa": true, "any": true,
 			},
 		},
@@ -155,6 +179,11 @@ func TestFlagSet_QueryTypeAndExcludeTypeFlags(t *testing.T) {
 				"aaaa": true, "cname": true, "ns": true,
 			},
 		},
+		{
+			name:      "invalid query type flag",
+			args:      []string{"-q", "invalid_type"},
+			expectErr: true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -167,7 +196,12 @@ func TestFlagSet_QueryTypeAndExcludeTypeFlags(t *testing.T) {
 			err := flagSet.CommandLine.Parse(tc.args)
 			require.NoError(t, err)
 
-			options.configureQueryOptions()
+			err = options.configureQueryOptions()
+			if tc.expectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
 
 			queryMap := map[string]bool{
 				"a": options.A, "aaaa": options.AAAA, "cname": options.CNAME,

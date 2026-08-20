@@ -2,6 +2,7 @@ package runner
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -226,7 +227,10 @@ func ParseOptions() *Options {
 		options.responseTypeFilterMap = validTypes
 	}
 
-	options.configureQueryOptions()
+	err = options.configureQueryOptions()
+	if err != nil {
+		gologger.Fatal().Msgf("%s\n", err)
+	}
 
 	err = options.configureRcodes()
 	if err != nil {
@@ -462,8 +466,8 @@ func (options *Options) configureResume() error {
 	return nil
 }
 
-func (options *Options) configureQueryOptions() {
-	queryMap := map[string]*bool{
+func (options *Options) queryMap() map[string]*bool {
+	return map[string]*bool{
 		"a":     &options.A,
 		"aaaa":  &options.AAAA,
 		"cname": &options.CNAME,
@@ -477,6 +481,10 @@ func (options *Options) configureQueryOptions() {
 		"caa":   &options.CAA,
 		"any":   &options.ANY,
 	}
+}
+
+func (options *Options) configureQueryOptions() error {
+	queryMap := options.queryMap()
 
 	for _, qt := range options.QueryType {
 		qt = strings.TrimSpace(strings.ToLower(qt))
@@ -486,6 +494,8 @@ func (options *Options) configureQueryOptions() {
 			}
 		} else if val, ok := queryMap[qt]; ok {
 			*val = true
+		} else {
+			return fmt.Errorf("unsupported query type: %s", qt)
 		}
 	}
 
@@ -505,6 +515,10 @@ func (options *Options) configureQueryOptions() {
 		et = strings.TrimSpace(strings.ToLower(et))
 		if val, ok := queryMap[et]; ok {
 			*val = false
+		} else {
+			return fmt.Errorf("unsupported exclude type: %s", et)
 		}
 	}
+
+	return nil
 }
