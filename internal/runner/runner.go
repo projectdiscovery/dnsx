@@ -66,6 +66,8 @@ type wildcardJob struct {
 }
 
 func New(options *Options) (*Runner, error) {
+	options.configureQueryOptions()
+
 	normalizedWildcardDomain, err := normalizeAndValidateWildcardDomain(options.WildcardDomain)
 	if err != nil {
 		return nil, errors.New("invalid wildcard domain")

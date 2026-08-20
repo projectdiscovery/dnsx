@@ -17,12 +17,28 @@ import (
 	"github.com/projectdiscovery/utils/auth/pdcp"
 	"github.com/projectdiscovery/utils/env"
 	fileutil "github.com/projectdiscovery/utils/file"
+	sliceutil "github.com/projectdiscovery/utils/slice"
 	updateutils "github.com/projectdiscovery/utils/update"
 )
 
 const (
 	DefaultResumeFile = "resume.cfg"
 )
+
+var SupportedQueryTypes = []string{
+	"a",
+	"aaaa",
+	"cname",
+	"ns",
+	"txt",
+	"srv",
+	"ptr",
+	"mx",
+	"soa",
+	"axfr",
+	"caa",
+	"any",
+}
 
 var PDCPApiKey string
 
@@ -76,7 +92,8 @@ type Options struct {
 	Timeout               time.Duration
 	CAA                   bool
 	QueryAll              bool
-	ExcludeType           []string
+	QueryType             goflags.StringSlice
+	ExcludeType           goflags.StringSlice
 	OutputCDN             bool
 	ASN                   bool
 	HealthCheck           bool
@@ -107,22 +124,6 @@ func ParseOptions() *Options {
 		flagSet.StringVarP(&options.WordList, "wordlist", "w", "", "list of words to bruteforce (file or comma separated or stdin)"),
 	)
 
-	queries := goflags.AllowdTypes{
-		"none":  goflags.EnumVariable(0),
-		"a":     goflags.EnumVariable(1),
-		"aaaa":  goflags.EnumVariable(2),
-		"cname": goflags.EnumVariable(3),
-		"ns":    goflags.EnumVariable(4),
-		"txt":   goflags.EnumVariable(5),
-		"srv":   goflags.EnumVariable(6),
-		"ptr":   goflags.EnumVariable(7),
-		"mx":    goflags.EnumVariable(8),
-		"soa":   goflags.EnumVariable(9),
-		"axfr":  goflags.EnumVariable(10),
-		"caa":   goflags.EnumVariable(11),
-		"any":   goflags.EnumVariable(12),
-	}
-
 	flagSet.CreateGroup("query", "Query",
 		flagSet.BoolVar(&options.A, "a", false, "query A record (default)"),
 		flagSet.BoolVar(&options.AAAA, "aaaa", false, "query AAAA record"),
@@ -137,7 +138,8 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.AXFR, "axfr", false, "query AXFR"),
 		flagSet.BoolVar(&options.CAA, "caa", false, "query CAA record"),
 		flagSet.BoolVarP(&options.QueryAll, "recon", "all", false, "query all the dns records (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa)"),
-		flagSet.EnumSliceVarP(&options.ExcludeType, "exclude-type", "e", []goflags.EnumVariable{0}, "dns query type to exclude (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa)", queries),
+		flagSet.StringSliceVarP(&options.QueryType, "query-type", "q", nil, "dns query type to resolve (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa,any,all)", goflags.NormalizedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.ExcludeType, "exclude-type", "eq", nil, "dns query type to exclude (a,aaaa,cname,ns,txt,srv,ptr,mx,soa,axfr,caa)", goflags.NormalizedStringSliceOptions),
 	)
 
 	flagSet.CreateGroup("filter", "Filter",
@@ -476,6 +478,17 @@ func (options *Options) configureQueryOptions() {
 		"any":   &options.ANY,
 	}
 
+	for _, qt := range options.QueryType {
+		qt = strings.TrimSpace(strings.ToLower(qt))
+		if qt == "all" {
+			for _, val := range queryMap {
+				*val = true
+			}
+		} else if val, ok := queryMap[qt]; ok {
+			*val = true
+		}
+	}
+
 	if options.QueryAll {
 		for _, val := range queryMap {
 			*val = true
@@ -483,10 +496,13 @@ func (options *Options) configureQueryOptions() {
 		options.Response = true
 		// the ANY query type is not supported by the retryabledns library,
 		// thus it's hard to filter the results when it's used in combination with other query types
-		options.ExcludeType = append(options.ExcludeType, "any")
+		if !sliceutil.Contains(options.ExcludeType, "any") {
+			options.ExcludeType = append(options.ExcludeType, "any")
+		}
 	}
 
 	for _, et := range options.ExcludeType {
+		et = strings.TrimSpace(strings.ToLower(et))
 		if val, ok := queryMap[et]; ok {
 			*val = false
 		}
