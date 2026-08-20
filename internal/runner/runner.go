@@ -149,7 +149,7 @@ func New(options *Options) (*Runner, error) {
 
 	// If no option is specified or manual wildcard filtering has been requested, use query type A.
 	// Auto wildcard mode uses internal address probes and preserves the selected record types.
-	if len(questionTypes) == 0 || options.WildcardDomain != "" {
+	if (len(questionTypes) == 0 && !options.AXFR && !options.Raw) || options.WildcardDomain != "" {
 		options.A = true
 		questionTypes = append(questionTypes, dns.TypeA)
 	}

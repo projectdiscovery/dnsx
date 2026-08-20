@@ -234,3 +234,40 @@ func TestFlagSet_QueryTypeAndExcludeTypeFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestAXFR_DoesNotForceDefaultA(t *testing.T) {
+	t.Run("axfr alone via struct field", func(t *testing.T) {
+		options := &Options{
+			AXFR:    true,
+			Retries: 5,
+		}
+		err := options.configureQueryOptions()
+		require.NoError(t, err)
+		require.True(t, options.AXFR)
+		require.False(t, options.A)
+
+		runner, err := New(options)
+		require.NoError(t, err)
+		require.NotNil(t, runner)
+		require.False(t, runner.options.A)
+		require.Empty(t, runner.dnsx.Options.QuestionTypes)
+	})
+
+	t.Run("axfr alone via query type flag", func(t *testing.T) {
+		options := &Options{
+			QueryType: goflags.StringSlice{"axfr"},
+			Retries:   5,
+		}
+		err := options.configureQueryOptions()
+		require.NoError(t, err)
+		require.True(t, options.AXFR)
+		require.False(t, options.A)
+
+		runner, err := New(options)
+		require.NoError(t, err)
+		require.NotNil(t, runner)
+		require.False(t, runner.options.A)
+		require.Empty(t, runner.dnsx.Options.QuestionTypes)
+	})
+}
+
