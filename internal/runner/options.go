@@ -486,6 +486,14 @@ func (options *Options) queryMap() map[string]*bool {
 func (options *Options) configureQueryOptions() error {
 	queryMap := options.queryMap()
 
+	hasExplicitSelection := len(options.QueryType) > 0 || options.QueryAll
+	for _, enabled := range queryMap {
+		if *enabled {
+			hasExplicitSelection = true
+			break
+		}
+	}
+
 	for _, qt := range options.QueryType {
 		qt = strings.TrimSpace(strings.ToLower(qt))
 		if qt == "all" {
@@ -517,6 +525,19 @@ func (options *Options) configureQueryOptions() error {
 			*val = false
 		} else {
 			return fmt.Errorf("unsupported exclude type: %s", et)
+		}
+	}
+
+	if hasExplicitSelection {
+		hasActive := false
+		for _, enabled := range queryMap {
+			if *enabled {
+				hasActive = true
+				break
+			}
+		}
+		if !hasActive {
+			return errors.New("no query types remain after exclusions")
 		}
 	}
 

@@ -137,6 +137,16 @@ func TestConfigureQueryOptions_QueryTypeAndExcludeType(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "unsupported exclude type: invalid_type")
 	})
+
+	t.Run("all selected query types excluded returns error", func(t *testing.T) {
+		options := &Options{
+			QueryType:   goflags.StringSlice{"a"},
+			ExcludeType: goflags.StringSlice{"a"},
+		}
+		err := options.configureQueryOptions()
+		require.Error(t, err)
+		require.Equal(t, "no query types remain after exclusions", err.Error())
+	})
 }
 
 func TestFlagSet_QueryTypeAndExcludeTypeFlags(t *testing.T) {
@@ -182,6 +192,11 @@ func TestFlagSet_QueryTypeAndExcludeTypeFlags(t *testing.T) {
 		{
 			name:      "invalid query type flag",
 			args:      []string{"-q", "invalid_type"},
+			expectErr: true,
+		},
+		{
+			name:      "all selected query types excluded via flags -q a -eq a",
+			args:      []string{"-q", "a", "-eq", "a"},
 			expectErr: true,
 		},
 	}
