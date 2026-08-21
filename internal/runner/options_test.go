@@ -3,6 +3,7 @@ package runner
 import (
 	"testing"
 
+	"github.com/miekg/dns"
 	"github.com/projectdiscovery/goflags"
 	"github.com/stretchr/testify/require"
 )
@@ -269,5 +270,21 @@ func TestAXFR_DoesNotForceDefaultA(t *testing.T) {
 		require.False(t, runner.options.A)
 		require.Empty(t, runner.dnsx.Options.QuestionTypes)
 	})
+}
+
+func TestRaw_DefaultsToAWhenNoQuestionType(t *testing.T) {
+	options := &Options{
+		Raw:     true,
+		Retries: 5,
+	}
+	err := options.configureQueryOptions()
+	require.NoError(t, err)
+	require.False(t, options.A)
+
+	runner, err := New(options)
+	require.NoError(t, err)
+	require.NotNil(t, runner)
+	require.True(t, runner.options.A)
+	require.Contains(t, runner.dnsx.Options.QuestionTypes, dns.TypeA)
 }
 
