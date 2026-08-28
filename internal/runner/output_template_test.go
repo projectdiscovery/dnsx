@@ -17,6 +17,8 @@ func TestBuildTemplateFields(t *testing.T) {
 			A:     []string{"104.20.23.154", "172.66.147.243"},
 			AAAA:  []string{"2606:4700:10::6814:179a"},
 			CNAME: []string{"alias.example.com"},
+			MX:    []string{"10 mail.example.com"},
+			TTL:   300,
 		},
 		CDNName: "cloudflare",
 	}
@@ -28,12 +30,15 @@ func TestBuildTemplateFields(t *testing.T) {
 	require.Equal(t, "104.20.23.154,172.66.147.243", fields["a"])
 	require.Equal(t, "2606:4700:10::6814:179a", fields["aaaa"])
 	require.Equal(t, "alias.example.com", fields["cname"])
+	require.Equal(t, "10 mail.example.com", fields["mx"])
+	require.Equal(t, "300", fields["ttl"])
 	require.Equal(t, "cloudflare", fields["cdn-name"])
 	// ip alias combines A and AAAA records
 	require.Equal(t, "104.20.23.154,172.66.147.243,2606:4700:10::6814:179a", fields["ip"])
 	// unset fields are absent
-	require.Empty(t, fields["mx"])
+	require.Empty(t, fields["ns"])
 }
+
 
 func TestStringifyTemplateValue(t *testing.T) {
 	require.Equal(t, "example.com", stringifyTemplateValue("example.com"))
