@@ -349,9 +349,11 @@ func argumentHasStdin(arg string) bool {
 func normalizeWildcardDomain(domain string) string {
 	domain = strings.TrimSpace(strings.ToLower(domain))
 	domain = strings.TrimPrefix(domain, "*.")
+	domain = strings.TrimPrefix(domain, ".")
 	domain = strings.TrimSuffix(domain, ".")
 	return domain
 }
+
 
 func normalizeAndValidateWildcardDomain(raw string) (string, error) {
 	normalized := normalizeWildcardDomain(raw)
