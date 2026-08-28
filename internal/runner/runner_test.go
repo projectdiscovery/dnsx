@@ -327,6 +327,8 @@ func TestNewRejectsInvalidWildcardDomain(t *testing.T) {
 func TestHasSelectedRecord(t *testing.T) {
 	withCNAME := &dnsx.ResponseData{DNSData: &retryabledns.DNSData{CNAME: []string{"target.example.com"}}}
 	withA := &dnsx.ResponseData{DNSData: &retryabledns.DNSData{A: []string{"1.2.3.4"}}}
+	withAAAA := &dnsx.ResponseData{DNSData: &retryabledns.DNSData{AAAA: []string{"2001:db8::1"}}}
+	withTXT := &dnsx.ResponseData{DNSData: &retryabledns.DNSData{TXT: []string{"v=spf1 include:_spf.example.com ~all"}}}
 	empty := &dnsx.ResponseData{DNSData: &retryabledns.DNSData{}}
 
 	tests := []struct {
@@ -338,6 +340,8 @@ func TestHasSelectedRecord(t *testing.T) {
 		{"cname requested and present", &Options{CNAME: true}, withCNAME, true},
 		{"cname requested but absent", &Options{CNAME: true}, withA, false},
 		{"a requested and present", &Options{A: true}, withA, true},
+		{"aaaa requested and present", &Options{AAAA: true}, withAAAA, true},
+		{"txt requested and present", &Options{TXT: true}, withTXT, true},
 		{"any of several requested types present", &Options{A: true, CNAME: true}, withA, true},
 		{"any record type always matches", &Options{ANY: true}, empty, true},
 		{"no requested type present", &Options{CNAME: true, MX: true}, empty, false},
@@ -349,3 +353,4 @@ func TestHasSelectedRecord(t *testing.T) {
 		})
 	}
 }
+
