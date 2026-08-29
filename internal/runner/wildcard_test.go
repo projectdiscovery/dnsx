@@ -57,9 +57,12 @@ func TestNormalizeWildcardDomain(t *testing.T) {
 	require.Equal(t, "example.com", normalizeWildcardDomain("*.Example.COM."))
 	require.Equal(t, "example.com", normalizeWildcardDomain("  *.EXAMPLE.COM.  "))
 	require.Equal(t, "sub.example.com", normalizeWildcardDomain(".sub.example.com."))
+	require.Equal(t, "example.com", normalizeWildcardDomain("*.example.com"))
+	require.Equal(t, "dev.example.com", normalizeWildcardDomain("*.dev.example.com."))
 	require.Equal(t, "", normalizeWildcardDomain("*."))
 	require.Equal(t, "", normalizeWildcardDomain("   "))
 }
+
 
 
 func TestRunner_autoWildcardFiltersByRoot(t *testing.T) {
