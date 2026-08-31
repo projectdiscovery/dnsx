@@ -4,6 +4,7 @@ FROM golang:1.27-alpine AS builder
 RUN apk add --no-cache build-base
 WORKDIR /app
 COPY . /app
+ENV GOTOOLCHAIN=auto
 RUN go mod download
 RUN go build ./cmd/dnsx
 
