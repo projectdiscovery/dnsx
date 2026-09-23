@@ -230,6 +230,8 @@ func New(options *Options) (*Runner, error) {
 }
 
 func (r *Runner) InputWorkerStream() {
+	defer close(r.workerchan)
+
 	var sc *bufio.Scanner
 	// attempt to load list from file
 	if fileutil.FileExists(r.options.Hosts) {
@@ -242,6 +244,9 @@ func (r *Runner) InputWorkerStream() {
 		sc = bufio.NewScanner(f)
 	} else if fileutil.HasStdin() {
 		sc = bufio.NewScanner(os.Stdin)
+	} else {
+		gologger.Error().Msgf("no input provided in stream mode, pipe hosts to stdin")
+		return
 	}
 
 	for sc.Scan() {
@@ -269,7 +274,6 @@ func (r *Runner) InputWorkerStream() {
 			r.workerchan <- item
 		}
 	}
-	close(r.workerchan)
 }
 
 func (r *Runner) InputWorker() {
