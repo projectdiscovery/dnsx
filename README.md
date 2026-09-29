@@ -129,7 +129,7 @@ CONFIGURATIONS:
    -auth                         configure projectdiscovery cloud (pdcp) api key (default true)
    -r, -resolver string          list of resolvers to use (file or comma separated)
    -wt, -wildcard-threshold int  wildcard filter threshold (default 5)
-   -auto-wildcard                automatically detect wildcard domains for filtering
+   -aw, -auto-wildcard           automatically detect wildcard domains for filtering
    -wd, -wildcard-domain string  domain name for manual wildcard filtering (mutually exclusive with -auto-wildcard; other flags will be ignored - json output recommended)
 ```
 
