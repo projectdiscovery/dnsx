@@ -1,17 +1,15 @@
-# Base
-FROM golang:1.27-alpine AS builder
-
-RUN apk add --no-cache build-base
-WORKDIR /app
-COPY . /app
-ENV GOTOOLCHAIN=auto
-RUN go mod download
-RUN go build ./cmd/dnsx
-
-# Release
 FROM alpine:3.18.2
+
+LABEL org.opencontainers.image.authors="ProjectDiscovery"
+LABEL org.opencontainers.image.description="A fast and multi-purpose DNS toolkit designed for running DNS queries"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.title="dnsx"
+LABEL org.opencontainers.image.url="https://github.com/projectdiscovery/dnsx"
+
 RUN apk -U upgrade --no-cache \
     && apk add --no-cache bind-tools ca-certificates
-COPY --from=builder /app/dnsx /usr/local/bin/
+
+ARG TARGETPLATFORM
+COPY $TARGETPLATFORM/dnsx /usr/local/bin/
 
 ENTRYPOINT ["dnsx"]
