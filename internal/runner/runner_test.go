@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/hmap/store/hybrid"
@@ -280,6 +281,56 @@ func TestRunner_InputWorkerStream(t *testing.T) {
 	}
 	expected := append(baseExpected, asnIPs...)
 	require.ElementsMatch(t, expected, got, "could not match expected output")
+}
+
+func TestRunner_InputWorkerStreamWithoutInput(t *testing.T) {
+	t.Run("no hosts file and no stdin", func(t *testing.T) {
+		// replace stdin with /dev/null to get a deterministic "no input" state
+		origStdin := os.Stdin
+		devNull, err := os.Open(os.DevNull)
+		require.NoError(t, err)
+		os.Stdin = devNull
+		t.Cleanup(func() {
+			os.Stdin = origStdin
+			_ = devNull.Close()
+		})
+
+		r := Runner{
+			options:    &Options{Stream: true},
+			workerchan: make(chan string),
+		}
+		require.NotPanics(t, r.InputWorkerStream)
+		requireWorkerChanClosed(t, r.workerchan)
+	})
+
+	t.Run("unreadable hosts file", func(t *testing.T) {
+		f, err := os.CreateTemp("", "dnsx-stream-*")
+		require.NoError(t, err)
+		name := f.Name()
+		require.NoError(t, f.Close())
+		require.NoError(t, os.Chmod(name, 0o000))
+		t.Cleanup(func() {
+			_ = os.Chmod(name, 0o644)
+			_ = os.Remove(name)
+		})
+
+		r := Runner{
+			options:    &Options{Stream: true, Hosts: name},
+			workerchan: make(chan string),
+		}
+		require.NotPanics(t, r.InputWorkerStream)
+		requireWorkerChanClosed(t, r.workerchan)
+	})
+}
+
+func requireWorkerChanClosed(t *testing.T, workerchan chan string) {
+	t.Helper()
+	select {
+	case _, ok := <-workerchan:
+		require.False(t, ok, "workerchan should be closed")
+	case <-time.After(10 * time.Second):
+		t.Fatal("input worker returned without closing workerchan")
+	}
 }
 
 func TestNewRejectsAutoWildcardAndWildcardDomainTogether(t *testing.T) {
