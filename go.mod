@@ -2,6 +2,8 @@ module github.com/projectdiscovery/dnsx
 
 go 1.26.0
 
+toolchain go1.26.10
+
 require (
 	github.com/logrusorgru/aurora/v4 v4.0.0
 	github.com/miekg/dns v1.1.73
