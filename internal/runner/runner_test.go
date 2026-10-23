@@ -2,9 +2,9 @@ package runner
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/hmap/store/hybrid"
@@ -304,15 +304,14 @@ func TestRunner_InputWorkerStreamWithoutInput(t *testing.T) {
 	})
 
 	t.Run("unreadable hosts file", func(t *testing.T) {
-		f, err := os.CreateTemp("", "dnsx-stream-*")
-		require.NoError(t, err)
-		name := f.Name()
-		require.NoError(t, f.Close())
+		name := filepath.Join(t.TempDir(), "hosts")
+		require.NoError(t, os.WriteFile(name, []byte("example.com\n"), 0o600))
 		require.NoError(t, os.Chmod(name, 0o000))
-		t.Cleanup(func() {
-			_ = os.Chmod(name, 0o644)
-			_ = os.Remove(name)
-		})
+		t.Cleanup(func() { _ = os.Chmod(name, 0o600) })
+		if f, err := os.Open(name); err == nil {
+			_ = f.Close()
+			t.Skip("mode 000 is still readable here (root or windows)")
+		}
 
 		r := Runner{
 			options:    &Options{Stream: true, Hosts: name},
@@ -323,12 +322,14 @@ func TestRunner_InputWorkerStreamWithoutInput(t *testing.T) {
 	})
 }
 
+// requireWorkerChanClosed runs after InputWorkerStream returned, so an open
+// channel is already the hang and there is nothing to wait for.
 func requireWorkerChanClosed(t *testing.T, workerchan chan string) {
 	t.Helper()
 	select {
 	case _, ok := <-workerchan:
 		require.False(t, ok, "workerchan should be closed")
-	case <-time.After(10 * time.Second):
+	default:
 		t.Fatal("input worker returned without closing workerchan")
 	}
 }
