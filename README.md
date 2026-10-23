@@ -48,7 +48,7 @@
 # Installation Instructions
 
 
-`dnsx` requires **go1.21** to install successfully. Run the following command to install the latest version: 
+`dnsx` requires **go1.26.10** to install successfully. Run the following command to install the latest version: 
 
 ```sh
 go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
@@ -129,7 +129,7 @@ CONFIGURATIONS:
    -auth                         configure projectdiscovery cloud (pdcp) api key (default true)
    -r, -resolver string          list of resolvers to use (file or comma separated)
    -wt, -wildcard-threshold int  wildcard filter threshold (default 5)
-   -auto-wildcard                automatically detect wildcard domains for filtering
+   -aw, -auto-wildcard           automatically detect wildcard domains for filtering
    -wd, -wildcard-domain string  domain name for manual wildcard filtering (mutually exclusive with -auto-wildcard; other flags will be ignored - json output recommended)
 ```
 
