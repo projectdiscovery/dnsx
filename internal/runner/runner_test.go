@@ -2,6 +2,7 @@ package runner
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -280,6 +281,57 @@ func TestRunner_InputWorkerStream(t *testing.T) {
 	}
 	expected := append(baseExpected, asnIPs...)
 	require.ElementsMatch(t, expected, got, "could not match expected output")
+}
+
+func TestRunner_InputWorkerStreamWithoutInput(t *testing.T) {
+	t.Run("no hosts file and no stdin", func(t *testing.T) {
+		// replace stdin with /dev/null to get a deterministic "no input" state
+		origStdin := os.Stdin
+		devNull, err := os.Open(os.DevNull)
+		require.NoError(t, err)
+		os.Stdin = devNull
+		t.Cleanup(func() {
+			os.Stdin = origStdin
+			_ = devNull.Close()
+		})
+
+		r := Runner{
+			options:    &Options{Stream: true},
+			workerchan: make(chan string),
+		}
+		require.NotPanics(t, r.InputWorkerStream)
+		requireWorkerChanClosed(t, r.workerchan)
+	})
+
+	t.Run("unreadable hosts file", func(t *testing.T) {
+		name := filepath.Join(t.TempDir(), "hosts")
+		require.NoError(t, os.WriteFile(name, []byte("example.com\n"), 0o600))
+		require.NoError(t, os.Chmod(name, 0o000))
+		t.Cleanup(func() { _ = os.Chmod(name, 0o600) })
+		if f, err := os.Open(name); err == nil {
+			_ = f.Close()
+			t.Skip("mode 000 is still readable here (root or windows)")
+		}
+
+		r := Runner{
+			options:    &Options{Stream: true, Hosts: name},
+			workerchan: make(chan string),
+		}
+		require.NotPanics(t, r.InputWorkerStream)
+		requireWorkerChanClosed(t, r.workerchan)
+	})
+}
+
+// requireWorkerChanClosed runs after InputWorkerStream returned, so an open
+// channel is already the hang and there is nothing to wait for.
+func requireWorkerChanClosed(t *testing.T, workerchan chan string) {
+	t.Helper()
+	select {
+	case _, ok := <-workerchan:
+		require.False(t, ok, "workerchan should be closed")
+	default:
+		t.Fatal("input worker returned without closing workerchan")
+	}
 }
 
 func TestNewRejectsAutoWildcardAndWildcardDomainTogether(t *testing.T) {
