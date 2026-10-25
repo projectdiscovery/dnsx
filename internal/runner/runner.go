@@ -801,7 +801,9 @@ func (r *Runner) worker() {
 		// they must apply the record-type selectors themselves to stay
 		// consistent with the text output, which only prints hosts that have a
 		// matching record. AXFR keeps its own full-dump contract and is left untouched.
-		if (r.options.JSON || r.options.Raw || r.options.OutputTemplate != "") && r.options.explicitRecordTypes && !r.options.QueryAll && !r.options.AXFR && !r.hasSelectedRecord(&dnsData) {
+		// With -rcode the text output prints every host with a matching status code,
+		// records or not (e.g. NXDOMAIN), so the record-type selectors don't apply.
+		if (r.options.JSON || r.options.Raw || r.options.OutputTemplate != "") && r.options.explicitRecordTypes && !r.options.QueryAll && !r.options.AXFR && !r.options.hasRCodes && !r.hasSelectedRecord(&dnsData) {
 			continue
 		}
 

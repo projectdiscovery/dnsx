@@ -1,10 +1,12 @@
 package runner
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
 	"github.com/projectdiscovery/hmap/store/hybrid"
@@ -400,4 +402,47 @@ func TestHasSelectedRecord(t *testing.T) {
 			require.Equal(t, tt.expected, r.hasSelectedRecord(tt.data))
 		})
 	}
+}
+
+func TestRunner_jsonRcodeOutputsHostsWithoutSelectedRecord(t *testing.T) {
+	resolver, shutdown := startWildcardTestDNSServer(t)
+	defer shutdown()
+
+	tempDir := t.TempDir()
+	hostsFile := filepath.Join(tempDir, "hosts.txt")
+	outputFile := filepath.Join(tempDir, "output.txt")
+	require.NoError(t, os.WriteFile(hostsFile, []byte("keep.example.com\nmissing.example.net"), 0644))
+
+	options := &Options{
+		Hosts:      hostsFile,
+		OutputFile: outputFile,
+		Resolvers:  resolver,
+		Threads:    2,
+		Retries:    1,
+		Timeout:    time.Second,
+		Silent:     true,
+		A:          true,
+		JSON:       true,
+		OmitRaw:    true,
+		RCode:      "nxdomain",
+	}
+	require.NoError(t, options.configureRcodes())
+
+	runner, err := New(options)
+	require.NoError(t, err)
+	defer runner.Close()
+	require.NoError(t, runner.Run())
+
+	output, err := os.ReadFile(outputFile)
+	require.NoError(t, err)
+	lines := splitOutputLines(string(output))
+	require.Len(t, lines, 1)
+
+	var result struct {
+		Host       string `json:"host"`
+		StatusCode string `json:"status_code"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(lines[0]), &result))
+	require.Equal(t, "missing.example.net", result.Host)
+	require.Equal(t, "NXDOMAIN", result.StatusCode)
 }
