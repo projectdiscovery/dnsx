@@ -107,14 +107,17 @@ func New(options *Options) (*Runner, error) {
 	}
 
 	var questionTypes []uint16
+	// Query CNAME before address types (A / AAAA) so that for dangling CNAMEs,
+	// the address query (which follows the chain) retains the authoritative NXDOMAIN
+	// status rather than being overwritten by the intermediate CNAME query (#1092).
+	if options.CNAME {
+		questionTypes = append(questionTypes, dns.TypeCNAME)
+	}
 	if options.A {
 		questionTypes = append(questionTypes, dns.TypeA)
 	}
 	if options.AAAA {
 		questionTypes = append(questionTypes, dns.TypeAAAA)
-	}
-	if options.CNAME {
-		questionTypes = append(questionTypes, dns.TypeCNAME)
 	}
 	if options.PTR {
 		questionTypes = append(questionTypes, dns.TypePTR)
