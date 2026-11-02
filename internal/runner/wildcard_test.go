@@ -388,3 +388,92 @@ func cnameWildcardARecords(question string) []string {
 	}
 	return nil
 }
+
+func startDanglingCNAMETestDNSServer(t *testing.T) (string, func()) {
+	t.Helper()
+
+	packetConn, err := net.ListenPacket("udp", "127.0.0.1:0")
+	require.NoError(t, err)
+
+	server := &dns.Server{PacketConn: packetConn, Handler: dns.HandlerFunc(func(w dns.ResponseWriter, r *dns.Msg) {
+		msg := new(dns.Msg)
+		msg.SetReply(r)
+		msg.Authoritative = true
+
+		q := strings.TrimSuffix(r.Question[0].Name, ".")
+		switch r.Question[0].Qtype {
+		case dns.TypeCNAME:
+			if q == "dangling.example.com" {
+				msg.Answer = append(msg.Answer, &dns.CNAME{
+					Hdr:    dns.RR_Header{Name: dns.Fqdn(q), Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 60},
+					Target: dns.Fqdn("gone.example.com"),
+				})
+			} else {
+				msg.Rcode = dns.RcodeNameError
+			}
+		case dns.TypeA:
+			if q == "dangling.example.com" {
+				// Address query following CNAME chain returns CNAME + NXDOMAIN
+				msg.Answer = append(msg.Answer, &dns.CNAME{
+					Hdr:    dns.RR_Header{Name: dns.Fqdn(q), Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: 60},
+					Target: dns.Fqdn("gone.example.com"),
+				})
+				msg.Rcode = dns.RcodeNameError
+			} else {
+				msg.Rcode = dns.RcodeNameError
+			}
+		default:
+			msg.Rcode = dns.RcodeNameError
+		}
+
+		_ = w.WriteMsg(msg)
+	})}
+
+	go func() {
+		_ = server.ActivateAndServe()
+	}()
+
+	return packetConn.LocalAddr().String(), func() {
+		_ = server.Shutdown()
+		_ = packetConn.Close()
+	}
+}
+
+func TestRunner_DanglingCNAMEPreservesNXDOMAIN(t *testing.T) {
+	resolver, shutdown := startDanglingCNAMETestDNSServer(t)
+	defer shutdown()
+
+	tempDir := t.TempDir()
+	hostsFile := filepath.Join(tempDir, "hosts.txt")
+	outputFile := filepath.Join(tempDir, "output.txt")
+	require.NoError(t, os.WriteFile(hostsFile, []byte("dangling.example.com"), 0644))
+
+	options := &Options{
+		Hosts:      hostsFile,
+		OutputFile: outputFile,
+		Resolvers:  resolver,
+		Threads:    1,
+		Retries:    1,
+		Timeout:    time.Second,
+		Silent:     true,
+		A:          true,
+		CNAME:      true,
+		JSON:       true,
+		OmitRaw:    true,
+		RCode:      "nxdomain",
+	}
+	require.NoError(t, options.configureRcodes())
+
+	runner, err := New(options)
+	require.NoError(t, err)
+	defer runner.Close()
+	require.NoError(t, runner.Run())
+
+	output, err := os.ReadFile(outputFile)
+	require.NoError(t, err)
+	lines := splitOutputLines(string(output))
+	require.Len(t, lines, 1, "dangling CNAME should match -rcode nxdomain even when -cname is enabled (#1092)")
+
+	require.Contains(t, lines[0], `"status_code":"NXDOMAIN"`)
+	require.Contains(t, lines[0], `"cname":["gone.example.com"]`)
+}
