@@ -297,6 +297,12 @@ func (r *Runner) InputWorker() {
 }
 
 func (r *Runner) prepareInput() error {
+	// Cancel input producers on every return. An early error leaves their
+	// channel undrained, and they must observe cancellation instead of blocking
+	// forever on send. A fully consumed input finishes before this runs.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	var (
 		dataDomains chan string
 		sc          chan string
@@ -330,7 +336,7 @@ func (r *Runner) prepareInput() error {
 	}
 
 	if r.options.Domains != "" {
-		dataDomains, err = r.preProcessArgument(r.options.Domains)
+		dataDomains, err = r.preProcessArgument(ctx, r.options.Domains)
 		if err != nil {
 			return err
 		}
@@ -342,7 +348,7 @@ func (r *Runner) prepareInput() error {
 		if hostArg == "" && hasStdin {
 			hostArg = stdinMarker
 		}
-		sc, err = r.preProcessArgument(hostArg)
+		sc, err = r.preProcessArgument(ctx, hostArg)
 		if err != nil {
 			return err
 		}
@@ -353,7 +359,7 @@ func (r *Runner) prepareInput() error {
 		item := normalize(item)
 		switch {
 		case strings.Contains(item, "FUZZ"):
-			fuzz, err := r.preProcessArgument(r.options.WordList)
+			fuzz, err := r.preProcessArgument(ctx, r.options.WordList)
 			if err != nil {
 				return err
 			}
@@ -367,7 +373,7 @@ func (r *Runner) prepareInput() error {
 			}
 		case r.options.WordList != "":
 			// prepare wordlist
-			prefixes, err := r.preProcessArgument(r.options.WordList)
+			prefixes, err := r.preProcessArgument(ctx, r.options.WordList)
 			if err != nil {
 				return err
 			}
@@ -538,15 +544,15 @@ func (r *Runner) addHostsToHMapFromChan(hosts chan string) (numHosts int) {
 	return
 }
 
-func (r *Runner) preProcessArgument(arg string) (chan string, error) {
+func (r *Runner) preProcessArgument(ctx context.Context, arg string) (chan string, error) {
 	switch {
 	case fileutil.FileExists(arg):
-		return linesIterToChan(fileutil.Lines(arg)), nil
+		return linesIterToChan(ctx, fileutil.Lines(arg)), nil
 	case argumentHasStdin(arg):
-		return linesIterToChan(fileutil.Lines(r.tmpStdinFile)), nil
+		return linesIterToChan(ctx, fileutil.Lines(r.tmpStdinFile)), nil
 	case arg != "":
 		data := strings.ReplaceAll(arg, Comma, NewLine)
-		return linesIterToChan(fileutil.LinesReader(strings.NewReader(data))), nil
+		return linesIterToChan(ctx, fileutil.LinesReader(strings.NewReader(data))), nil
 	default:
 		return nil, errors.New("empty argument")
 	}
@@ -556,7 +562,9 @@ func (r *Runner) preProcessArgument(arg string) (chan string, error) {
 // surfaces a per-line error) to the channel signature the rest of the
 // runner expects. Iteration errors are silently dropped to preserve the
 // historical "best effort" behaviour of the old fileutil.ReadFile.
-func linesIterToChan(it iter.Seq2[string, error]) chan string {
+// The producer selects on ctx so an early return in prepareInput can stop it
+// while it is blocked sending.
+func linesIterToChan(ctx context.Context, it iter.Seq2[string, error]) chan string {
 	ch := make(chan string)
 	go func() {
 		defer close(ch)
@@ -564,7 +572,11 @@ func linesIterToChan(it iter.Seq2[string, error]) chan string {
 			if err != nil {
 				return
 			}
-			ch <- line
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- line:
+			}
 		}
 	}()
 	return ch

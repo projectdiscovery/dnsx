@@ -141,6 +141,27 @@ func TestRunner_cidrInput_prepareInput(t *testing.T) {
 	require.ElementsMatch(t, expected, got, "could not match expected output")
 }
 
+func TestPrepareInputCancelsProducerOnCIDRError(t *testing.T) {
+	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+	require.NoError(t, err)
+	r := Runner{
+		options: &Options{Domains: "173.0.84.0/29,example.com", MaxHosts: 4},
+		hm:      hm,
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		done <- r.prepareInput()
+	}()
+	select {
+	case err := <-done:
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "-max-hosts")
+	case <-time.After(2 * time.Second):
+		t.Fatal("prepareInput blocked with an input producer still sending")
+	}
+}
+
 func TestRunner_cidrInputRespectsMaxHosts(t *testing.T) {
 	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
 	require.NoError(t, err)
