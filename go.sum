@@ -140,8 +140,8 @@ github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 h1:o4JXh1EVt
 github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55/go.mod h1:OmDBASR4679mdNQnz2pUhc2G8CO2JrUAVFDRBDP/hJE=
 github.com/projectdiscovery/asnmap v1.2.0 h1:xxZxVYJYPyBNbwF7jL/rtpThKBMdjomQBmlAZRqhq7E=
 github.com/projectdiscovery/asnmap v1.2.0/go.mod h1:0tNdUGHUE7TFWDaHZtuXcVpQfRTZZ1BKmFfl8gtQbiU=
-github.com/projectdiscovery/blackrock v0.0.2 h1:mxXdu0uM8P2L2Qi210COlU8QiICPFW/Rxk5QUhlPO2k=
-github.com/projectdiscovery/blackrock v0.0.2/go.mod h1:ANUtjDfaVrqB453bzToU+YB4cUbvBRpLvEwoWIwlTss=
+github.com/projectdiscovery/blackrock v0.0.4 h1:xFqk3gqbLDfJuqfpTer+rtwz3q7JLnz/a/A2hbFB8rI=
+github.com/projectdiscovery/blackrock v0.0.4/go.mod h1:ANUtjDfaVrqB453bzToU+YB4cUbvBRpLvEwoWIwlTss=
 github.com/projectdiscovery/cdncheck v1.4.0 h1:FP+ALhMtm+HyE8WgeWp3lUvNp3WaE7LCsC7LpB9QsWw=
 github.com/projectdiscovery/cdncheck v1.4.0/go.mod h1:27FjISwBKtdQXsC31q16xspX5xAu0gbYfF0rs3yGNxs=
 github.com/projectdiscovery/clistats v0.1.10 h1:G+Ml7L1RoYPhkspkGPwSse7r2Nhnee2Z5wsr7YE0HTs=
@@ -170,8 +170,8 @@ github.com/projectdiscovery/retryabledns v1.0.119 h1:QljvfDIQ9qw3qtsgyl3g5dkW87R
 github.com/projectdiscovery/retryabledns v1.0.119/go.mod h1:DzJqF5OpIgjSm4fR087gHSDYC05JsTRi1RTbbpvrJo8=
 github.com/projectdiscovery/retryablehttp-go v1.3.35 h1:u4ZnTMh7ZE46buZRBrFL3Yyk0uCrDudcVOlT/VkDWGU=
 github.com/projectdiscovery/retryablehttp-go v1.3.35/go.mod h1:+UvjTjyTxKJRfPgm023lb84MjAjpDT3jjs1ZO5KuAIE=
-github.com/projectdiscovery/utils v0.11.14 h1:1AL15zuWA5A9PjKX6Df0j62eEGAiFzmJO71P0x8ul0A=
-github.com/projectdiscovery/utils v0.11.14/go.mod h1:e5kUJT/Jr+lBGrzCAVo8TQvYeeEkVwT6DMkkIRVlGRU=
+github.com/projectdiscovery/utils v0.11.15 h1:SL02AwUsTvuAt5fu+uxEzjZPwtc0Oj1MVky89GlcnR0=
+github.com/projectdiscovery/utils v0.11.15/go.mod h1:xi8KJ+NENlIk4sgfnvihJdcR+4qnEO5Z67fvN5Md33w=
 github.com/refraction-networking/utls v1.8.2 h1:j4Q1gJj0xngdeH+Ox/qND11aEfhpgoEvV+S9iJ2IdQo=
 github.com/refraction-networking/utls v1.8.2/go.mod h1:jkSOEkLqn+S/jtpEHPOsVv/4V4EVnelwbMQl4vCWXAM=
 github.com/rivo/uniseg v0.1.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
