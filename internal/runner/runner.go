@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"iter"
+	"net"
 	"os"
 	"strings"
 	"sync"
@@ -253,18 +254,18 @@ func (r *Runner) InputWorkerStream() {
 		item := strings.TrimSpace(sc.Text())
 		switch {
 		case iputil.IsCIDR(item):
-			hostsC, err := mapcidr.IPAddressesAsStream(item)
+			hostsC, err := r.iterCIDR(item)
 			if err != nil {
-				gologger.Warning().Msgf("Could not parse CIDR '%s': %s\n", item, err)
+				gologger.Warning().Msgf("Could not expand CIDR '%s': %s\n", item, err)
 				continue
 			}
 			for host := range hostsC {
 				r.workerchan <- host
 			}
 		case asn.IsASN(item):
-			hostsC, err := asn.GetIPAddressesAsStream(item)
+			hostsC, err := r.iterASN(item)
 			if err != nil {
-				gologger.Warning().Msgf("Could not get IPs for ASN '%s': %s\n", item, err)
+				gologger.Warning().Msgf("Could not expand ASN '%s': %s\n", item, err)
 				continue
 			}
 			for host := range hostsC {
@@ -379,13 +380,13 @@ func (r *Runner) prepareInput() error {
 				}
 			}
 		case iputil.IsCIDR(item):
-			hostC, err := mapcidr.IPAddressesAsStream(item)
+			hostC, err := r.iterCIDR(item)
 			if err != nil {
 				return err
 			}
 			numHosts += r.addHostsToHMapFromChan(hostC)
 		case asn.IsASN(item):
-			hostC, err := asn.GetIPAddressesAsStream(item)
+			hostC, err := r.iterASN(item)
 			if err != nil {
 				return err
 			}
@@ -414,6 +415,102 @@ func (r *Runner) prepareInput() error {
 
 // addHostToHMap inserts a single host into the hybrid map, deduplicating, and
 // reports whether it was newly added (used to count the exact number of targets).
+// maxHostsLimit is the per-input expansion cap. Zero means the default cap.
+// A negative value disables it.
+func (options *Options) maxHostsLimit() int {
+	if options.MaxHosts == 0 {
+		return DefaultMaxHosts
+	}
+	return options.MaxHosts
+}
+
+func addressCount(cidr string) (uint64, bool, error) {
+	_, ipnet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return 0, false, err
+	}
+	ones, bits := ipnet.Mask.Size()
+	if bits == 0 {
+		return 0, false, fmt.Errorf("invalid CIDR %s", cidr)
+	}
+	hostBits := bits - ones
+	// Shifting by 63 or more overflows uint64. Those ranges are always over the cap.
+	if hostBits >= 63 {
+		return 0, true, nil
+	}
+	return 1 << uint(hostBits), false, nil
+}
+
+func (r *Runner) cidrWithinLimit(cidr string) error {
+	limit := r.options.maxHostsLimit()
+	if limit < 0 {
+		return nil
+	}
+	count, tooLarge, err := addressCount(cidr)
+	if err != nil {
+		return err
+	}
+	if tooLarge || count > uint64(limit) {
+		return fmt.Errorf("%s expands past the -max-hosts limit of %d (pass -max-hosts -1 to disable)", cidr, limit)
+	}
+	return nil
+}
+
+func (r *Runner) asnWithinLimit(asnName string, cidrs []*net.IPNet) error {
+	limit := r.options.maxHostsLimit()
+	if limit < 0 {
+		return nil
+	}
+	var total uint64
+	max := uint64(limit)
+	for _, cidr := range cidrs {
+		count, tooLarge, err := addressCount(cidr.String())
+		if err != nil {
+			return err
+		}
+		if tooLarge || count > max || total > max-count {
+			return fmt.Errorf("%s expands past the -max-hosts limit of %d (pass -max-hosts -1 to disable)", asnName, limit)
+		}
+		total += count
+	}
+	return nil
+}
+
+func (r *Runner) iterCIDR(cidr string) (chan string, error) {
+	if err := r.cidrWithinLimit(cidr); err != nil {
+		return nil, err
+	}
+	return mapcidr.IPAddressesAsStream(cidr)
+}
+
+func (r *Runner) iterASN(value string) (chan string, error) {
+	cidrs, err := asn.GetCIDRsForASNNum(value)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.asnWithinLimit(value, cidrs); err != nil {
+		return nil, err
+	}
+	return streamIPNets(cidrs), nil
+}
+
+func streamIPNets(cidrs []*net.IPNet) chan string {
+	out := make(chan string)
+	go func() {
+		defer close(out)
+		for _, cidr := range cidrs {
+			ips, err := mapcidr.IPAddressesAsStream(cidr.String())
+			if err != nil {
+				continue
+			}
+			for ip := range ips {
+				out <- ip
+			}
+		}
+	}()
+	return out
+}
+
 func (r *Runner) addHostToHMap(host string) (added bool) {
 	if _, ok := r.hm.Get(host); ok {
 		return false
