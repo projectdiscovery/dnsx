@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"iter"
+	"net"
 	"os"
 	"strings"
 	"sync"
@@ -253,18 +254,18 @@ func (r *Runner) InputWorkerStream() {
 		item := strings.TrimSpace(sc.Text())
 		switch {
 		case iputil.IsCIDR(item):
-			hostsC, err := mapcidr.IPAddressesAsStream(item)
+			hostsC, err := r.iterCIDR(item)
 			if err != nil {
-				gologger.Warning().Msgf("Could not parse CIDR '%s': %s\n", item, err)
+				gologger.Warning().Msgf("Could not expand CIDR '%s': %s\n", item, err)
 				continue
 			}
 			for host := range hostsC {
 				r.workerchan <- host
 			}
 		case asn.IsASN(item):
-			hostsC, err := asn.GetIPAddressesAsStream(item)
+			hostsC, err := r.iterASN(item)
 			if err != nil {
-				gologger.Warning().Msgf("Could not get IPs for ASN '%s': %s\n", item, err)
+				gologger.Warning().Msgf("Could not expand ASN '%s': %s\n", item, err)
 				continue
 			}
 			for host := range hostsC {
@@ -296,6 +297,12 @@ func (r *Runner) InputWorker() {
 }
 
 func (r *Runner) prepareInput() error {
+	// Cancel input producers on every return. An early error leaves their
+	// channel undrained, and they must observe cancellation instead of blocking
+	// forever on send. A fully consumed input finishes before this runs.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	var (
 		dataDomains chan string
 		sc          chan string
@@ -329,7 +336,7 @@ func (r *Runner) prepareInput() error {
 	}
 
 	if r.options.Domains != "" {
-		dataDomains, err = r.preProcessArgument(r.options.Domains)
+		dataDomains, err = r.preProcessArgument(ctx, r.options.Domains)
 		if err != nil {
 			return err
 		}
@@ -341,7 +348,7 @@ func (r *Runner) prepareInput() error {
 		if hostArg == "" && hasStdin {
 			hostArg = stdinMarker
 		}
-		sc, err = r.preProcessArgument(hostArg)
+		sc, err = r.preProcessArgument(ctx, hostArg)
 		if err != nil {
 			return err
 		}
@@ -352,7 +359,7 @@ func (r *Runner) prepareInput() error {
 		item := normalize(item)
 		switch {
 		case strings.Contains(item, "FUZZ"):
-			fuzz, err := r.preProcessArgument(r.options.WordList)
+			fuzz, err := r.preProcessArgument(ctx, r.options.WordList)
 			if err != nil {
 				return err
 			}
@@ -366,7 +373,7 @@ func (r *Runner) prepareInput() error {
 			}
 		case r.options.WordList != "":
 			// prepare wordlist
-			prefixes, err := r.preProcessArgument(r.options.WordList)
+			prefixes, err := r.preProcessArgument(ctx, r.options.WordList)
 			if err != nil {
 				return err
 			}
@@ -379,13 +386,13 @@ func (r *Runner) prepareInput() error {
 				}
 			}
 		case iputil.IsCIDR(item):
-			hostC, err := mapcidr.IPAddressesAsStream(item)
+			hostC, err := r.iterCIDR(item)
 			if err != nil {
 				return err
 			}
 			numHosts += r.addHostsToHMapFromChan(hostC)
 		case asn.IsASN(item):
-			hostC, err := asn.GetIPAddressesAsStream(item)
+			hostC, err := r.iterASN(item)
 			if err != nil {
 				return err
 			}
@@ -410,6 +417,102 @@ func (r *Runner) prepareInput() error {
 		})
 	}
 	return nil
+}
+
+// maxHostsLimit is the opt-in per-input expansion cap. Zero or a negative
+// value means no limit.
+func (options *Options) maxHostsLimit() int {
+	if options.MaxHosts <= 0 {
+		return -1
+	}
+	return options.MaxHosts
+}
+
+func addressCount(cidr string) (uint64, bool, error) {
+	_, ipnet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return 0, false, err
+	}
+	ones, bits := ipnet.Mask.Size()
+	if bits == 0 {
+		return 0, false, fmt.Errorf("invalid CIDR %s", cidr)
+	}
+	hostBits := bits - ones
+	// Shifting by 63 or more overflows uint64. Those ranges are always over the cap.
+	if hostBits >= 63 {
+		return 0, true, nil
+	}
+	return 1 << uint(hostBits), false, nil
+}
+
+func (r *Runner) cidrWithinLimit(cidr string) error {
+	limit := r.options.maxHostsLimit()
+	if limit < 0 {
+		return nil
+	}
+	count, tooLarge, err := addressCount(cidr)
+	if err != nil {
+		return err
+	}
+	if tooLarge || count > uint64(limit) {
+		return fmt.Errorf("%s expands past the -max-hosts limit of %d (raise or drop -max-hosts)", cidr, limit)
+	}
+	return nil
+}
+
+func (r *Runner) asnWithinLimit(asnName string, cidrs []*net.IPNet) error {
+	limit := r.options.maxHostsLimit()
+	if limit < 0 {
+		return nil
+	}
+	var total uint64
+	max := uint64(limit)
+	for _, cidr := range cidrs {
+		count, tooLarge, err := addressCount(cidr.String())
+		if err != nil {
+			return err
+		}
+		if tooLarge || count > max || total > max-count {
+			return fmt.Errorf("%s expands past the -max-hosts limit of %d (raise or drop -max-hosts)", asnName, limit)
+		}
+		total += count
+	}
+	return nil
+}
+
+func (r *Runner) iterCIDR(cidr string) (chan string, error) {
+	if err := r.cidrWithinLimit(cidr); err != nil {
+		return nil, err
+	}
+	return mapcidr.IPAddressesAsStream(cidr)
+}
+
+func (r *Runner) iterASN(value string) (chan string, error) {
+	cidrs, err := asn.GetCIDRsForASNNum(value)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.asnWithinLimit(value, cidrs); err != nil {
+		return nil, err
+	}
+	return streamIPNets(cidrs), nil
+}
+
+func streamIPNets(cidrs []*net.IPNet) chan string {
+	out := make(chan string)
+	go func() {
+		defer close(out)
+		for _, cidr := range cidrs {
+			ips, err := mapcidr.IPAddressesAsStream(cidr.String())
+			if err != nil {
+				continue
+			}
+			for ip := range ips {
+				out <- ip
+			}
+		}
+	}()
+	return out
 }
 
 // addHostToHMap inserts a single host into the hybrid map, deduplicating, and
@@ -441,15 +544,15 @@ func (r *Runner) addHostsToHMapFromChan(hosts chan string) (numHosts int) {
 	return
 }
 
-func (r *Runner) preProcessArgument(arg string) (chan string, error) {
+func (r *Runner) preProcessArgument(ctx context.Context, arg string) (chan string, error) {
 	switch {
 	case fileutil.FileExists(arg):
-		return linesIterToChan(fileutil.Lines(arg)), nil
+		return linesIterToChan(ctx, fileutil.Lines(arg)), nil
 	case argumentHasStdin(arg):
-		return linesIterToChan(fileutil.Lines(r.tmpStdinFile)), nil
+		return linesIterToChan(ctx, fileutil.Lines(r.tmpStdinFile)), nil
 	case arg != "":
 		data := strings.ReplaceAll(arg, Comma, NewLine)
-		return linesIterToChan(fileutil.LinesReader(strings.NewReader(data))), nil
+		return linesIterToChan(ctx, fileutil.LinesReader(strings.NewReader(data))), nil
 	default:
 		return nil, errors.New("empty argument")
 	}
@@ -459,7 +562,9 @@ func (r *Runner) preProcessArgument(arg string) (chan string, error) {
 // surfaces a per-line error) to the channel signature the rest of the
 // runner expects. Iteration errors are silently dropped to preserve the
 // historical "best effort" behaviour of the old fileutil.ReadFile.
-func linesIterToChan(it iter.Seq2[string, error]) chan string {
+// The producer selects on ctx so an early return in prepareInput can stop it
+// while it is blocked sending.
+func linesIterToChan(ctx context.Context, it iter.Seq2[string, error]) chan string {
 	ch := make(chan string)
 	go func() {
 		defer close(ch)
@@ -467,7 +572,11 @@ func linesIterToChan(it iter.Seq2[string, error]) chan string {
 			if err != nil {
 				return
 			}
-			ch <- line
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- line:
+			}
 		}
 	}()
 	return ch

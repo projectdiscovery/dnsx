@@ -2,6 +2,7 @@ package runner
 
 import (
 	"encoding/json"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -138,6 +139,68 @@ func TestRunner_cidrInput_prepareInput(t *testing.T) {
 		return nil
 	})
 	require.ElementsMatch(t, expected, got, "could not match expected output")
+}
+
+func TestPrepareInputCancelsProducerOnCIDRError(t *testing.T) {
+	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+	require.NoError(t, err)
+	r := Runner{
+		options: &Options{Domains: "173.0.84.0/29,example.com", MaxHosts: 4},
+		hm:      hm,
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		done <- r.prepareInput()
+	}()
+	select {
+	case err := <-done:
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "-max-hosts")
+	case <-time.After(2 * time.Second):
+		t.Fatal("prepareInput blocked with an input producer still sending")
+	}
+}
+
+func TestRunner_cidrInputRespectsMaxHosts(t *testing.T) {
+	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+	require.NoError(t, err)
+	r := Runner{options: &Options{Domains: "173.0.84.0/29", MaxHosts: 4}, hm: hm}
+	err = r.prepareInput()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "-max-hosts")
+	require.Empty(t, scanHMap(t, r.hm))
+}
+
+func TestRunner_cidrUnlimitedByDefault(t *testing.T) {
+	r := Runner{options: &Options{}}
+	require.NoError(t, r.cidrWithinLimit("0.0.0.0/0"))
+	require.NoError(t, r.cidrWithinLimit("2001:db8::/32"))
+}
+
+func TestRunner_maxHostsRejectsLargeCIDR(t *testing.T) {
+	r := Runner{options: &Options{MaxHosts: 256}}
+	require.Error(t, r.cidrWithinLimit("0.0.0.0/0"))
+	require.Error(t, r.cidrWithinLimit("2001:db8::/32"))
+	require.NoError(t, r.cidrWithinLimit("173.0.84.0/30"))
+}
+
+func TestRunner_maxHostsDisabledAllowsLargeCIDR(t *testing.T) {
+	r := Runner{options: &Options{MaxHosts: -1}}
+	require.NoError(t, r.cidrWithinLimit("0.0.0.0/0"))
+}
+
+func TestRunner_asnExpansionRespectsMaxHosts(t *testing.T) {
+	_, network, err := net.ParseCIDR("10.0.0.0/8")
+	require.NoError(t, err)
+	r := Runner{options: &Options{MaxHosts: 65536}}
+	err = r.asnWithinLimit("AS15169", []*net.IPNet{network})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "AS15169")
+
+	_, small, err := net.ParseCIDR("173.0.84.0/30")
+	require.NoError(t, err)
+	require.NoError(t, r.asnWithinLimit("AS14421", []*net.IPNet{small}))
 }
 
 func TestRunner_asnInput_prepareInput(t *testing.T) {
