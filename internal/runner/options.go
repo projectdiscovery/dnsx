@@ -285,8 +285,12 @@ func (options *Options) validateOptions() {
 		gologger.Fatal().Msgf("output-template can't be used with json or raw output")
 	}
 
-	if options.Retries == 0 {
+	if options.Retries < 1 {
 		gologger.Fatal().Msgf("retries must be at least 1")
+	}
+
+	if options.Threads < 1 {
+		gologger.Fatal().Msgf("threads must be at least 1")
 	}
 
 	wordListPresent := options.WordList != ""

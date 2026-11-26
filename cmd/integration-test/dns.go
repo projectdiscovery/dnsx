@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
+	"os/exec"
 	"strings"
 
 	"github.com/miekg/dns"
@@ -13,6 +15,31 @@ var dnsTestcases = map[string]testutils.TestCase{
 	"DNS A Request":                 &dnsARequest{question: "projectdiscovery.io", expectedOutput: "projectdiscovery.io"},
 	"DNS AAAA Request":              &dnsAAAARequest{question: "projectdiscovery.io", expectedOutput: "projectdiscovery.io"},
 	"DNS Filter Additional Section": &dnsFilterAdditionalSection{question: "anyinvaliddomain.projectdiscovery.io"},
+	"DNS Invalid Threads Flag":      &dnsNonPositiveFlag{flag: "-t", value: "0", expectedError: "threads must be at least 1"},
+	"DNS Negative Threads Flag":     &dnsNonPositiveFlag{flag: "-t", value: "-1", expectedError: "threads must be at least 1"},
+	"DNS Negative Retries Flag":     &dnsNonPositiveFlag{flag: "-retry", value: "-1", expectedError: "retries must be at least 1"},
+}
+
+// dnsNonPositiveFlag covers numeric flags that silently disabled the whole run
+// by leaving no worker (or no retry) behind: -t 0 / -t -1 resolved nothing and
+// still exited successfully.
+type dnsNonPositiveFlag struct {
+	flag          string
+	value         string
+	expectedError string
+}
+
+func (h *dnsNonPositiveFlag) Execute() error {
+	cmd := exec.Command("./dnsx", "-silent", "-a", h.flag, h.value)
+	cmd.Stdin = strings.NewReader("example.com\n")
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		return fmt.Errorf("expected %s %s to be rejected, got success: %s", h.flag, h.value, strings.TrimSpace(string(out)))
+	}
+	if !strings.Contains(string(out), h.expectedError) {
+		return errIncorrectResult(h.expectedError, strings.TrimSpace(string(out)))
+	}
+	return nil
 }
 
 type dnsARequest struct {
