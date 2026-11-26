@@ -419,13 +419,11 @@ func (r *Runner) prepareInput() error {
 	return nil
 }
 
-// addHostToHMap inserts a single host into the hybrid map, deduplicating, and
-// reports whether it was newly added (used to count the exact number of targets).
-// maxHostsLimit is the per-input expansion cap. Zero means the default cap.
-// A negative value disables it.
+// maxHostsLimit is the opt-in per-input expansion cap. Zero or a negative
+// value means no limit.
 func (options *Options) maxHostsLimit() int {
-	if options.MaxHosts == 0 {
-		return DefaultMaxHosts
+	if options.MaxHosts <= 0 {
+		return -1
 	}
 	return options.MaxHosts
 }
@@ -457,7 +455,7 @@ func (r *Runner) cidrWithinLimit(cidr string) error {
 		return err
 	}
 	if tooLarge || count > uint64(limit) {
-		return fmt.Errorf("%s expands past the -max-hosts limit of %d (pass -max-hosts -1 to disable)", cidr, limit)
+		return fmt.Errorf("%s expands past the -max-hosts limit of %d (raise or drop -max-hosts)", cidr, limit)
 	}
 	return nil
 }
@@ -475,7 +473,7 @@ func (r *Runner) asnWithinLimit(asnName string, cidrs []*net.IPNet) error {
 			return err
 		}
 		if tooLarge || count > max || total > max-count {
-			return fmt.Errorf("%s expands past the -max-hosts limit of %d (pass -max-hosts -1 to disable)", asnName, limit)
+			return fmt.Errorf("%s expands past the -max-hosts limit of %d (raise or drop -max-hosts)", asnName, limit)
 		}
 		total += count
 	}
@@ -517,6 +515,8 @@ func streamIPNets(cidrs []*net.IPNet) chan string {
 	return out
 }
 
+// addHostToHMap inserts a single host into the hybrid map, deduplicating, and
+// reports whether it was newly added (used to count the exact number of targets).
 func (r *Runner) addHostToHMap(host string) (added bool) {
 	if _, ok := r.hm.Get(host); ok {
 		return false

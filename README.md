@@ -96,7 +96,7 @@ PROBE:
 RATE-LIMIT:
    -t, -threads int      number of concurrent threads to use (default 100)
    -rl, -rate-limit int  number of dns request/second to make (disabled as default) (default -1)
-   -mh, -max-hosts int   maximum hosts expanded from a single CIDR or ASN (-1 to disable) (default 65536)
+   -mh, -max-hosts int   maximum hosts expanded from a single CIDR or ASN (default: no limit)
 
 UPDATE:
    -up, -update                 update dnsx to latest version

@@ -22,9 +22,6 @@ import (
 
 const (
 	DefaultResumeFile = "resume.cfg"
-	// DefaultMaxHosts is the maximum number of addresses expanded from one CIDR or ASN.
-	// -1 disables the cap.
-	DefaultMaxHosts = 65536
 )
 
 var PDCPApiKey string
@@ -159,7 +156,7 @@ func ParseOptions() *Options {
 	flagSet.CreateGroup("rate-limit", "Rate-limit",
 		flagSet.IntVarP(&options.Threads, "threads", "t", 100, "number of concurrent threads to use"),
 		flagSet.IntVarP(&options.RateLimit, "rate-limit", "rl", -1, "number of dns request/second to make (disabled as default)"),
-		flagSet.IntVarP(&options.MaxHosts, "max-hosts", "mh", DefaultMaxHosts, "maximum hosts expanded from a single CIDR or ASN (-1 to disable)"),
+		flagSet.IntVarP(&options.MaxHosts, "max-hosts", "mh", 0, "maximum hosts expanded from a single CIDR or ASN (default: no limit)"),
 	)
 
 	flagSet.CreateGroup("update", "Update",

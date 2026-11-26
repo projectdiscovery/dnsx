@@ -172,8 +172,14 @@ func TestRunner_cidrInputRespectsMaxHosts(t *testing.T) {
 	require.Empty(t, scanHMap(t, r.hm))
 }
 
-func TestRunner_largeCIDRRejectedByDefault(t *testing.T) {
+func TestRunner_cidrUnlimitedByDefault(t *testing.T) {
 	r := Runner{options: &Options{}}
+	require.NoError(t, r.cidrWithinLimit("0.0.0.0/0"))
+	require.NoError(t, r.cidrWithinLimit("2001:db8::/32"))
+}
+
+func TestRunner_maxHostsRejectsLargeCIDR(t *testing.T) {
+	r := Runner{options: &Options{MaxHosts: 256}}
 	require.Error(t, r.cidrWithinLimit("0.0.0.0/0"))
 	require.Error(t, r.cidrWithinLimit("2001:db8::/32"))
 	require.NoError(t, r.cidrWithinLimit("173.0.84.0/30"))
@@ -187,7 +193,7 @@ func TestRunner_maxHostsDisabledAllowsLargeCIDR(t *testing.T) {
 func TestRunner_asnExpansionRespectsMaxHosts(t *testing.T) {
 	_, network, err := net.ParseCIDR("10.0.0.0/8")
 	require.NoError(t, err)
-	r := Runner{options: &Options{MaxHosts: DefaultMaxHosts}}
+	r := Runner{options: &Options{MaxHosts: 65536}}
 	err = r.asnWithinLimit("AS15169", []*net.IPNet{network})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "AS15169")
