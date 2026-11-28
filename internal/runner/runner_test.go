@@ -551,7 +551,7 @@ func TestRunner_jsonRcodeOutputsHostsWithoutSelectedRecord(t *testing.T) {
 
 	runner, err := New(options)
 	require.NoError(t, err)
-	defer runner.Close()
+	t.Cleanup(func() { require.NoError(t, runner.Close()) })
 	require.NoError(t, runner.Run())
 
 	output, err := os.ReadFile(outputFile)

@@ -224,7 +224,7 @@ func runWildcardTestRunnerOutputWithResolver(t *testing.T, resolver string, host
 
 	runner, err := New(testOptions)
 	require.NoError(t, err)
-	defer runner.Close()
+	t.Cleanup(func() { require.NoError(t, runner.Close()) })
 
 	err = runner.Run()
 	require.NoError(t, err)
@@ -475,7 +475,7 @@ func TestRunner_DanglingCNAMEPreservesNXDOMAIN(t *testing.T) {
 
 	runner, err := New(options)
 	require.NoError(t, err)
-	defer runner.Close()
+	t.Cleanup(func() { require.NoError(t, runner.Close()) })
 	require.NoError(t, runner.Run())
 
 	output, err := os.ReadFile(outputFile)
