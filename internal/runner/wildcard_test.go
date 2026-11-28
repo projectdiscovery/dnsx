@@ -16,6 +16,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestRunnerFilterWildcardReportsStoredDataError(t *testing.T) {
+	r, err := New(&Options{WildcardDomain: "example.com", Threads: 1, Retries: 1})
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, r.Close()) })
+	require.NoError(t, r.hm.Set("host.example.com", []byte("{")))
+
+	require.Error(t, r.filterWildcardDomain())
+}
+
 func TestRunner_withoutWildcardFilteringOutputsAllHosts(t *testing.T) {
 	results := runWildcardTestRunner(t, &Options{})
 	require.ElementsMatch(t, []string{
@@ -215,7 +224,7 @@ func runWildcardTestRunnerOutputWithResolver(t *testing.T, resolver string, host
 
 	runner, err := New(testOptions)
 	require.NoError(t, err)
-	defer runner.Close()
+	t.Cleanup(func() { require.NoError(t, runner.Close()) })
 
 	err = runner.Run()
 	require.NoError(t, err)
@@ -466,7 +475,7 @@ func TestRunner_DanglingCNAMEPreservesNXDOMAIN(t *testing.T) {
 
 	runner, err := New(options)
 	require.NoError(t, err)
-	defer runner.Close()
+	t.Cleanup(func() { require.NoError(t, runner.Close()) })
 	require.NoError(t, runner.Run())
 
 	output, err := os.ReadFile(outputFile)

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"iter"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/logrusorgru/aurora/v4"
 	"github.com/miekg/dns"
-	"github.com/pkg/errors"
 	asnmap "github.com/projectdiscovery/asnmap/libs"
 	"github.com/projectdiscovery/clistats"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
@@ -44,6 +44,8 @@ type Runner struct {
 	wgwildcardworker     *sync.WaitGroup
 	workerchan           chan string
 	outputchan           chan string
+	inputErr             chan error
+	outputErr            chan error
 	wildcardworkerchan   chan wildcardJob
 	wildcardAResolver    *wildcard.Resolver
 	wildcardAAAAResolver *wildcard.Resolver
@@ -57,6 +59,8 @@ type Runner struct {
 	stats                clistats.StatisticsClient
 	tmpStdinFile         string
 	droppedDomains       atomic.Int64
+	workerErrOnce        sync.Once
+	workerErr            error
 	aurora               *aurora.Aurora
 	outputTemplate       *fasttemplate.Template
 }
@@ -64,6 +68,11 @@ type Runner struct {
 type wildcardJob struct {
 	host string
 	root string
+}
+
+type inputLine struct {
+	value string
+	err   error
 }
 
 func New(options *Options) (*Runner, error) {
@@ -225,7 +234,7 @@ func New(options *Options) (*Runner, error) {
 	if options.OutputTemplate != "" {
 		tmpl, err := fasttemplate.NewTemplate(options.OutputTemplate, "{{", "}}")
 		if err != nil {
-			return nil, errors.Wrap(err, "could not parse output template")
+			return nil, fmt.Errorf("could not parse output template: %w", err)
 		}
 		r.outputTemplate = tmpl
 	}
@@ -233,24 +242,23 @@ func New(options *Options) (*Runner, error) {
 	return &r, nil
 }
 
-func (r *Runner) InputWorkerStream() {
+func (r *Runner) InputWorkerStream() (err error) {
 	defer close(r.workerchan)
 
 	var sc *bufio.Scanner
 	// attempt to load list from file
 	if fileutil.FileExists(r.options.Hosts) {
-		f, err := os.Open(r.options.Hosts)
+		var f *os.File
+		f, err = os.Open(r.options.Hosts)
 		if err != nil {
-			gologger.Error().Msgf("Could not open hosts file '%s': %s", r.options.Hosts, err)
-			return
+			return fmt.Errorf("open hosts file %s: %w", r.options.Hosts, err)
 		}
-		defer f.Close() //nolint:errcheck
+		defer func() { err = errors.Join(err, f.Close()) }()
 		sc = bufio.NewScanner(f)
 	} else if fileutil.HasStdin() {
 		sc = bufio.NewScanner(os.Stdin)
 	} else {
-		gologger.Error().Msgf("no input provided in stream mode, pipe hosts to stdin")
-		return
+		return errors.New("no input provided in stream mode, pipe hosts to stdin")
 	}
 
 	for sc.Scan() {
@@ -278,6 +286,7 @@ func (r *Runner) InputWorkerStream() {
 			r.workerchan <- item
 		}
 	}
+	return sc.Err()
 }
 
 func (r *Runner) InputWorker() {
@@ -299,7 +308,7 @@ func (r *Runner) InputWorker() {
 	close(r.workerchan)
 }
 
-func (r *Runner) prepareInput() error {
+func (r *Runner) prepareInput() (retErr error) {
 	// Cancel input producers on every return. An early error leaves their
 	// channel undrained, and they must observe cancellation instead of blocking
 	// forever on send. A fully consumed input finishes before this runs.
@@ -307,8 +316,8 @@ func (r *Runner) prepareInput() error {
 	defer cancel()
 
 	var (
-		dataDomains chan string
-		sc          chan string
+		dataDomains chan inputLine
+		sc          chan inputLine
 		err         error
 	)
 
@@ -327,13 +336,13 @@ func (r *Runner) prepareInput() error {
 		if err != nil {
 			return err
 		}
-		if _, err := io.Copy(stdinFile, os.Stdin); err != nil {
+		defer func() {
+			retErr = errors.Join(retErr, os.Remove(r.tmpStdinFile))
+		}()
+		_, copyErr := io.Copy(stdinFile, os.Stdin)
+		if err := errors.Join(copyErr, stdinFile.Close()); err != nil {
 			return err
 		}
-		_ = stdinFile.Close()
-		defer func() {
-			_ = os.RemoveAll(r.tmpStdinFile)
-		}()
 	} else if hasStdin {
 		hasStdin = false
 	}
@@ -358,8 +367,11 @@ func (r *Runner) prepareInput() error {
 	}
 
 	numHosts := 0
-	for item := range sc {
-		item := normalize(item)
+	for line := range sc {
+		if line.err != nil {
+			return line.err
+		}
+		item := normalize(line.value)
 		switch {
 		case strings.Contains(item, "FUZZ"):
 			fuzz, err := r.preProcessArgument(ctx, r.options.WordList)
@@ -369,8 +381,15 @@ func (r *Runner) prepareInput() error {
 			// stream the expansion straight into the hybrid map instead of
 			// materializing the whole product in memory
 			for word := range fuzz {
-				subdomain := strings.ReplaceAll(item, "FUZZ", word)
-				if r.addHostToHMap(subdomain) {
+				if word.err != nil {
+					return word.err
+				}
+				subdomain := strings.ReplaceAll(item, "FUZZ", word.value)
+				added, err := r.addHostToHMap(subdomain)
+				if err != nil {
+					return err
+				}
+				if added {
 					numHosts++
 				}
 			}
@@ -383,8 +402,15 @@ func (r *Runner) prepareInput() error {
 			// domains Cartesian product with wordlist, streamed into the
 			// hybrid map to keep memory bounded on large wordlists
 			for prefix := range prefixes {
-				subdomain := strings.TrimSpace(prefix) + "." + item
-				if r.addHostToHMap(subdomain) {
+				if prefix.err != nil {
+					return prefix.err
+				}
+				subdomain := strings.TrimSpace(prefix.value) + "." + item
+				added, err := r.addHostToHMap(subdomain)
+				if err != nil {
+					return err
+				}
+				if added {
 					numHosts++
 				}
 			}
@@ -393,15 +419,29 @@ func (r *Runner) prepareInput() error {
 			if err != nil {
 				return err
 			}
-			numHosts += r.addHostsToHMapFromChan(hostC)
+			count, err := r.addHostsToHMapFromChan(hostC)
+			if err != nil {
+				return err
+			}
+			numHosts += count
 		case asn.IsASN(item):
 			hostC, err := r.iterASN(item)
 			if err != nil {
 				return err
 			}
-			numHosts += r.addHostsToHMapFromChan(hostC)
+			count, err := r.addHostsToHMapFromChan(hostC)
+			if err != nil {
+				return err
+			}
+			numHosts += count
 		default:
-			numHosts += r.addHostsToHMapFromList([]string{item})
+			added, err := r.addHostToHMap(item)
+			if err != nil {
+				return err
+			}
+			if added {
+				numHosts++
+			}
 		}
 	}
 	if r.options.ShowStatistics {
@@ -410,8 +450,9 @@ func (r *Runner) prepareInput() error {
 		r.stats.AddCounter("requests", 0)
 		r.stats.AddCounter("total", uint64(numHosts*len(r.dnsx.Options.QuestionTypes)))
 		r.stats.AddDynamic("summary", makePrintCallback())
-		// nolint:errcheck
-		r.stats.Start()
+		if err := r.stats.Start(); err != nil {
+			return err
+		}
 		r.stats.GetStatResponse(time.Second*5, func(s string, err error) error {
 			if err != nil && r.options.Verbose {
 				gologger.Error().Msgf("Could not read statistics: %s\n", err)
@@ -520,34 +561,30 @@ func streamIPNets(cidrs []*net.IPNet) chan string {
 
 // addHostToHMap inserts a single host into the hybrid map, deduplicating, and
 // reports whether it was newly added (used to count the exact number of targets).
-func (r *Runner) addHostToHMap(host string) (added bool) {
+func (r *Runner) addHostToHMap(host string) (bool, error) {
 	if _, ok := r.hm.Get(host); ok {
-		return false
+		return false, nil
 	}
-	// nolint:errcheck
-	r.hm.Set(host, nil)
-	return true
+	if err := r.hm.Set(host, nil); err != nil {
+		return false, fmt.Errorf("store host %s: %w", host, err)
+	}
+	return true, nil
 }
 
-func (r *Runner) addHostsToHMapFromList(hosts []string) (numHosts int) {
-	for _, host := range hosts {
-		if r.addHostToHMap(host) {
-			numHosts++
-		}
-	}
-	return
-}
-
-func (r *Runner) addHostsToHMapFromChan(hosts chan string) (numHosts int) {
+func (r *Runner) addHostsToHMapFromChan(hosts chan string) (numHosts int, err error) {
 	for host := range hosts {
-		if r.addHostToHMap(host) {
+		added, err := r.addHostToHMap(host)
+		if err != nil {
+			return numHosts, err
+		}
+		if added {
 			numHosts++
 		}
 	}
-	return
+	return numHosts, nil
 }
 
-func (r *Runner) preProcessArgument(ctx context.Context, arg string) (chan string, error) {
+func (r *Runner) preProcessArgument(ctx context.Context, arg string) (chan inputLine, error) {
 	switch {
 	case fileutil.FileExists(arg):
 		return linesIterToChan(ctx, fileutil.Lines(arg)), nil
@@ -561,24 +598,18 @@ func (r *Runner) preProcessArgument(ctx context.Context, arg string) (chan strin
 	}
 }
 
-// linesIterToChan bridges fileutil.Lines/LinesReader (an iter.Seq2 that
-// surfaces a per-line error) to the channel signature the rest of the
-// runner expects. Iteration errors are silently dropped to preserve the
-// historical "best effort" behaviour of the old fileutil.ReadFile.
-// The producer selects on ctx so an early return in prepareInput can stop it
-// while it is blocked sending.
-func linesIterToChan(ctx context.Context, it iter.Seq2[string, error]) chan string {
-	ch := make(chan string)
+func linesIterToChan(ctx context.Context, it iter.Seq2[string, error]) chan inputLine {
+	ch := make(chan inputLine)
 	go func() {
 		defer close(ch)
 		for line, err := range it {
-			if err != nil {
-				return
-			}
 			select {
 			case <-ctx.Done():
 				return
-			case ch <- line:
+			case ch <- inputLine{value: line, err: err}:
+			}
+			if err != nil {
+				return
 			}
 		}
 	}()
@@ -658,18 +689,21 @@ func (r *Runner) run() error {
 	r.startWorkers()
 
 	r.wgresolveworkers.Wait()
+	inputErr := <-r.inputErr
+	var statsErr error
 	if r.stats != nil {
-		err = r.stats.Stop()
-		if err != nil {
-			return err
-		}
+		statsErr = r.stats.Stop()
 	}
 
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
+	outputErr := <-r.outputErr
 
 	if dropped := r.droppedDomains.Load(); dropped > 0 {
 		fmt.Fprintf(os.Stderr, "[WRN] %d domains failed to resolve (consider increasing -retry or reducing -threads)\n", dropped)
+	}
+	if err := errors.Join(inputErr, r.workerErr, statsErr, outputErr); err != nil {
+		return err
 	}
 
 	if r.options.WildcardDomain != "" {
@@ -706,62 +740,70 @@ func (r *Runner) runStream() error {
 	r.startWorkers()
 
 	r.wgresolveworkers.Wait()
+	inputErr := <-r.inputErr
 
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
+	outputErr := <-r.outputErr
 
 	if dropped := r.droppedDomains.Load(); dropped > 0 {
 		fmt.Fprintf(os.Stderr, "[WRN] %d domains failed to resolve (consider increasing -retry or reducing -threads)\n", dropped)
 	}
 
-	return nil
+	return errors.Join(inputErr, r.workerErr, outputErr)
 }
 
-func (r *Runner) HandleOutput() {
-	defer r.wgoutputworker.Done()
-
+func (r *Runner) HandleOutput() error {
 	// setup output
 	var (
-		foutput *os.File
-		w       *bufio.Writer
+		foutput  *os.File
+		w        *bufio.Writer
+		writeErr error
 	)
 	if r.options.OutputFile != "" {
-		var err error
-		foutput, err = os.OpenFile(r.options.OutputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
+		foutput, writeErr = os.OpenFile(r.options.OutputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if writeErr == nil {
+			w = bufio.NewWriter(foutput)
 		}
-		defer func() {
-			_ = foutput.Close()
-		}()
-		w = bufio.NewWriter(foutput)
-		defer func() {
-			_ = w.Flush()
-		}()
 	}
 	for item := range r.outputchan {
-		if foutput != nil {
+		if w != nil && writeErr == nil {
 			// uses a buffer to write to file
-			_, _ = w.WriteString(item + "\n")
+			_, writeErr = w.WriteString(item + "\n")
 		}
 		// writes sequentially to stdout
 		gologger.Silent().Msgf("%s\n", item)
 	}
+	if w != nil {
+		writeErr = errors.Join(writeErr, w.Flush(), foutput.Close())
+	}
+	if writeErr != nil {
+		return fmt.Errorf("write output %s: %w", r.options.OutputFile, writeErr)
+	}
+	return nil
 }
 
 func (r *Runner) startOutputWorker() {
 	// output worker
 	r.outputchan = make(chan string)
+	r.outputErr = make(chan error, 1)
 	r.wgoutputworker.Add(1)
-	go r.HandleOutput()
+	go func() {
+		defer r.wgoutputworker.Done()
+		r.outputErr <- r.HandleOutput()
+	}()
 }
 
 func (r *Runner) startWorkers() {
-	if r.options.Stream {
-		go r.InputWorkerStream()
-	} else {
-		go r.InputWorker()
-	}
+	r.inputErr = make(chan error, 1)
+	go func() {
+		if r.options.Stream {
+			r.inputErr <- r.InputWorkerStream()
+			return
+		}
+		r.InputWorker()
+		r.inputErr <- nil
+	}()
 
 	r.startOutputWorker()
 	// resolve workers
@@ -769,6 +811,10 @@ func (r *Runner) startWorkers() {
 		r.wgresolveworkers.Add(1)
 		go r.worker()
 	}
+}
+
+func (r *Runner) recordWorkerError(err error) {
+	r.workerErrOnce.Do(func() { r.workerErr = err })
 }
 
 func (r *Runner) worker() {
@@ -899,7 +945,7 @@ func (r *Runner) worker() {
 		// if wildcard filtering just store the data
 		if r.options.WildcardDomain != "" {
 			if err := r.storeDNSData(dnsData.DNSData); err != nil {
-				gologger.Debug().Msgf("Failed to store DNS data for %s: %v\n", domain, err)
+				r.recordWorkerError(fmt.Errorf("store DNS data for %s: %w", domain, err))
 			}
 			continue
 		}
@@ -929,7 +975,11 @@ func (r *Runner) worker() {
 			if r.options.OmitRaw {
 				marshalOptions = append(marshalOptions, dnsx.WithoutAllRecords())
 			}
-			jsons, _ := dnsData.JSON(marshalOptions...)
+			jsons, err := dnsData.JSON(marshalOptions...)
+			if err != nil {
+				r.recordWorkerError(fmt.Errorf("encode DNS data for %s: %w", domain, err))
+				continue
+			}
 			r.outputchan <- jsons
 			continue
 		}
@@ -1140,8 +1190,8 @@ func (r *Runner) loadStoredDNSData(host string) (*retryabledns.DNSData, error) {
 }
 
 // Close running instance
-func (r *Runner) Close() {
-	_ = r.hm.Close()
+func (r *Runner) Close() error {
+	return r.hm.Close()
 }
 
 func (r *Runner) wildcardWorker() {
