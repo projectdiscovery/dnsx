@@ -16,6 +16,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestRunnerFilterWildcardReportsStoredDataError(t *testing.T) {
+	r, err := New(&Options{WildcardDomain: "example.com", Threads: 1, Retries: 1})
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, r.Close()) })
+	require.NoError(t, r.hm.Set("host.example.com", []byte("{")))
+
+	require.Error(t, r.filterWildcardDomain())
+}
+
 func TestRunner_withoutWildcardFilteringOutputsAllHosts(t *testing.T) {
 	results := runWildcardTestRunner(t, &Options{})
 	require.ElementsMatch(t, []string{

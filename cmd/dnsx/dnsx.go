@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"os/signal"
 
@@ -23,7 +24,9 @@ func main() {
 	go func() {
 		for range c {
 			gologger.Info().Msgf("CTRL+C pressed: Exiting\n")
-			dnsxRunner.Close()
+			if err := dnsxRunner.Close(); err != nil {
+				gologger.Error().Msgf("Could not close runner: %s\n", err)
+			}
 			if options.ShouldSaveResume() {
 				gologger.Info().Msgf("Creating resume file: %s\n", runner.DefaultResumeFile)
 				err := dnsxRunner.SaveResumeConfig()
@@ -35,7 +38,9 @@ func main() {
 		}
 	}()
 
-	// nolint:errcheck
-	dnsxRunner.Run()
-	dnsxRunner.Close()
+	runErr := dnsxRunner.Run()
+	closeErr := dnsxRunner.Close()
+	if err := errors.Join(runErr, closeErr); err != nil {
+		gologger.Fatal().Msgf("dnsx failed: %s\n", err)
+	}
 }

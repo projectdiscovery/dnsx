@@ -2,6 +2,8 @@ package runner
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 
 	"github.com/miekg/dns"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
@@ -115,11 +117,16 @@ func (r *Runner) filterWildcardDomain() error {
 
 	ipDomain := make(map[string]map[string]struct{})
 	listIPs := []string{}
+	var scanErr error
 
 	r.hm.Scan(func(k, v []byte) error {
+		if len(v) == 0 {
+			return nil
+		}
 		var dnsdata retryabledns.DNSData
 		if err := json.Unmarshal(v, &dnsdata); err != nil {
-			return nil
+			scanErr = fmt.Errorf("decode stored DNS data for %s: %w", k, err)
+			return scanErr
 		}
 
 		for _, address := range dnsdata.A {
@@ -132,6 +139,9 @@ func (r *Runner) filterWildcardDomain() error {
 
 		return nil
 	})
+	if scanErr != nil {
+		return scanErr
+	}
 
 	jobs := make([]wildcardJob, 0)
 	seen := make(map[string]struct{})
@@ -160,6 +170,8 @@ func (r *Runner) filterWildcardDomain() error {
 	seen = make(map[string]struct{})
 	seenRemovedSubdomains := make(map[string]struct{})
 	numRemovedSubdomains := 0
+	var lookupErr error
+emit:
 	for _, address := range listIPs {
 		for host := range ipDomain[address] {
 			if host == r.options.WildcardDomain || !r.wildcards.Has(host) {
@@ -168,7 +180,8 @@ func (r *Runner) filterWildcardDomain() error {
 				}
 				seen[host] = struct{}{}
 				if err := r.lookupAndOutput(host); err != nil {
-					return err
+					lookupErr = err
+					break emit
 				}
 				continue
 			}
@@ -181,6 +194,9 @@ func (r *Runner) filterWildcardDomain() error {
 	}
 	close(r.outputchan)
 	r.wgoutputworker.Wait()
+	if err := errors.Join(lookupErr, <-r.outputErr); err != nil {
+		return err
+	}
 
 	gologger.Print().Msgf("%d wildcard subdomains removed\n", numRemovedSubdomains)
 	return nil

@@ -2,9 +2,11 @@ package runner
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +17,60 @@ import (
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/stretchr/testify/require"
 )
+
+func TestRunnerRunReportsOutputWriteError(t *testing.T) {
+	outputFile := "/dev/full"
+	if runtime.GOOS == "darwin" {
+		reader, writer, err := os.Pipe()
+		require.NoError(t, err)
+		require.NoError(t, reader.Close())
+		t.Cleanup(func() { require.NoError(t, writer.Close()) })
+		outputFile = fmt.Sprintf("/dev/fd/%d", writer.Fd())
+	} else if runtime.GOOS != "linux" {
+		t.Skip("requires /dev/full or /dev/fd")
+	}
+
+	hosts := filepath.Join(t.TempDir(), "hosts.txt")
+	require.NoError(t, os.WriteFile(hosts, []byte("localhost\n"), 0600))
+	r, err := New(&Options{
+		Hosts: hosts, HostsFile: true, OutputFile: outputFile,
+		Stream: true, Threads: 1, Retries: 1, Timeout: time.Second,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, r.Close()) })
+
+	require.ErrorContains(t, r.Run(), "write output")
+}
+
+func TestRunnerPrepareInputReportsReadError(t *testing.T) {
+	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, hm.Close()) })
+	hosts := filepath.Join(t.TempDir(), "hosts.txt")
+	require.NoError(t, os.WriteFile(hosts, []byte(strings.Repeat("a", 70*1024)), 0600))
+	r := Runner{options: &Options{Hosts: hosts}, hm: hm}
+
+	require.ErrorContains(t, r.prepareInput(), "token too long")
+}
+
+func TestRunnerPrepareInputReportsStorageError(t *testing.T) {
+	hm, err := hybrid.New(hybrid.DefaultDiskOptions)
+	require.NoError(t, err)
+	require.NoError(t, hm.Close())
+	r := Runner{options: &Options{Hosts: "localhost"}, hm: hm}
+
+	require.Error(t, r.prepareInput())
+}
+
+func TestRunnerRunReportsStreamReadError(t *testing.T) {
+	hosts := filepath.Join(t.TempDir(), "hosts.txt")
+	require.NoError(t, os.WriteFile(hosts, []byte(strings.Repeat("a", 70*1024)), 0600))
+	r, err := New(&Options{Hosts: hosts, Stream: true, Threads: 1, Retries: 1})
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, r.Close()) })
+
+	require.ErrorContains(t, r.Run(), "token too long")
+}
 
 func TestRunner_singleDomain_prepareInput(t *testing.T) {
 	options := &Options{
@@ -332,11 +388,13 @@ func TestRunner_InputWorkerStream(t *testing.T) {
 		options:    options,
 		workerchan: make(chan string),
 	}
-	go r.InputWorkerStream()
+	inputErr := make(chan error, 1)
+	go func() { inputErr <- r.InputWorkerStream() }()
 	var got []string
 	for c := range r.workerchan {
 		got = append(got, c)
 	}
+	require.NoError(t, <-inputErr)
 	baseExpected := []string{"173.0.84.0", "173.0.84.1", "173.0.84.2", "173.0.84.3", "one.one.one.one"}
 	fileContent, err := os.ReadFile("tests/AS14421.txt")
 	require.Nil(t, err, "could not read the expectedOutputFile file")
@@ -364,7 +422,7 @@ func TestRunner_InputWorkerStreamWithoutInput(t *testing.T) {
 			options:    &Options{Stream: true},
 			workerchan: make(chan string),
 		}
-		require.NotPanics(t, r.InputWorkerStream)
+		require.Error(t, r.InputWorkerStream())
 		requireWorkerChanClosed(t, r.workerchan)
 	})
 
@@ -382,7 +440,7 @@ func TestRunner_InputWorkerStreamWithoutInput(t *testing.T) {
 			options:    &Options{Stream: true, Hosts: name},
 			workerchan: make(chan string),
 		}
-		require.NotPanics(t, r.InputWorkerStream)
+		require.Error(t, r.InputWorkerStream())
 		requireWorkerChanClosed(t, r.workerchan)
 	})
 }
